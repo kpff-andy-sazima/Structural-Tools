@@ -1,0 +1,165 @@
+﻿Sheathing Material,Minimum Nominal Panel Thickness,Minimum Nail Bearing Length in Framing Member or Blocking,Nail Type and Size,Panel Edge Nail Spacing,Panel Type,Unit Shear,Apparent Shear Stiffness Value
+Wood Structural Panels - Structural I,0.31250,1.250,6d common,6,OSB,560.0,13
+Wood Structural Panels - Structural I,0.37500,1.375,8d common,6,OSB,645.0,19
+Wood Structural Panels - Structural I,0.43750,1.375,8d common,6,OSB,715.0,16
+Wood Structural Panels - Structural I,0.46875,1.375,8d common,6,OSB,785.0,14
+Wood Structural Panels - Structural I,0.46875,1.500,10d common,6,OSB,950.0,22
+Wood Structural Panels - Sheathing,0.31250,1.250,6d common,6,OSB,505.0,13
+Wood Structural Panels - Sheathing,0.37500,1.250,6d common,6,OSB,560.0,11
+Wood Structural Panels - Sheathing,0.37500,1.375,8d common,6,OSB,615.0,17
+Wood Structural Panels - Sheathing,0.43750,1.375,8d common,6,OSB,670.0,15
+Wood Structural Panels - Sheathing,0.46875,1.375,8d common,6,OSB,730.0,13
+Wood Structural Panels - Sheathing,0.46875,1.500,10d common,6,OSB,870.0,22
+Wood Structural Panels - Sheathing,0.59375,1.500,10d common,6,OSB,950.0,19
+Plywood Siding,0.31250,1.250,6d galvanized casing,6,OSB,390.0,0
+Plywood Siding,0.37500,1.375,8d galvanized casing,6,OSB,450.0,0
+Particleboard Sheathing,0.37500,0.000,6d common,6,OSB,335.0,0
+Particleboard Sheathing,0.37500,0.000,8d common,6,OSB,365.0,0
+Particleboard Sheathing,0.50000,0.000,8d common,6,OSB,390.0,0
+Particleboard Sheathing,0.50000,0.000,10d common,6,OSB,520.0,0
+Particleboard Sheathing,0.62500,0.000,10d common,6,OSB,560.0,0
+Wood Structural Panels - Structural I,0.31250,1.250,6d common,6,PLY,560.0,10
+Wood Structural Panels - Structural I,0.37500,1.375,8d common,6,PLY,645.0,14
+Wood Structural Panels - Structural I,0.43750,1.375,8d common,6,PLY,715.0,13
+Wood Structural Panels - Structural I,0.46875,1.375,8d common,6,PLY,785.0,11
+Wood Structural Panels - Structural I,0.46875,1.500,10d common,6,PLY,950.0,16
+Wood Structural Panels - Sheathing,0.31250,1.250,6d common,6,PLY,505.0,9.5
+Wood Structural Panels - Sheathing,0.37500,1.250,6d common,6,PLY,560.0,8.5
+Wood Structural Panels - Sheathing,0.37500,1.375,8d common,6,PLY,615.0,12
+Wood Structural Panels - Sheathing,0.43750,1.375,8d common,6,PLY,670.0,11
+Wood Structural Panels - Sheathing,0.46875,1.375,8d common,6,PLY,730.0,10
+Wood Structural Panels - Sheathing,0.46875,1.500,10d common,6,PLY,870.0,14
+Wood Structural Panels - Sheathing,0.59375,1.500,10d common,6,PLY,950.0,13
+Plywood Siding,0.31250,1.250,6d galvanized casing,6,PLY,390.0,13
+Plywood Siding,0.37500,1.375,8d galvanized casing,6,PLY,450.0,16
+Particleboard Sheathing,0.37500,0.000,6d common,6,PLY,335.0,15
+Particleboard Sheathing,0.37500,0.000,8d common,6,PLY,365.0,18
+Particleboard Sheathing,0.50000,0.000,8d common,6,PLY,390.0,18
+Particleboard Sheathing,0.50000,0.000,10d common,6,PLY,520.0,21
+Particleboard Sheathing,0.62500,0.000,10d common,6,PLY,560.0,21
+Wood Structural Panels - Structural I,0.31250,1.250,6d common,4,OSB,840.0,18
+Wood Structural Panels - Structural I,0.37500,1.375,8d common,4,OSB,1010.0,24
+Wood Structural Panels - Structural I,0.43750,1.375,8d common,4,OSB,1105.0,21
+Wood Structural Panels - Structural I,0.46875,1.375,8d common,4,OSB,1205.0,18
+Wood Structural Panels - Structural I,0.46875,1.500,10d common,4,OSB,1430.0,29
+Wood Structural Panels - Sheathing,0.31250,1.250,6d common,4,OSB,755.0,18
+Wood Structural Panels - Sheathing,0.37500,1.250,6d common,4,OSB,840.0,15
+Wood Structural Panels - Sheathing,0.37500,1.375,8d common,4,OSB,895.0,25
+Wood Structural Panels - Sheathing,0.43750,1.375,8d common,4,OSB,980.0,22
+Wood Structural Panels - Sheathing,0.46875,1.375,8d common,4,OSB,1065.0,19
+Wood Structural Panels - Sheathing,0.46875,1.500,10d common,4,OSB,1290.0,30
+Wood Structural Panels - Sheathing,0.59375,1.500,10d common,4,OSB,1430.0,26
+Plywood Siding,0.31250,1.250,6d galvanized casing,4,OSB,590.0,0
+Plywood Siding,0.37500,1.375,8d galvanized casing,4,OSB,670.0,0
+Particleboard Sheathing,0.37500,0.000,6d common,4,OSB,505.0,0
+Particleboard Sheathing,0.37500,0.000,8d common,4,OSB,530.0,0
+Particleboard Sheathing,0.50000,0.000,8d common,4,OSB,590.0,0
+Particleboard Sheathing,0.50000,0.000,10d common,4,OSB,770.0,0
+Particleboard Sheathing,0.62500,0.000,10d common,4,OSB,855.0,0
+Structural Fiberboard Sheathing,0.50000,0.000,11 gauge galvanized roofing,4,OSB,475.0,0
+Structural Fiberboard Sheathing,0.78125,0.000,11 gauge galvanized roofing,4,OSB,475.0,0
+Wood Structural Panels - Structural I,0.31250,1.250,6d common,4,PLY,840.0,13
+Wood Structural Panels - Structural I,0.37500,1.375,8d common,4,PLY,1010.0,17
+Wood Structural Panels - Structural I,0.43750,1.375,8d common,4,PLY,1105.0,16
+Wood Structural Panels - Structural I,0.46875,1.375,8d common,4,PLY,1205.0,14
+Wood Structural Panels - Structural I,0.46875,1.500,10d common,4,PLY,1430.0,20
+Wood Structural Panels - Sheathing,0.31250,1.250,6d common,4,PLY,755.0,12
+Wood Structural Panels - Sheathing,0.37500,1.250,6d common,4,PLY,840.0,11
+Wood Structural Panels - Sheathing,0.37500,1.375,8d common,4,PLY,895.0,15
+Wood Structural Panels - Sheathing,0.43750,1.375,8d common,4,PLY,980.0,14
+Wood Structural Panels - Sheathing,0.46875,1.375,8d common,4,PLY,1065.0,13
+Wood Structural Panels - Sheathing,0.46875,1.500,10d common,4,PLY,1290.0,17
+Wood Structural Panels - Sheathing,0.59375,1.500,10d common,4,PLY,1430.0,16
+Plywood Siding,0.31250,1.250,6d galvanized casing,4,PLY,590.0,16
+Plywood Siding,0.37500,1.375,8d galvanized casing,4,PLY,670.0,18
+Particleboard Sheathing,0.37500,0.000,6d common,4,PLY,505.0,17
+Particleboard Sheathing,0.37500,0.000,8d common,4,PLY,530.0,20
+Particleboard Sheathing,0.50000,0.000,8d common,4,PLY,590.0,20
+Particleboard Sheathing,0.50000,0.000,10d common,4,PLY,770.0,23
+Particleboard Sheathing,0.62500,0.000,10d common,4,PLY,855.0,23
+Structural Fiberboard Sheathing,0.50000,0.000,11 gauge galvanized roofing,4,PLY,475.0,4
+Structural Fiberboard Sheathing,0.78125,0.000,11 gauge galvanized roofing,4,PLY,475.0,4
+Wood Structural Panels - Structural I,0.31250,1.250,6d common,3,OSB,1090.0,23
+Wood Structural Panels - Structural I,0.37500,1.375,8d common,3,OSB,1290.0,30
+Wood Structural Panels - Structural I,0.43750,1.375,8d common,3,OSB,1415.0,27
+Wood Structural Panels - Structural I,0.46875,1.375,8d common,3,OSB,1540.0,24
+Wood Structural Panels - Structural I,0.46875,1.500,10d common,3,OSB,1860.0,36
+Wood Structural Panels - Sheathing,0.31250,1.250,6d common,3,OSB,980.0,24
+Wood Structural Panels - Sheathing,0.37500,1.250,6d common,3,OSB,1090.0,20
+Wood Structural Panels - Sheathing,0.37500,1.375,8d common,3,OSB,1150.0,31
+Wood Structural Panels - Sheathing,0.43750,1.375,8d common,3,OSB,1260.0,28
+Wood Structural Panels - Sheathing,0.46875,1.375,8d common,3,OSB,1370.0,25
+Wood Structural Panels - Sheathing,0.46875,1.500,10d common,3,OSB,1680.0,37
+Wood Structural Panels - Sheathing,0.59375,1.500,10d common,3,OSB,1860.0,33
+Plywood Siding,0.31250,1.250,6d galvanized casing,3,OSB,770.0,0
+Plywood Siding,0.37500,1.375,8d galvanized casing,3,OSB,870.0,0
+Particleboard Sheathing,0.37500,0.000,6d common,3,OSB,645.0,0
+Particleboard Sheathing,0.37500,0.000,8d common,3,OSB,670.0,0
+Particleboard Sheathing,0.50000,0.000,8d common,3,OSB,755.0,0
+Particleboard Sheathing,0.50000,0.000,10d common,3,OSB,1010.0,0
+Particleboard Sheathing,0.62500,0.000,10d common,3,OSB,1105.0,0
+Structural Fiberboard Sheathing,0.50000,0.000,11 gauge galvanized roofing,3,OSB,645.0,0
+Structural Fiberboard Sheathing,0.78125,0.000,11 gauge galvanized roofing,3,OSB,645.0,0
+Wood Structural Panels - Structural I,0.31250,1.250,6d common,3,PLY,1090.0,16
+Wood Structural Panels - Structural I,0.37500,1.375,8d common,3,PLY,1290.0,20
+Wood Structural Panels - Structural I,0.43750,1.375,8d common,3,PLY,1415.0,19
+Wood Structural Panels - Structural I,0.46875,1.375,8d common,3,PLY,1540.0,17
+Wood Structural Panels - Structural I,0.46875,1.500,10d common,3,PLY,1860.0,22
+Wood Structural Panels - Sheathing,0.31250,1.250,6d common,3,PLY,980.0,14
+Wood Structural Panels - Sheathing,0.37500,1.250,6d common,3,PLY,1090.0,13
+Wood Structural Panels - Sheathing,0.37500,1.375,8d common,3,PLY,1150.0,17
+Wood Structural Panels - Sheathing,0.43750,1.375,8d common,3,PLY,1260.0,17
+Wood Structural Panels - Sheathing,0.46875,1.375,8d common,3,PLY,1370.0,15
+Wood Structural Panels - Sheathing,0.46875,1.500,10d common,3,PLY,1680.0,19
+Wood Structural Panels - Sheathing,0.59375,1.500,10d common,3,PLY,1860.0,18
+Plywood Siding,0.31250,1.250,6d galvanized casing,3,PLY,770.0,17
+Plywood Siding,0.37500,1.375,8d galvanized casing,3,PLY,870.0,20
+Particleboard Sheathing,0.37500,0.000,6d common,3,PLY,645.0,19
+Particleboard Sheathing,0.37500,0.000,8d common,3,PLY,670.0,21
+Particleboard Sheathing,0.50000,0.000,8d common,3,PLY,755.0,22
+Particleboard Sheathing,0.50000,0.000,10d common,3,PLY,1010.0,24
+Particleboard Sheathing,0.62500,0.000,10d common,3,PLY,1105.0,24
+Structural Fiberboard Sheathing,0.50000,0.000,11 gauge galvanized roofing,3,PLY,645.0,5
+Structural Fiberboard Sheathing,0.78125,0.000,11 gauge galvanized roofing,3,PLY,645.0,5
+Wood Structural Panels - Structural I,0.31250,1.250,6d common,2,OSB,1430.0,35
+Wood Structural Panels - Structural I,0.37500,1.375,8d common,2,OSB,1710.0,43
+Wood Structural Panels - Structural I,0.43750,1.375,8d common,2,OSB,1875.0,40
+Wood Structural Panels - Structural I,0.46875,1.375,8d common,2,OSB,2045.0,37
+Wood Structural Panels - Structural I,0.46875,1.500,10d common,2,OSB,2435.0,51
+Wood Structural Panels - Sheathing,0.31250,1.250,6d common,2,OSB,1260.0,37
+Wood Structural Panels - Sheathing,0.37500,1.250,6d common,2,OSB,1430.0,32
+Wood Structural Panels - Sheathing,0.37500,1.375,8d common,2,OSB,1485.0,45
+Wood Structural Panels - Sheathing,0.43750,1.375,8d common,2,OSB,1640.0,42
+Wood Structural Panels - Sheathing,0.46875,1.375,8d common,2,OSB,1790.0,39
+Wood Structural Panels - Sheathing,0.46875,1.500,10d common,2,OSB,2155.0,52
+Wood Structural Panels - Sheathing,0.59375,1.500,10d common,2,OSB,2435.0,48
+Plywood Siding,0.31250,1.250,6d galvanized casing,2,OSB,1010.0,0
+Plywood Siding,0.37500,1.375,8d galvanized casing,2,OSB,1150.0,0
+Particleboard Sheathing,0.37500,0.000,6d common,2,OSB,840.0,0
+Particleboard Sheathing,0.37500,0.000,8d common,2,OSB,880.0,0
+Particleboard Sheathing,0.50000,0.000,8d common,2,OSB,980.0,0
+Particleboard Sheathing,0.50000,0.000,10d common,2,OSB,1290.0,0
+Particleboard Sheathing,0.62500,0.000,10d common,2,OSB,1455.0,0
+Structural Fiberboard Sheathing,0.50000,0.000,11 gauge galvanized roofing,2,OSB,730.0,0
+Structural Fiberboard Sheathing,0.78125,0.000,11 gauge galvanized roofing,2,OSB,730.0,0
+Wood Structural Panels - Structural I,0.31250,1.250,6d common,2,PLY,1430.0,22
+Wood Structural Panels - Structural I,0.37500,1.375,8d common,2,PLY,1710.0,24
+Wood Structural Panels - Structural I,0.43750,1.375,8d common,2,PLY,1875.0,24
+Wood Structural Panels - Structural I,0.46875,1.375,8d common,2,PLY,2045.0,23
+Wood Structural Panels - Structural I,0.46875,1.500,10d common,2,PLY,2435.0,28
+Wood Structural Panels - Sheathing,0.31250,1.250,6d common,2,PLY,1260.0,18
+Wood Structural Panels - Sheathing,0.37500,1.250,6d common,2,PLY,1430.0,17
+Wood Structural Panels - Sheathing,0.37500,1.375,8d common,2,PLY,1485.0,20
+Wood Structural Panels - Sheathing,0.43750,1.375,8d common,2,PLY,1640.0,21
+Wood Structural Panels - Sheathing,0.46875,1.375,8d common,2,PLY,1790.0,20
+Wood Structural Panels - Sheathing,0.46875,1.500,10d common,2,PLY,2155.0,23
+Wood Structural Panels - Sheathing,0.59375,1.500,10d common,2,PLY,2435.0,22
+Plywood Siding,0.31250,1.250,6d galvanized casing,2,PLY,1010.0,21
+Plywood Siding,0.37500,1.375,8d galvanized casing,2,PLY,1150.0,22
+Particleboard Sheathing,0.37500,0.000,6d common,2,PLY,840.0,22
+Particleboard Sheathing,0.37500,0.000,8d common,2,PLY,880.0,23
+Particleboard Sheathing,0.50000,0.000,8d common,2,PLY,980.0,24
+Particleboard Sheathing,0.50000,0.000,10d common,2,PLY,1290.0,25
+Particleboard Sheathing,0.62500,0.000,10d common,2,PLY,1455.0,26
+Structural Fiberboard Sheathing,0.50000,0.000,11 gauge galvanized roofing,2,PLY,730.0,5.5
+Structural Fiberboard Sheathing,0.78125,0.000,11 gauge galvanized roofing,2,PLY,730.0,5.5

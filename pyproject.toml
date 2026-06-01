@@ -1,0 +1,27 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "structural_tools"
+version = "0.1.0"
+description = "Structural engineering design and analysis tools"
+requires-python = ">=3.14"
+
+dependencies = [
+    "numpy",
+    "pandas",
+    "handcalcs",
+    "forallpeople",
+    "ruff",
+    "mypy"
+]
+
+[project.scripts]
+export-notebook = "structural_tools.scripts.export_notebook:main"
+export-nb = "structural_tools.scripts.export_notebook:main"
+remove-aux-files = "structural_tools.scripts.remove_aux_files:main"
+banish-aux-files-to-the-shadow-dimension-where-they-belong = "structural_tools.scripts.remove_aux_files:main"
+
+[tool.ruff]
+line-length = 120
