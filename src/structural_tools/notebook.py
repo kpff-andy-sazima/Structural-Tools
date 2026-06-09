@@ -94,9 +94,7 @@ def display_table(
     if column_names_filter_and_map:
         display_columns = list(column_names_filter_and_map.keys())
         df_display = dataframe[display_columns].copy()
-        df_display.rename(
-            columns=column_names_filter_and_map, errors="raise", inplace=True
-        )
+        df_display.rename(columns=column_names_filter_and_map, errors="raise", inplace=True)
     else:
         df_display = dataframe.copy()
     if levels:
@@ -168,3 +166,26 @@ def sig_figs(x: float, sig_figs: int):
         return f"{x:.{decimals}f}"
 
     return round(x, -int(math.floor(math.log10(abs(x)))) + (sig_figs - 1))
+
+
+VALID_RETURN_UNITS_FEET = {"feet", "ft"}
+VALID_RETURN_UNITS_INCHES = {"inches", "in", "inch"}
+VALID_RETURN_UNITS = VALID_RETURN_UNITS_FEET.union(VALID_RETURN_UNITS_INCHES)
+
+
+def feet_inches(
+    feet: float = 0,
+    inches: float = 0,
+    fractional_inches: float = 0,
+    return_unit: str = "feet",
+) -> float:
+    if return_unit not in VALID_RETURN_UNITS:
+        raise ValueError(f"Invalid return unit {return_unit}. Use one of {VALID_RETURN_UNITS}")
+
+    # Default to calc'ing inches. Then convert to feet if asked to.
+
+    length = (feet * 12) + inches + fractional_inches
+    if return_unit in {"feet", "ft"}:
+        length = length / 12
+
+    return length
