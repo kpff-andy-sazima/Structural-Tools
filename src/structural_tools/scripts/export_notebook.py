@@ -4,45 +4,64 @@ import time
 from pathlib import Path
 import os
 from importlib.resources import as_file, files
+import shutil
+import nbformat
+import yaml
+import re
 
 
 # point nbconvert at your package templates
 TEMPLATE_DIR = Path(__file__).resolve().parents[1] / "templates"
 
 
-def run_nbconvert(output_type: str, notebooks: list[str], template: str) -> None:
-    for notebook in notebooks:
-        notebook_path = Path(notebook).with_suffix(".ipynb")
-        print(f"Exporting {notebook_path} to {output_type} with the {template} template\n")
+def extract_yaml_frontmatter(cell_source: str):
+    """
+    Extract YAML frontmatter from a markdown cell.
+    Returns dict or empty dict if none found.
+    """
+    match = re.match(r"^---\n(.*?)\n---\s*", cell_source, re.DOTALL)
+    if not match:
+        return {}
 
-        if not notebook_path.exists():
-            raise FileNotFoundError(f"Notebook not found: {notebook_path}")
+    return yaml.safe_load(match.group(1)) or {}
 
-        env = os.environ.copy()
-        env["NBCONVERT"] = "1"
 
-        cmd = [
-            "jupyter",
-            "nbconvert",
-            "--no-input",
-            "--execute",
-            "--to",
-            output_type,
-            f"--template={template}",
-            f"--TemplateExporter.extra_template_basedirs={str(TEMPLATE_DIR)}",
-            str(notebook_path),
-        ]
+def check_for_kpff_background():
+    template_pdf = TEMPLATE_DIR / "kpff_calc_pad_letter_vertical_no_grid.pdf"
+    shutil.copy(template_pdf, ".")
 
-        start = time.perf_counter()
 
-        subprocess.run(
-            cmd,
-            env=env,
-            check=True,
-        )
+def run_nbconvert(output_type: str, notebook_path: Path, template: str) -> None:
+    print(f"Exporting {notebook_path} to {output_type} with the {template} template\n")
 
-        elapsed = time.perf_counter() - start
-        print(f"\nCompleted in {elapsed:.1f} sec\n")
+    if not notebook_path.exists():
+        raise FileNotFoundError(f"Notebook not found: {notebook_path}")
+
+    env = os.environ.copy()
+    env["NBCONVERT"] = "1"
+
+    cmd = [
+        "jupyter",
+        "nbconvert",
+        "--no-input",
+        "--execute",
+        "--to",
+        output_type,
+        f"--template={template}",
+        f"--TemplateExporter.extra_template_basedirs={str(TEMPLATE_DIR)}",
+        str(notebook_path),
+    ]
+
+    start = time.perf_counter()
+
+    subprocess.run(
+        cmd,
+        env=env,
+        check=True,
+    )
+
+    elapsed = time.perf_counter() - start
+    print(f"\nCompleted in {elapsed:.1f} sec\n")
 
 
 def main():
@@ -58,7 +77,7 @@ def main():
     )
 
     parser.add_argument(
-        "notebook",
+        "notebooks",
         nargs="+",
         help="Notebook name without .ipynb extension",
     )
@@ -70,9 +89,31 @@ def main():
         help="Name of the template to use",
     )
 
+    parser.add_argument(
+        "--background",
+        default="kpff_calc_pad_letter_vertical_no_grid.pdf",
+        help="Path to the pdf background you wish to use",
+    )
+
     args = parser.parse_args()
 
-    run_nbconvert(args.output_type, args.notebook, args.template)
+    check_for_kpff_background()
+
+    notebook_paths: list[Path] = []
+    for notebook in args.notebooks:
+        notebook_paths.append(Path(notebook).with_suffix(".ipynb"))
+
+    for notebook_path in notebook_paths:
+        nb = nbformat.read(notebook_path, as_version=4)
+
+        for cell in nb.cells:
+            if cell.cell_type == "markdown":
+                meta = extract_yaml_frontmatter(cell.source)
+                if meta:
+                    # merge into notebook metadata
+                    nb.metadata["project"] = meta
+                    break  # usually only one frontmatter block
+        run_nbconvert(args.output_type, notebook_path, args.template)
 
 
 if __name__ == "__main__":
