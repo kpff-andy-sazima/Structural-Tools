@@ -26,6 +26,8 @@ override this.-=))
     % proper Figure object with a Caption API and a way to capture that
     % in the conversion process - todo).
     \usepackage{caption}
+    %\usepackage{datetime}     WEIRD BUG WITH CHANGING THE FONT IDK
+    %\yyyymmdddate % Switches format to YYYY/MM/DD
     % \DeclareCaptionFormat{nocaption}{}
     % \captionsetup{format=nocaption,aboveskip=0pt,belowskip=0pt}
 
@@ -33,7 +35,7 @@ override this.-=))
     \floatplacement{figure}{H} % forces figures to be placed at the correct location
     \usepackage[table]{xcolor} % Allow colors to be defined
     \usepackage{enumerate} % Needed for markdown enumerations to work
-    \usepackage[margin=0.5in]{geometry} % Used to adjust the document margins
+    \usepackage{geometry} % Used to adjust the document margins
     \usepackage[fleqn]{amsmath} % Equations
     \usepackage{amssymb} % Equations
     \usepackage{textcomp} % defines textquotesingle
@@ -122,6 +124,16 @@ override this.-=))
 
         \setmonofont{Consolas}
     \fi
+
+    \usepackage{eso-pic}
+    \AddToShipoutPictureBG{%
+        \AtPageLowerLeft{%
+            \includegraphics[
+                width=\paperwidth,
+                height=\paperheight
+            ]{kpff_calc_pad_letter_vertical_no_grid.pdf}
+        }%
+    }
 
     ((* endblock packages *))
 
@@ -258,9 +270,13 @@ override this.-=))
       citecolor=citecolor,
       }
     % Slightly bigger margins than the latex defaults
-    %((* block margins *))
-    %\geometry{verbose,tmargin=1in,bmargin=1in,lmargin=1in,rmargin=1in}
-    %((* endblock margins *))
+    ((* block margins *))
+    \geometry{verbose,tmargin=1.4in,bmargin=0.4in,lmargin=0.75in,rmargin=0.38in}
+    ((* endblock margins *))
+
+
+
+
     ((* endblock commands *))
 ((* endblock header *))
 
