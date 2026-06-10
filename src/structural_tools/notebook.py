@@ -70,8 +70,9 @@ def display_table(
     column_names_filter_and_map: dict[str, str | None] | None = None,
     style_functions: Sequence[tuple[Callable, Literal[0, 1]]] | None = None,
     formatter_functions: Sequence[Callable] | None = None,
-    hrules=True,
-    position="H",
+    hrules: bool = True,
+    position: str = "H",
+    position_float: str = "centering",
     **kwargs,
 ) -> Latex | None:
     """Displays a table if run in a Jupyter ipynb, or returns LaTeX code if run by nbconvert when exporting to PDF
@@ -121,6 +122,7 @@ def display_table(
                     hrules=hrules,
                     position=position,
                     convert_css=True,
+                    position_float=position_float,
                     **kwargs,
                 )
             )
