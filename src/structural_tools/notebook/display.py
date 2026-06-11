@@ -3,65 +3,40 @@ import math
 import os
 from typing import Literal
 
-import handcalcs
 import pandas as pd
 from IPython.display import Latex, display
 
 
-def set_params_columns(num_cols: int):
-    handcalcs.set_option("param_columns", num_cols)
+def sig_figs(x: float, sig_figs: int):
+    """
+    Rounds a number to number of significant figures
+    Parameters:
+    - x - the number to be rounded
+    - precision (integer) - the number of significant figures
+    Returns:
+    - float
+    """
 
+    if pd.isna(x):
+        return ""
 
-def check_value(value: float, check_value: float = 1, inequality: str = "leq"):
-    pass_latex = r"\textbf{\color{OK}OK}\ {\color{OK}\checkmark}"
-    fail_latex = r"\textbf{{\color{NG}NG !}}"
-    outcome = fail_latex
-    operator = "ERROR"
-    match inequality:
-        case "leq" | "<=":
-            if value <= check_value:
-                outcome = pass_latex
-                operator = "\\leq"
-            else:
-                operator = "\\gt"
-        case "lt" | "<":
-            if value < check_value:
-                outcome = pass_latex
-                operator = "\\lt"
-            else:
-                operator = "\\geq"
-        case "geq" | ">=":
-            if value >= check_value:
-                outcome = pass_latex
-                operator = "\\geq"
-            else:
-                operator = "\\lt"
-        case "gt" | ">":
-            if value > check_value:
-                outcome = pass_latex
-                operator = "\\gt"
-            else:
-                operator = "\\leq"
-        case "eq" | "=":
-            if value == check_value:
-                outcome = pass_latex
-                operator = "="
-            else:
-                operator = "\\neq"
-    return f"{value:.3g} {operator} {check_value:.3g} \\quad {outcome}"
+    if x == 0:
+        return float(0)
 
+    # If the value is not a number, just return it as is (e.g. for strings in the dataframe)
+    try:
+        x = float(x)
+    except ValueError, TypeError:
+        return x
 
-def highlight_insufficient_capacity(row):
-    styles = [""] * len(row)
+    sig_figs = int(sig_figs)
 
-    if row["$0.7 v$ [plf]"] > row["$v_{cap}$ [plf]"]:
-        demand_idx = row.index.get_loc("$0.7 v$ [plf]")
-        capacity_idx = row.index.get_loc("$v_{cap}$ [plf]")
+    if 1e-3 <= abs(x) < 1e6:
+        decimals = sig_figs - int(math.floor(math.log10(abs(x)))) - 1
+        decimals = max(decimals, 0)
+        return f"{x:.{decimals}f}"
 
-        styles[demand_idx] = "background-color: red; font-weight: bold"
-        styles[capacity_idx] = "background-color: red; font-weight: bold"
-
-    return styles
+    return round(x, -int(math.floor(math.log10(abs(x)))) + (sig_figs - 1))
 
 
 def display_table(
@@ -71,6 +46,7 @@ def display_table(
     style_functions: Sequence[tuple[Callable, Literal[0, 1]]] | None = None,
     formatter_functions: Sequence[Callable] | None = None,
     hrules: bool = True,
+    clines: str = "all;data",
     position: str = "H",
     position_float: str = "centering",
     **kwargs,
@@ -120,6 +96,7 @@ def display_table(
             Latex(
                 styler.to_latex(
                     hrules=hrules,
+                    clines=clines,
                     position=position,
                     convert_css=True,
                     position_float=position_float,
@@ -136,58 +113,3 @@ def display_text(text: str) -> Latex | None:
         return Latex(text)
     else:
         display(text)
-
-
-def sig_figs(x: float, sig_figs: int):
-    """
-    Rounds a number to number of significant figures
-    Parameters:
-    - x - the number to be rounded
-    - precision (integer) - the number of significant figures
-    Returns:
-    - float
-    """
-
-    if pd.isna(x):
-        return ""
-
-    if x == 0:
-        return float(0)
-
-    # If the value is not a number, just return it as is (e.g. for strings in the dataframe)
-    try:
-        x = float(x)
-    except ValueError, TypeError:
-        return x
-
-    sig_figs = int(sig_figs)
-
-    if 1e-3 <= abs(x) < 1e6:
-        decimals = sig_figs - int(math.floor(math.log10(abs(x)))) - 1
-        decimals = max(decimals, 0)
-        return f"{x:.{decimals}f}"
-
-    return round(x, -int(math.floor(math.log10(abs(x)))) + (sig_figs - 1))
-
-
-VALID_RETURN_UNITS_FEET = {"feet", "ft"}
-VALID_RETURN_UNITS_INCHES = {"inches", "in", "inch"}
-VALID_RETURN_UNITS = VALID_RETURN_UNITS_FEET.union(VALID_RETURN_UNITS_INCHES)
-
-
-def feet_inches(
-    feet: float = 0,
-    inches: float = 0,
-    fractional_inches: float = 0,
-    return_unit: str = "feet",
-) -> float:
-    if return_unit not in VALID_RETURN_UNITS:
-        raise ValueError(f"Invalid return unit {return_unit}. Use one of {VALID_RETURN_UNITS}")
-
-    # Default to calc'ing inches. Then convert to feet if asked to.
-
-    length = (feet * 12) + inches + fractional_inches
-    if return_unit in {"feet", "ft"}:
-        length = length / 12
-
-    return length
