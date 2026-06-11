@@ -280,7 +280,7 @@ override this.-=))
     % Document title
     ((* block title -*))
     ((*- set nb_title = nb.metadata.get('title', '') or resources['metadata']['name'] -*))
-    \title{((( nb_title | escape_latex )))}
+    \title{\vspace{-0.5in}((( nb_title | escape_latex )))}
     ((*- endblock title *))
     ((* block date *))
     ((* if 'date' in nb.metadata *))
@@ -316,7 +316,7 @@ override this.-=))
 ((* block body *))
 \begin{document}
     ((* block predoc *))
-    ((* block maketitle *))\maketitle((* endblock maketitle *))
+    ((* block maketitle *))\maketitle\vspace{-0.75in}((* endblock maketitle *))
     ((* block abstract *))((* endblock abstract *))
     ((* block tableofcontents *))\tableofcontents((* endblock tableofcontents *))
     ((* endblock predoc *))
