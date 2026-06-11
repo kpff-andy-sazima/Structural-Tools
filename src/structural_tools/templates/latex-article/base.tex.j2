@@ -26,6 +26,7 @@ override this.-=))
     % proper Figure object with a Caption API and a way to capture that
     % in the conversion process - todo).
     \usepackage{caption}
+    \usepackage{datetime2}
     %\usepackage{datetime}     WEIRD BUG WITH CHANGING THE FONT IDK
     %\yyyymmdddate % Switches format to YYYY/MM/DD
     % \DeclareCaptionFormat{nocaption}{}
@@ -134,6 +135,41 @@ override this.-=))
             ]{kpff_calc_pad_letter_vertical_no_grid.pdf}
         }%
     }
+
+    \usepackage{lastpage}
+    \pagestyle{empty}
+
+    \AddToShipoutPictureFG{%
+        \AtPageUpperLeft{%
+            ((* if 'project' in nb.metadata *))
+            \put(258, -39){\small ((( nb.metadata.project )))}
+            ((* endif *))
+
+            ((* if 'location' in nb.metadata *))
+            \put(258, -58){\small ((( nb.metadata.location )))}
+            ((* endif *))
+
+            ((* if 'client' in nb.metadata *))
+            \put(258, -76.5){\small ((( nb.metadata.client )))}
+            ((* endif *))
+
+            ((* if 'title' in nb.metadata *))
+            \put(219,-94){\parbox{217pt}{\centering\small ((( nb.metadata.title )))}}
+            ((* endif *))
+
+            ((* if 'author' in nb.metadata *))
+            \put(467, -39){\small ((( nb.metadata.author.initials )))}
+            ((* endif *))
+
+            \put(467, -58){\small \today}
+            \put(517, -50){\parbox{72pt}{\centering\small \thepage{} of \pageref*{LastPage}}}
+
+            ((* if 'job_number' in nb.metadata *))
+            \put(517, -87){\parbox{72pt}{\centering\small ((( nb.metadata.job_number ))) }}
+            ((* endif *))
+        }%
+    }
+
 
     ((* endblock packages *))
 
@@ -271,11 +307,8 @@ override this.-=))
       }
     % Slightly bigger margins than the latex defaults
     ((* block margins *))
-    \geometry{verbose,tmargin=1.4in,bmargin=0.4in,lmargin=0.75in,rmargin=0.38in}
+    \geometry{verbose,tmargin=1.4in,bmargin=0.45in,lmargin=0.75in,rmargin=0.4in}
     ((* endblock margins *))
-
-
-
 
     ((* endblock commands *))
 ((* endblock header *))
@@ -287,7 +320,7 @@ override this.-=))
     ((* block abstract *))((* endblock abstract *))
     ((* block tableofcontents *))\tableofcontents((* endblock tableofcontents *))
     ((* endblock predoc *))
-
+    \thispagestyle{empty}
     ((( super() )))
 
     % Add a bibliography block to the postdoc
