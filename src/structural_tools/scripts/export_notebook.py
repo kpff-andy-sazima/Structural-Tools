@@ -107,12 +107,15 @@ def main():
         nb = nbformat.read(notebook_path, as_version=4)
 
         for cell in nb.cells:
-            if cell.cell_type == "markdown":
+            if cell.cell_type in {"raw", "markdown"}:
                 meta = extract_yaml_frontmatter(cell.source)
                 if meta:
                     # merge into notebook metadata
-                    nb.metadata["project"] = meta
+                    nb.metadata.update(meta)
                     break  # usually only one frontmatter block
+        with open(notebook_path, "w", encoding="utf-8") as f:
+            nbformat.write(nb, f)
+
         run_nbconvert(args.output_type, notebook_path, args.template)
 
 
