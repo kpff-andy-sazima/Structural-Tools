@@ -89,10 +89,10 @@ override this.-=))
 
     \expandafter\def\expandafter\normalsize\expandafter{%
       \normalsize%
-      \setlength\abovedisplayskip{-6pt}%
-      \setlength\belowdisplayskip{6pt}%
-      \setlength\abovedisplayshortskip{-6pt}%
-      \setlength\belowdisplayshortskip{6pt}%
+      \setlength\abovedisplayskip{-10pt}%
+      \setlength\belowdisplayskip{2pt}%
+      \setlength\abovedisplayshortskip{-10pt}%
+      \setlength\belowdisplayshortskip{2pt}%
     }
 
     % Font selection
@@ -283,13 +283,16 @@ override this.-=))
     \title{\vspace{-0.5in}((( nb_title | escape_latex )))}
     ((*- endblock title *))
     ((* block date *))
-    ((* if 'date' in nb.metadata *))
-    \date{((( nb.metadata.date | escape_latex )))}
-    ((* endif *))
+    %((* if 'date' in nb.metadata *))
+    %\date{((( nb.metadata.date | escape_latex )))}
+    %((* endif *))
+    \date{}
     ((* endblock date *))
     ((* block author *))
     ((* if 'authors' in nb.metadata *))
-    \author{((( nb.metadata.authors | join(', ', attribute='name') )))}
+    \author{((( nb.metadata.author.name )))}
+    ((* else *))
+    \author{}
     ((* endif *))
     ((* endblock author *))
     ((* endblock definitions *))
