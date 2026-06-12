@@ -1,0 +1,93 @@
+﻿Index,Category,Seismic Force-Resisting System,R,Omega_0,C_d
+A1,BEARING WALL SYSTEMS, Special reinforced concrete shear walls,5,2.5,5
+A2,BEARING WALL SYSTEMS,Reinforced concrete ductile coupled walls,8,2.5,8
+A3,BEARING WALL SYSTEMS, Ordinary reinforced concrete shear walls,4,2.5,4
+A4,BEARING WALL SYSTEMS, Detailed plain concrete shear walls,2,2.5,2
+A5,BEARING WALL SYSTEMS, Ordinary plain concrete shear walls,1.5,2.5,1.5
+A6,BEARING WALL SYSTEMS, Intermediate precast shear walls,4,2.5,4
+A7,BEARING WALL SYSTEMS, Ordinary precast shear walls,3,2.5,3
+A8,BEARING WALL SYSTEMS, Special reinforced masonry shear walls,5,2.5,3.5
+A9,BEARING WALL SYSTEMS, Intermediate reinforced masonry shear walls,3.5,2.5,2.25
+A10,BEARING WALL SYSTEMS, Ordinary reinforced masonry shear walls,2,2.5,1.75
+A11,BEARING WALL SYSTEMS, Detailed plain masonry shear walls,2,2.5,1.75
+A12,BEARING WALL SYSTEMS, Ordinary plain masonry shear walls,1.5,2.5,1.25
+A13,BEARING WALL SYSTEMS, Prestressed masonry shear walls,1.5,2.5,1.75
+A14,BEARING WALL SYSTEMS, Ordinary reinforced AAC masonry shear walls,2,2.5,2
+A15,BEARING WALL SYSTEMS, Ordinary plain AAC masonry shear walls,1.5,2.5,1.5
+A16,BEARING WALL SYSTEMS, Light-frame (wood) walls sheathed with wood structural panels rated for shear resistance,6.5,3,4
+A17,BEARING WALL SYSTEMS, Light-frame (cold-formed steel) walls sheathed with wood structural panels rated for shear resistance or steel sheets,6.5,3,4
+A18,BEARING WALL SYSTEMS, Light-frame walls with shear panels of all other materials,2,2.5,2
+A19,BEARING WALL SYSTEMS, Light-frame (cold-formed steel) wall systems using flat strap bracing,4,2,3.5
+A20,BEARING WALL SYSTEMS,Cross-laminated timber shear walls,3,3,3
+A21,BEARING WALL SYSTEMS,Cross-laminated timber shear walls with shear resistance provided by  high-aspect-ratio panels only,4,3,4
+B1,BUILDING FRAME SYSTEMS, Steel eccentrically braced frames,8,2,4
+B2,BUILDING FRAME SYSTEMS, Steel special concentrically braced frames,6,2,5
+B3,BUILDING FRAME SYSTEMS, Steel ordinary concentrically braced frames,3.25,2,3.25
+B4,BUILDING FRAME SYSTEMS, Special reinforced concrete shear walls,6,2.5,5
+B5,BUILDING FRAME SYSTEMS,Reinforced concrete ductile coupled walls,8,2.5,8
+B6,BUILDING FRAME SYSTEMS, Ordinary reinforced concrete shear walls,5,2.5,4.5
+B7,BUILDING FRAME SYSTEMS, Detailed plain concrete shear walls,2,2.5,2
+B8,BUILDING FRAME SYSTEMS, Ordinary plain concrete shear walls,1.5,2.5,1.5
+B9,BUILDING FRAME SYSTEMS, Intermediate precast shear walls,5,2.5,4.5
+B10,BUILDING FRAME SYSTEMS, Ordinary precast shear walls,4,2.5,4
+B11,BUILDING FRAME SYSTEMS, Steel and concrete composite eccentrically braced frames,8,2.5,4
+B12,BUILDING FRAME SYSTEMS, Steel and concrete composite special concentrically braced frames,5,2,4.5
+B13,BUILDING FRAME SYSTEMS, Steel and concrete composite ordinary braced frames,3,2,3
+B14,BUILDING FRAME SYSTEMS, Steel and concrete composite plate shear walls,6.5,2.5,5.5
+B15,BUILDING FRAME SYSTEMS, Steel and concrete composite special shear walls,6,2.5,5
+B16,BUILDING FRAME SYSTEMS, Steel and concrete composite ordinary shear walls,5,2.5,4.5
+B17,BUILDING FRAME SYSTEMS, Special reinforced masonry shear walls,5.5,2.5,4
+B18,BUILDING FRAME SYSTEMS, Intermediate reinforced masonry shear walls,4,2.5,4
+B19,BUILDING FRAME SYSTEMS, Ordinary reinforced masonry shear walls,2,2.5,2
+B20,BUILDING FRAME SYSTEMS, Detailed plain masonry shear walls,2,2.5,2
+B21,BUILDING FRAME SYSTEMS, Ordinary plain masonry shear walls,1.5,2.5,1.25
+B22,BUILDING FRAME SYSTEMS, Prestressed masonry shear walls,1.5,2.5,1.75
+B23,BUILDING FRAME SYSTEMS, Light-frame (wood) walls sheathed with wood structural panels rated for shear resistance,7,2.5,4.5
+B24,BUILDING FRAME SYSTEMS, Light-frame (cold-formed steel) walls sheathed with wood structural panels rated for shear resistance or steel sheets,7,2.5,4.5
+B25,BUILDING FRAME SYSTEMS, Light-frame walls with shear panels of all other materials,2.5,2.5,2.5
+B26,BUILDING FRAME SYSTEMS, Steel buckling-restrained braced frames,8,2.5,5
+B27,BUILDING FRAME SYSTEMS, Steel special plate shear walls,7,2,6
+B28,BUILDING FRAME SYSTEMS,Steel and concrete coupled composite plate shear walls,8,2.5,5.5
+C1,MOMENT-RESISTING FRAME SYSTEMS, Steel special moment frames,8,3,5.5
+C2,MOMENT-RESISTING FRAME SYSTEMS, Steel special truss moment frames,7,3,5.5
+C3,MOMENT-RESISTING FRAME SYSTEMS, Steel intermediate moment frames,4.5,3,4
+C4,MOMENT-RESISTING FRAME SYSTEMS, Steel ordinary moment frames,3.5,3,3
+C5,MOMENT-RESISTING FRAME SYSTEMS, Special reinforced concrete moment frames,8,3,5.5
+C6,MOMENT-RESISTING FRAME SYSTEMS, Intermediate reinforced concrete moment frames,5,3,4.5
+C7,MOMENT-RESISTING FRAME SYSTEMS, Ordinary reinforced concrete moment frames,3,3,2.5
+C8,MOMENT-RESISTING FRAME SYSTEMS, Steel and concrete composite special moment frames,8,3,5.5
+C9,MOMENT-RESISTING FRAME SYSTEMS, Steel and concrete composite intermediate moment frames,5,3,4.5
+C10,MOMENT-RESISTING FRAME SYSTEMS, Steel and concrete composite partially restrained moment frames,6,3,5.5
+C11,MOMENT-RESISTING FRAME SYSTEMS, Steel and concrete composite ordinary moment frames,3,3,2.5
+C12,MOMENT-RESISTING FRAME SYSTEMS, Cold-formed steel—special bolted moment framen,3.5,3,3.5
+D1,DUAL SYSTEMS WITH SPECIAL MOMENT FRAMES CAPABLE OF RESISTING AT LEAST 25% OF PRESCRIBED SEISMIC FORCES, Steel eccentrically braced frames,8,2.5,4
+D2,DUAL SYSTEMS WITH SPECIAL MOMENT FRAMES CAPABLE OF RESISTING AT LEAST 25% OF PRESCRIBED SEISMIC FORCES, Steel special concentrically braced frames,7,2.5,5.5
+D3,DUAL SYSTEMS WITH SPECIAL MOMENT FRAMES CAPABLE OF RESISTING AT LEAST 25% OF PRESCRIBED SEISMIC FORCES, Special reinforced concrete shear walls,7,2.5,5.5
+D4,DUAL SYSTEMS WITH SPECIAL MOMENT FRAMES CAPABLE OF RESISTING AT LEAST 25% OF PRESCRIBED SEISMIC FORCES, Reinforced concrete ductile coupled walls,8,2.5,8
+D5,DUAL SYSTEMS WITH SPECIAL MOMENT FRAMES CAPABLE OF RESISTING AT LEAST 25% OF PRESCRIBED SEISMIC FORCES, Ordinary reinforced concrete shear walls,6,2.5,5
+D6,DUAL SYSTEMS WITH SPECIAL MOMENT FRAMES CAPABLE OF RESISTING AT LEAST 25% OF PRESCRIBED SEISMIC FORCES, Steel and concrete composite eccentrically braced frames,8,2.5,4
+D7,DUAL SYSTEMS WITH SPECIAL MOMENT FRAMES CAPABLE OF RESISTING AT LEAST 25% OF PRESCRIBED SEISMIC FORCES, Steel and concrete composite special concentrically braced frames,6,2.5,5
+D8,DUAL SYSTEMS WITH SPECIAL MOMENT FRAMES CAPABLE OF RESISTING AT LEAST 25% OF PRESCRIBED SEISMIC FORCES, Steel and concrete composite plate shear walls,7.5,2.5,6
+D9,DUAL SYSTEMS WITH SPECIAL MOMENT FRAMES CAPABLE OF RESISTING AT LEAST 25% OF PRESCRIBED SEISMIC FORCES, Steel and concrete composite special shear walls,7,2.5,6
+D10,DUAL SYSTEMS WITH SPECIAL MOMENT FRAMES CAPABLE OF RESISTING AT LEAST 25% OF PRESCRIBED SEISMIC FORCES, Steel and concrete composite ordinary shear walls,6,2.5,5
+D11,DUAL SYSTEMS WITH SPECIAL MOMENT FRAMES CAPABLE OF RESISTING AT LEAST 25% OF PRESCRIBED SEISMIC FORCES, Special reinforced masonry shear walls,5.5,3,5
+D12,DUAL SYSTEMS WITH SPECIAL MOMENT FRAMES CAPABLE OF RESISTING AT LEAST 25% OF PRESCRIBED SEISMIC FORCES, Intermediate reinforced masonry shear walls,4,3,3.5
+D13,DUAL SYSTEMS WITH SPECIAL MOMENT FRAMES CAPABLE OF RESISTING AT LEAST 25% OF PRESCRIBED SEISMIC FORCES, Steel buckling-restrained braced frames,8,2.5,5
+D14,DUAL SYSTEMS WITH SPECIAL MOMENT FRAMES CAPABLE OF RESISTING AT LEAST 25% OF PRESCRIBED SEISMIC FORCES, Steel special plate shear walls,8,2.5,6.5
+D15,DUAL SYSTEMS WITH SPECIAL MOMENT FRAMES CAPABLE OF RESISTING AT LEAST 25% OF PRESCRIBED SEISMIC FORCES, Steel and concrete coupled composite plate shear walls,8,2.5,5.5
+E1,DUAL SYSTEMS WITH INTERMEDIATE MOMENT FRAMES CAPABLE OF RESISTING AT LEAST 25% OF PRESCRIBED SEISMIC FORCES, Steel special concentrically braced frames,6,2.5,5
+E2,DUAL SYSTEMS WITH INTERMEDIATE MOMENT FRAMES CAPABLE OF RESISTING AT LEAST 25% OF PRESCRIBED SEISMIC FORCES, Special reinforced concrete shear walls,6.5,2.5,5
+E3,DUAL SYSTEMS WITH INTERMEDIATE MOMENT FRAMES CAPABLE OF RESISTING AT LEAST 25% OF PRESCRIBED SEISMIC FORCES, Ordinary reinforced masonry shear walls,3,3,2.5
+E4,DUAL SYSTEMS WITH INTERMEDIATE MOMENT FRAMES CAPABLE OF RESISTING AT LEAST 25% OF PRESCRIBED SEISMIC FORCES, Intermediate reinforced masonry shear walls,3.5,3,3
+E5,DUAL SYSTEMS WITH INTERMEDIATE MOMENT FRAMES CAPABLE OF RESISTING AT LEAST 25% OF PRESCRIBED SEISMIC FORCES, Steel and concrete composite special concentrically braced frames,5.5,2.5,4.5
+E6,DUAL SYSTEMS WITH INTERMEDIATE MOMENT FRAMES CAPABLE OF RESISTING AT LEAST 25% OF PRESCRIBED SEISMIC FORCES, Steel and concrete composite ordinary braced frames,3.5,2.5,3
+E7,DUAL SYSTEMS WITH INTERMEDIATE MOMENT FRAMES CAPABLE OF RESISTING AT LEAST 25% OF PRESCRIBED SEISMIC FORCES, Steel and concrete composite ordinary shear walls,5,3,4.5
+E8,DUAL SYSTEMS WITH INTERMEDIATE MOMENT FRAMES CAPABLE OF RESISTING AT LEAST 25% OF PRESCRIBED SEISMIC FORCES, Ordinary reinforced concrete shear walls,5.5,2.5,4.5
+F1,SHEAR WALL-FRAME INTERACTIVE SYSTEM WITH ORDINARY REINFORCED CONCRETE MOMENT FRAMES AND ORDINARY REINFORCED CONCRETE SHEAR WALLS,,4.5,2.5,4
+G1,CANTILEVERED COLUMN SYSTEMS DETAILED TO CONFORM TO THE REQUIREMENTS FOR:, Steel special cantilever column systems,2.5,1.25,2.5
+G2,CANTILEVERED COLUMN SYSTEMS DETAILED TO CONFORM TO THE REQUIREMENTS FOR:, Steel ordinary cantilever column systems,1.25,1.25,1.25
+G3,CANTILEVERED COLUMN SYSTEMS DETAILED TO CONFORM TO THE REQUIREMENTS FOR:, Special reinforced concrete moment frames,2.5,1.25,2.5
+G4,CANTILEVERED COLUMN SYSTEMS DETAILED TO CONFORM TO THE REQUIREMENTS FOR:, Intermediate reinforced concrete moment frames,1.5,1.25,1.5
+G5,CANTILEVERED COLUMN SYSTEMS DETAILED TO CONFORM TO THE REQUIREMENTS FOR:, Ordinary reinforced concrete moment frames,1,1.25,1
+G6,CANTILEVERED COLUMN SYSTEMS DETAILED TO CONFORM TO THE REQUIREMENTS FOR:, Timber frames,1.5,1.5,1.5
+H1,"STEEL SYSTEMS NOT SPECIFICALLY DETAILED FOR SEISMIC RESISTANCE, EXCLUDING CANTILEVER COLUMN SYSTEMS",,3,3,3
