@@ -1,23 +1,44 @@
 import pandas as pd
 import numpy as np
 from forallpeople import Physical
+from ..util import generate_levels_list
 
 
-def generate_levels_list(number_of_levels: int, add_roof: bool = True) -> list[str]:
-    """Generates a list of strings representing all the level names based on how many levels are specified.
+class SeismicLoads:
+    levels: list[float]
+    level_heights: list[float]
+    level_weights: list[float]
+    base_shear: float
+    building_period: float
+    add_roof: bool = True
+    reverse_level_order: bool = True
+    s_ds: float | None = None
+    i_e: float | None = None
+
+
+def get_structural_period_exponent(building_period: float) -> float:
+    """Given the building period, calculate the structural period exponent from ASCE 7-16 Section 12.8.
 
     Args:
-        number_of_levels (int): The number of levels including ground floor (Level 1).
-        add_roof (bool, optional): Whether to add a "Roof" level. Defaults to True.
+        building_period (float): Building period in seconds
+
+    Raises:
+        ValueError: If the building period is <= 0
 
     Returns:
-        list[str]: A list of strings representing all the levels in increasing order (Level 1, Level 2, etc.).
+        float: Structural period exponent
     """
-    levels_list = [f"Level {i}" for i in range(1, number_of_levels + 1)]
-    if add_roof:
-        levels_list.append("Roof")
+    if building_period <= 0:
+        raise ValueError(f"Building period must be greater than zero. Your building period is {building_period}")
 
-    return levels_list
+    if building_period <= 0.5:
+        k = 1
+    elif building_period >= 2.5:
+        k = 2
+    else:
+        k = 1 + ((building_period - 0.5) * (2 - 1) / (2.5 - 0.5))
+
+    return k
 
 
 def generate_seismic_loads(
@@ -31,7 +52,7 @@ def generate_seismic_loads(
     reverse_order: bool = True,
     s_ds: float | None = None,
     i_e: float | None = None,
-) -> pd.DataFrame:
+) -> tuple[pd.DataFrame, dict[str, str]]:
     """Generate a building's seismic loading for each level. If s_ds and i_e are supplied, the diaphragm forces will be automatically bounded based on ASCE 7 Section 12.10
 
     Args:
@@ -53,6 +74,7 @@ def generate_seismic_loads(
 
     Returns:
         pd.DataFrame: Seismic forces
+        dict[str,str]: Mapping of series names and common LaTeX table headers
     """
     if not number_of_levels and not levels_list:
         raise ValueError("At least one of 'number_of_levels' or 'levels_list' should be supplied.")
@@ -60,7 +82,7 @@ def generate_seismic_loads(
     if number_of_levels and levels_list:
         raise ValueError("Supply only one of 'number_of_levels' or 'levels_list'.")
 
-    if number_of_levels:
+    if number_of_levels and not levels_list:
         levels_list = generate_levels_list(number_of_levels=number_of_levels, add_roof=add_roof)
 
     # Roof should have 0 height. Naively assume that the user just didn't include a zero at the end
@@ -72,7 +94,7 @@ def generate_seismic_loads(
         level_weights.insert(0, 0)
 
     # Check lengths of lists to ensure they match
-    if len(levels_list) != len(level_heights):
+    if levels_list and len(levels_list) != len(level_heights):
         raise ValueError(
             f"Each level needs one height.\n\
             Your levels list has {len(levels_list)} entries:\n\
@@ -80,7 +102,7 @@ def generate_seismic_loads(
             Your level heights list las {len(level_heights)} entries:\n\
             {level_heights}"
         )
-    if len(levels_list) != len(level_weights):
+    if levels_list and len(levels_list) != len(level_weights):
         raise ValueError(
             f"Each level needs one weight.\n\
             Your levels list has {len(levels_list)} entries:\n\
@@ -160,4 +182,20 @@ def generate_seismic_loads(
     if reverse_order:
         seismic_loads = seismic_loads.iloc[::-1]
 
-    return seismic_loads
+    column_name_map = {
+        "level height": "$h_{floor}$ [ft]",
+        "level weight": "$w_x$ [kip]",
+        "level elevation": "$h_x$ [ft]",
+        "level weighting parameter": "$w_x h_x^k$",
+        "vertical distribution factor": "$C_{vx}$",
+        "lateral seismic force": "$F_x$ [kip]",
+        "cumulative lateral seismic force": r"$\sum F_x$ [kip]",
+        "unbounded diaphragm design force": "$F_{px,u}$ [kip]",
+        "minimum diaphragm design force": "$F_{px,min}$ [kip]",
+        "maximum diaphragm design force": "$F_{px,max}$ [kip]",
+        "diaphragm design force": "$F_{px}$ [kip]",
+        "seismic design story shear": "$V_x$ [kip]",
+        "overturning moment": "OTM [kip-ft]",
+    }
+
+    return seismic_loads, column_name_map
