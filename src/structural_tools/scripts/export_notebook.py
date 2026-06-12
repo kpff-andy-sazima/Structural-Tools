@@ -3,7 +3,8 @@ import subprocess
 import time
 from pathlib import Path
 import os
-from importlib.resources import as_file, files
+
+# from importlib.resources import as_file, files
 import shutil
 import nbformat
 import yaml
