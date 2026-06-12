@@ -3,7 +3,8 @@ from __future__ import annotations
 from bisect import bisect_right
 from dataclasses import dataclass
 from enum import Enum
-from typing import Dict, List
+from importlib import resources
+import pandas as pd
 
 
 LOAD_FACTOR_SEISMIC_ASD = 0.7
@@ -87,14 +88,14 @@ class DesignMethod(Enum):
 # ASCE 7-16 TABLES
 # ============================================================================
 
-SEISMIC_IMPORTANCE_FACTORS: Dict[RiskCategory, float] = {
+SEISMIC_IMPORTANCE_FACTORS: dict[RiskCategory, float] = {
     RiskCategory.I: 1.0,
     RiskCategory.II: 1.0,
     RiskCategory.III: 1.25,
     RiskCategory.IV: 1.5,
 }
 
-F_A_TABLE_11_4_1: Dict[SiteClass, dict] = {
+F_A_TABLE_11_4_1: dict[SiteClass, dict[str, list]] = {
     SiteClass.A: {
         "s_s": [0.25, 0.50, 0.75, 1.00, 1.25, 1.5],
         "f_a": [0.8, 0.8, 0.8, 0.8, 0.8, 0.8],
@@ -121,7 +122,7 @@ F_A_TABLE_11_4_1: Dict[SiteClass, dict] = {
     },
 }
 
-F_V_TABLE_11_4_2: Dict[SiteClass, dict] = {
+F_V_TABLE_11_4_2: dict[SiteClass, dict[str, list]] = {
     SiteClass.A: {
         "s_1": [0.1, 0.2, 0.3, 0.4, 0.5, 0.6],
         "f_v": [0.8, 0.8, 0.8, 0.8, 0.8, 0.8],
@@ -148,6 +149,17 @@ F_V_TABLE_11_4_2: Dict[SiteClass, dict] = {
     },
 }
 
+C_U_TABLE_12_8_1: dict[str, list[float]] = {
+    "s_d1": [0.1, 0.15, 0.2, 0.3, 0.4],
+    "c_u": [1.7, 1.6, 1.5, 1.4, 1.4],
+}
+
+DESIGN_COEFFICIENTS_TABLE_12_2_1 = pd.read_csv(
+    filepath_or_buffer=resources
+    .files("structural_tools.data")
+    .joinpath("asce_7_22_table_12_2_1.csv")
+    .open("r", encoding="utf-8"),
+).set_index("Index")
 # ============================================================================
 # GENERIC INTERPOLATION UTILITIES
 # ============================================================================
@@ -172,8 +184,8 @@ def _linear_interpolate(
 
 def _interpolate_table(
     x: float,
-    x_values: List[float],
-    y_values: List[float],
+    x_values: list[float],
+    y_values: list[float],
 ) -> float:
     """
     Interpolate a value from tabulated data.
@@ -225,11 +237,6 @@ def _interpolate_table(
     )
 
 
-# ============================================================================
-# PUBLIC STRUCTURAL ENGINEERING FUNCTIONS
-# ============================================================================
-
-
 @dataclass
 class SeismicParameters:
     """
@@ -240,6 +247,9 @@ class SeismicParameters:
     s_1: float
     site_class: SiteClass = SiteClass.D
     risk_category: RiskCategory = RiskCategory.II
+    t_l: float = 16
+    seismic_force_resisting_system: str = "A1"
+    rho: float = 1
 
     def __post_init__(self):
         self.f_a = self._get_f_a_coefficient()
@@ -251,8 +261,14 @@ class SeismicParameters:
         self.s_ds = 2 / 3 * self.s_ms
         self.s_d1 = 2 / 3 * self.s_m1
 
+        self.c_u = self._get_c_u_coefficient()
+
         self.i_e = SEISMIC_IMPORTANCE_FACTORS[self.risk_category]
         self.sdc = self._get_seismic_design_category()
+
+        self.r = DESIGN_COEFFICIENTS_TABLE_12_2_1.loc[self.seismic_force_resisting_system, "R"]
+        self.omega_0 = DESIGN_COEFFICIENTS_TABLE_12_2_1.loc[self.seismic_force_resisting_system, "Omega_0"]
+        self.c_d = DESIGN_COEFFICIENTS_TABLE_12_2_1.loc[self.seismic_force_resisting_system, "C_d"]
 
     def _get_f_a_coefficient(self) -> float:
         """
@@ -304,6 +320,29 @@ class SeismicParameters:
             x=self.s_1,
             x_values=table["s_1"],
             y_values=table["f_v"],
+        )
+
+    def _get_c_u_coefficient(self) -> float:
+        """
+        Compute C_u from ASCE 7-16 Table 12.8-1.
+
+        Parameters
+        ----------
+        s_d1 : float
+            Design spectral acceleration parameter at 1.0 second period.
+
+        Returns
+        -------
+        float
+            Interpolated C_u coefficient.
+        """
+
+        table = C_U_TABLE_12_8_1
+
+        return _interpolate_table(
+            x=self.s_d1,
+            x_values=table["s_d1"],
+            y_values=table["c_u"],
         )
 
     def _get_seismic_design_category(self) -> str:
