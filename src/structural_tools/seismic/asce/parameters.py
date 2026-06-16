@@ -160,6 +160,7 @@ DESIGN_COEFFICIENTS_TABLE_12_2_1 = pd.read_csv(
     .joinpath("asce_7_22_table_12_2_1.csv")
     .open("r", encoding="utf-8"),
 ).set_index("Index")
+
 # ============================================================================
 # GENERIC INTERPOLATION UTILITIES
 # ============================================================================
@@ -235,6 +236,11 @@ def _interpolate_table(
         x2=x_values[idx],
         y2=y_values[idx],
     )
+
+
+# ============================================================================
+# SEISMIC PARAMETERS DATACLASS
+# ============================================================================
 
 
 @dataclass
@@ -348,50 +354,31 @@ class SeismicParameters:
         SeismicDesignCategory
             Seismic design category.
         """
-        sdc_short: SeismicDesignCategory = SeismicDesignCategory.D
-        sdc_long: SeismicDesignCategory = SeismicDesignCategory.D
+        SDC = SeismicDesignCategory
+        is_risk_iv = self.risk_category == RiskCategory.IV
 
-        if self.risk_category in (RiskCategory.I, RiskCategory.II, RiskCategory.III):
-            if self.s_1 >= 0.75:
-                sdc_long = SeismicDesignCategory.E
-            else:
-                if self.s_ds < 0.167:
-                    sdc_short = SeismicDesignCategory.A
-                elif self.s_ds < 0.33:
-                    sdc_short = SeismicDesignCategory.B
-                elif self.s_ds < 0.50:
-                    sdc_short = SeismicDesignCategory.C
-                else:
-                    sdc_short = SeismicDesignCategory.D
+        # S_1 >= 0.75 check takes precedence per Tables 11.6-1/2
+        if self.s_1 >= 0.75:
+            return (SDC.F if is_risk_iv else SDC.E).name
 
-                if self.s_d1 < 0.067:
-                    sdc_long = SeismicDesignCategory.A
-                elif self.s_d1 < 0.133:
-                    sdc_long = SeismicDesignCategory.B
-                elif self.s_d1 < 0.20:
-                    sdc_long = SeismicDesignCategory.C
-                else:
-                    sdc_long = SeismicDesignCategory.D
-        else:
-            if self.s_1 >= 0.75:
-                sdc_long = SeismicDesignCategory.F
-            else:
-                if self.s_ds < 0.167:
-                    sdc_short = SeismicDesignCategory.A
-                elif self.s_ds < 0.33:
-                    sdc_short = SeismicDesignCategory.C
-                elif self.s_ds < 0.50:
-                    sdc_short = SeismicDesignCategory.D
-                else:
-                    sdc_short = SeismicDesignCategory.D
+        # Thresholds and categories per Table 11.6-1 (I/II/III) and 11.6-2 (IV)
+        sds_thresholds = [
+            (0.167, SDC.A),
+            (0.33, SDC.B if not is_risk_iv else SDC.C),
+            (0.50, SDC.C if not is_risk_iv else SDC.D),
+            (float("inf"), SDC.D),
+        ]
+        sd1_thresholds = [
+            (0.067, SDC.A),
+            (0.133, SDC.B if not is_risk_iv else SDC.C),
+            (0.20, SDC.C if not is_risk_iv else SDC.D),
+            (float("inf"), SDC.D),
+        ]
 
-                if self.s_d1 < 0.067:
-                    sdc_long = SeismicDesignCategory.A
-                elif self.s_d1 < 0.133:
-                    sdc_long = SeismicDesignCategory.C
-                elif self.s_d1 < 0.20:
-                    sdc_long = SeismicDesignCategory.D
-                else:
-                    sdc_long = SeismicDesignCategory.D
-        sdc = max(sdc_short, sdc_long)
-        return sdc.name
+        def lookup(value: float, thresholds: list) -> SeismicDesignCategory:
+            return next(category for limit, category in thresholds if value < limit)
+
+        sdc_short = lookup(self.s_ds, sds_thresholds)
+        sdc_long = lookup(self.s_d1, sd1_thresholds)
+
+        return max(sdc_short, sdc_long).name
