@@ -248,8 +248,6 @@ class SeismicParameters:
     site_class: SiteClass = SiteClass.D
     risk_category: RiskCategory = RiskCategory.II
     t_l: float = 16
-    seismic_force_resisting_system: str = "A1"
-    rho: float = 1
 
     def __post_init__(self):
         self.f_a = self._get_f_a_coefficient()
@@ -265,10 +263,6 @@ class SeismicParameters:
 
         self.i_e = SEISMIC_IMPORTANCE_FACTORS[self.risk_category]
         self.sdc = self._get_seismic_design_category()
-
-        self.r = DESIGN_COEFFICIENTS_TABLE_12_2_1.loc[self.seismic_force_resisting_system, "R"]
-        self.omega_0 = DESIGN_COEFFICIENTS_TABLE_12_2_1.loc[self.seismic_force_resisting_system, "Omega_0"]
-        self.c_d = DESIGN_COEFFICIENTS_TABLE_12_2_1.loc[self.seismic_force_resisting_system, "C_d"]
 
     def _get_f_a_coefficient(self) -> float:
         """
