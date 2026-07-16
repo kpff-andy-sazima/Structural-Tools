@@ -2,7 +2,6 @@ from dataclasses import dataclass
 
 import pandas as pd
 import numpy as np
-from forallpeople import Physical
 
 from structural_tools.seismic.asce.parameters import SeismicParameters
 from structural_tools.structure import Structure
