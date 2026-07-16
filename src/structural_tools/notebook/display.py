@@ -4,7 +4,7 @@ import os
 from typing import Literal
 
 import pandas as pd
-from IPython.display import Latex, display
+from IPython.display import DisplayHandle, Latex, display
 
 
 def sig_figs(x: float, sig_figs: int):
@@ -46,11 +46,11 @@ def display_table(
     style_functions: Sequence[tuple[Callable, Literal[0, 1]]] | None = None,
     formatter_functions: Sequence[Callable] | None = None,
     hrules: bool = True,
-    clines: str = "all;data",
-    position: str = "H",
+    clines: Literal["all;data", "all;index", "skip-last;data", "skip-last;index"] | None = "all;data",
+    position: str = "!htb",
     position_float: str = "centering",
     **kwargs,
-) -> Latex | None:
+) -> DisplayHandle | None:
     """Displays a table if run in a Jupyter ipynb, or returns LaTeX code if run by nbconvert when exporting to PDF
 
     Args:
@@ -92,6 +92,8 @@ def display_table(
             for function, axis in style_functions:
                 styler = styler.apply(function, axis)
 
+        styler.format_index(escape="latex", axis=0)
+
         display(
             Latex(
                 styler.to_latex(
@@ -108,8 +110,30 @@ def display_table(
         display(df_display)
 
 
-def display_text(text: str) -> Latex | None:
+def display_text(text: str, mathindent: bool = False) -> DisplayHandle | None:
     if "NBCONVERT" in os.environ:
-        return Latex(text)
+        text = text.replace("_", "\\_")
+        if mathindent:
+            text = r"\hspace{\mathindent}" + text
+        return display(Latex(text))
+    else:
+        display(text)
+
+
+def display_math(text: str | list[str]) -> DisplayHandle | None:
+    if isinstance(text, str):
+        text = [text]
+    if "NBCONVERT" in os.environ:
+        text_list = []
+        text_list.append(r"\begin{align*}")
+        text_list.append("\n")
+        for line in text:
+            text_list.append(line)
+            text_list.append(r" \\")
+        text_list.pop()
+        text_list.append("\n")
+        text_list.append(r"\end{align*}")
+        block_text = "".join(text_list)
+        return display(Latex(block_text))
     else:
         display(text)
