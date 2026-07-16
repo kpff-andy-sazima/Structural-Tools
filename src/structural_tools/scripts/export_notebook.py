@@ -32,6 +32,30 @@ def check_for_kpff_background():
     shutil.copy(template_pdf, ".")
 
 
+def run_jupytext(python_file_path: Path) -> None:
+    print(f"Converting {python_file_path} to a Jupyter Notebook with Jupytext\n")
+
+    if not python_file_path.exists():
+        raise FileNotFoundError(f"Notebook not found: {python_file_path}")
+
+    cmd = [
+        "jupytext",
+        "--to",
+        "notebook",
+        str(python_file_path),
+    ]
+
+    start = time.perf_counter()
+
+    subprocess.run(
+        cmd,
+        check=True,
+    )
+
+    elapsed = time.perf_counter() - start
+    print(f"\nCompleted in {elapsed:.1f} sec\n")
+
+
 def run_nbconvert(output_type: str, notebook_path: Path, template: str) -> None:
     print(f"Exporting {notebook_path} to {output_type} with the {template} template\n")
 
@@ -102,7 +126,11 @@ def main():
 
     notebook_paths: list[Path] = []
     for notebook in args.notebooks:
-        notebook_paths.append(Path(notebook).with_suffix(".ipynb"))
+        notebook = Path(notebook)
+        if notebook.suffix == ".py":
+            run_jupytext(notebook)
+
+        notebook_paths.append(notebook.with_suffix(".ipynb"))
 
     for notebook_path in notebook_paths:
         nb = nbformat.read(notebook_path, as_version=4)
