@@ -1,11 +1,12 @@
+import warnings
 from dataclasses import dataclass, field
 from importlib import resources
-import warnings
 
 import pandas as pd
 from forallpeople import Physical
 
 from structural_tools.seismic.asce.parameters import RiskCategory, SiteClass
+from structural_tools.typing import FloatLike
 
 DESIGN_COEFFICIENTS_TABLE_12_2_1 = pd.read_csv(
     filepath_or_buffer=resources
@@ -63,21 +64,19 @@ class LateralSystem:
 
 @dataclass
 class Level:
-    height: float | Physical = 0
-    weight: float | Physical = 0
+    height: FloatLike = 0
+    weight: FloatLike = 0
 
     def __post_init__(self):
-        if isinstance(self.height, Physical):
-            self.height = float(self.height)
-        if isinstance(self.weight, Physical):
-            self.weight = float(self.weight)
+        self.height = float(self.height)
+        self.weight = float(self.weight)
 
 
 @dataclass
 class Structure:
     lateral_system_x: LateralSystem
     lateral_system_y: LateralSystem
-    structural_height: float | Physical
+    structural_height: FloatLike
     levels_input: dict[int, Level]
     vertical_system: VerticalSystem = field(default_factory=VerticalSystem)
     site_class: SiteClass = SiteClass.D
@@ -91,9 +90,7 @@ class Structure:
                 f"levels_data keys must be consecutive integers starting at 1, got {list(self.levels_input.keys())}"
             )
 
-        # Set the structural height to a float
-        if isinstance(self.structural_height, Physical):
-            self.structural_height = float(self.structural_height)
+        self.structural_height = float(self.structural_height)
 
         # Roof should have 0 height. Force it to be 0
         if self.levels_input[self.roof].height != 0:
