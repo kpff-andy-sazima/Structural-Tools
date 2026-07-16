@@ -9,15 +9,16 @@ description = "Structural engineering design and analysis tools"
 requires-python = ">=3.14"
 
 dependencies = [
+    "handcalcs",
+    "forallpeople",
+    "ipython",
+    "matplotlib",
+    "mypy",
     "nbformat",
     "numpy",
     "pandas",
-    "handcalcs",
-    "forallpeople",
-    "ruff",
-    "mypy",
     "pyyaml",
-    "ipython"
+    "ruff",
 ]
 
 [project.scripts]
@@ -25,6 +26,7 @@ export-notebook = "structural_tools.scripts.export_notebook:main"
 export-nb = "structural_tools.scripts.export_notebook:main"
 remove-aux-files = "structural_tools.scripts.remove_aux_files:main"
 banish-aux-files-to-the-shadow-dimension-where-they-belong = "structural_tools.scripts.remove_aux_files:main"
+trim-image-whitespace = "structural_tools.scripts.trim_image_whitespace:main"
 
 [tool.ruff]
 line-length = 120
