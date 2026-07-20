@@ -1,0 +1,1 @@
+    parser.add_argument("--js-out", default="structural_tools/steel/web/shapes.js")
