@@ -466,11 +466,16 @@
         g.rotate(Math.PI / 2); // note +90° so text faces inward
         drawRuns(
           g,
-          [{ t: "M" }, { t: "n", sub: true }, { t: "  (kip-in)" }],
+          [
+            { t: "Moment capacity, " },
+            { t: "M" },
+            { t: "n", sub: true },
+            { t: " (kip-in)" },
+          ],
           0,
           0,
           "center",
-          12,
+          14,
         );
         g.restore();
 
@@ -479,15 +484,15 @@
         drawRuns(
           g,
           [
-            { t: "Unbraced length  " },
+            { t: "Unbraced length, " },
             { t: "L" },
             { t: "b", sub: true },
-            { t: `  (${lenUnit})` },
+            { t: ` (${lenUnit})` },
           ],
           (mL + W - mR) / 2,
           H - 8,
           "center",
-          12,
+          14,
         );
         // (4) y-axis title with proper M_n subscript
         g.save();
@@ -495,11 +500,16 @@
         g.rotate(-Math.PI / 2);
         drawRuns(
           g,
-          [{ t: "M" }, { t: "n", sub: true }, { t: "  (kip-ft)" }],
+          [
+            { t: "Moment capacity, " },
+            { t: "M" },
+            { t: "n", sub: true },
+            { t: " (kip-ft)" },
+          ],
           0,
           0,
           "center",
-          12,
+          14,
         );
         g.restore();
 
@@ -597,6 +607,51 @@
           g.fill();
           g.stroke();
         }
+
+        // --- Legend ---
+        const legendX = W - mR - 170;
+        const legendY = mT + 10;
+        const legendW = 155;
+        const legendH = 50;
+        const designLabel =
+          document.querySelector('input[name="method"]:checked').value ===
+          "LRFD"
+            ? "φMn (Design)"
+            : "Mn/Ω (Design)";
+
+        // background
+        g.fillStyle = "rgba(255,255,255,0.95)";
+        g.strokeStyle = "#ccc";
+        g.lineWidth = 1;
+        g.fillRect(legendX, legendY, legendW, legendH);
+        g.strokeRect(legendX, legendY, legendW, legendH);
+
+        // Nominal strength (dashed)
+        g.strokeStyle = "#0b5cad";
+        g.lineWidth = 1.8;
+        g.setLineDash([6, 4]);
+        g.beginPath();
+        g.moveTo(legendX + 10, legendY + 36);
+        g.lineTo(legendX + 45, legendY + 36);
+        g.stroke();
+        g.setLineDash([]);
+
+        // Design strength (solid)
+        g.strokeStyle = "#0b5cad";
+        g.lineWidth = 2.4;
+        g.setLineDash([]);
+        g.beginPath();
+        g.moveTo(legendX + 10, legendY + 18);
+        g.lineTo(legendX + 45, legendY + 18);
+        g.stroke();
+
+        g.fillStyle = "#222";
+        g.font = "12px system-ui";
+        g.textAlign = "left";
+        // g.fillText("Design strength", legendX + 55, legendY + 22);
+        // g.fillText("Nominal strength", legendX + 55, legendY + 40);
+        g.fillText("Mn (Nominal)", legendX + 55, legendY + 40);
+        g.fillText(designLabel, legendX + 55, legendY + 22);
       }
 
       // --- (7) Governing equation, typeset with MathML ---
