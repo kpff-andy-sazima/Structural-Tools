@@ -56,7 +56,7 @@ def run_jupytext(python_file_path: Path) -> None:
     print(f"\nCompleted in {elapsed:.1f} sec\n")
 
 
-def run_nbconvert(output_type: str, notebook_path: Path, template: str) -> None:
+def run_nbconvert(output_type: str, notebook_path: Path, template: str, generate_new_images: bool) -> None:
     print(f"Exporting {notebook_path} to {output_type} with the {template} template\n")
 
     if not notebook_path.exists():
@@ -64,6 +64,9 @@ def run_nbconvert(output_type: str, notebook_path: Path, template: str) -> None:
 
     env = os.environ.copy()
     env["NBCONVERT"] = "1"
+    env["CALC_PATH"] = str(notebook_path)
+    env["CALC_ID"] = str(Path(notebook_path).stem)
+    env["GENERATE_NEW_IMAGES"] = "1" if generate_new_images else "0"
 
     cmd = [
         "jupyter",
@@ -108,6 +111,14 @@ def main():
     )
 
     parser.add_argument(
+        "-g",
+        "--generate-new-images",
+        action="store_true",
+        help="Generate new images for the PDF creation.",
+    )
+
+    parser.add_argument(
+        "-t",
         "--template",
         default="latex-article",
         choices=["latex-article", "latex-report"],
@@ -115,6 +126,7 @@ def main():
     )
 
     parser.add_argument(
+        "-b",
         "--background",
         default="kpff_calc_pad_letter_vertical_no_grid.pdf",
         help="Path to the pdf background you wish to use",
@@ -145,7 +157,7 @@ def main():
         with open(notebook_path, "w", encoding="utf-8") as f:
             nbformat.write(nb, f)
 
-        run_nbconvert(args.output_type, notebook_path, args.template)
+        run_nbconvert(args.output_type, notebook_path, args.template, args.generate_new_images)
 
 
 if __name__ == "__main__":
