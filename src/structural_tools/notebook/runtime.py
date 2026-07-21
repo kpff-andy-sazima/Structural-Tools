@@ -1,10 +1,9 @@
 """
 Runtime helpers for structural_tools notebook execution.
 
-This module provides execution context for calculation notebooks.
-
-The goal is to hide implementation details such as environment variables,
-nbconvert, and export scripts from calculation files.
+This module exposes execution context supplied by the export pipeline.
+Calculation notebooks should use this module rather than accessing
+environment variables directly.
 """
 
 from __future__ import annotations
@@ -18,14 +17,10 @@ def _as_bool(value: str | None) -> bool:
     """
     Convert a string value to a boolean.
 
-    Parameters
-    ----------
-    value
-        String representation of a boolean value.
+    Args:
+        value: String representation of a boolean value.
 
-    Returns
-    -------
-    bool
+    Returns:
         True if the value represents an enabled state.
     """
     return str(value).strip().lower() in {
@@ -58,16 +53,38 @@ class Runtime:
         """
         Return the notebook filename.
 
-        Returns
-        -------
-        str | None
-            Notebook filename including extension.
+        Returns:
+            Notebook filename including extension, or None if unavailable.
         """
         return None if self.path is None else self.path.name
 
+    def image_path(
+        self,
+        name: str,
+        extension: str = ".png",
+    ) -> str:
+        """
+        Generate a calculation-specific image path.
+
+        Args:
+            name: Descriptive image name.
+            extension: File extension including the leading dot.
+
+        Returns:
+            Relative image path.
+        """
+        return f"images/{self.identifier}_{name}{extension}"
+
+
+runtime = Runtime(
+    identifier=os.getenv("CALC_ID", "unknown_calc"),
+    path=(Path(path) if (path := os.getenv("CALC_PATH")) else None),
+    generate_new_images=_as_bool(os.getenv("GENERATE_NEW_IMAGES")),
+    nbconvert=_as_bool(os.getenv("NBCONVERT")),
+)
+
 
 def image_path(
-    self,
     name: str,
     extension: str = ".png",
 ) -> str:
@@ -79,36 +96,6 @@ def image_path(
         extension: File extension including the leading dot.
 
     Returns:
-        Relative image path.
-    """
-
-
-runtime = Runtime(
-    identifier=os.getenv("CALC_ID", "unknown_calc"),
-    path=(Path(path) if (path := os.getenv("CALC_PATH")) else None),
-    generate_new_images=_as_bool(os.getenv("GENERATE_NEW_IMAGES")),
-    nbconvert=_as_bool(os.getenv("NBCONVERT")),
-)
-
-
-def image_name(
-    name: str,
-    extension: str = ".png",
-) -> str:
-    """
-    Convenience wrapper around runtime.image_path().
-
-    Parameters
-    ----------
-    name
-        Descriptive image name.
-
-    extension
-        File extension including the leading dot.
-
-    Returns
-    -------
-    str
         Relative image path.
     """
     return runtime.image_path(
