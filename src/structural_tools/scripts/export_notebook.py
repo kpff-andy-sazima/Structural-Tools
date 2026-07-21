@@ -63,9 +63,9 @@ def run_nbconvert(output_type: str, notebook_path: Path, template: str, generate
         raise FileNotFoundError(f"Notebook not found: {notebook_path}")
 
     env = os.environ.copy()
+    env["CALC_ID"] = notebook_path.stem
+    env["CALC_PATH"] = str(notebook_path.resolve())
     env["NBCONVERT"] = "1"
-    env["CALC_PATH"] = str(notebook_path)
-    env["CALC_ID"] = str(Path(notebook_path).stem)
     env["GENERATE_NEW_IMAGES"] = "1" if generate_new_images else "0"
 
     cmd = [
