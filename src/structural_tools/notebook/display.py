@@ -4,7 +4,7 @@ import os
 from typing import Literal
 
 import pandas as pd
-from IPython.display import DisplayHandle, Latex, display
+from IPython.display import DisplayHandle, Latex, display, Markdown
 
 
 def sig_figs(x: float, sig_figs: int):
@@ -137,3 +137,48 @@ def display_math(text: str | list[str]) -> DisplayHandle | None:
         return display(Latex(block_text))
     else:
         display(text)
+
+
+def display_markdown(text: str) -> DisplayHandle | None:
+    """
+    Display markdown content in notebooks.
+
+    This is primarily useful for inserting dynamic markdown
+    generated from Python variables.
+
+    Parameters:
+        text: Markdown text to display.
+
+    Returns:
+        DisplayHandle | None: Result of IPython.display.display.
+    """
+    return display(Markdown(text))
+
+
+def display_figure(
+    image_path: str,
+    caption: str,
+    label: str,
+    width: str | None = None,
+) -> DisplayHandle | None:
+    """
+    Display a figure using Pandoc markdown syntax.
+
+    Args:
+        image_path: Relative path to the image.
+        caption: Figure caption.
+        label: Figure reference label without the leading '#'.
+        width: Optional image width.
+
+    Returns:
+        Result of IPython.display.display.
+    """
+    attributes = []
+    if width:
+        attributes.append(f"width={width}")
+
+    attributes.append(f"#{label}")
+
+    attr_string = " ".join(attributes)
+
+    return display(Markdown(f"![{caption}]({image_path}){{{attr_string}}}"))
