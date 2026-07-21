@@ -1,11 +1,14 @@
 """Modeling tools"""
 
+from __future__ import annotations
+
+from collections import defaultdict
+from copy import deepcopy
+from dataclasses import dataclass
+
 from Pynite import FEModel3D
 
 from .asce import DesignMethod
-
-from copy import deepcopy
-from dataclasses import dataclass
 
 
 @dataclass
@@ -17,7 +20,7 @@ class ModelMaterial:
     fy: float  # Yield stress
 
     def __post_init__(self):
-        G: float = self.E / (2 * (1 + self.nu))  # Shear modulus of elasticity
+        self.G: float = self.E / (2 * (1 + self.nu))  # Shear modulus of elasticity
 
 
 MATERIAL_STEEL_36_KSI_KIP_INCH: ModelMaterial = ModelMaterial(
@@ -64,15 +67,7 @@ def create_base_model(
 ) -> FEModel3D:
     base_model = FEModel3D()
 
-    # Wood
-    E = 1700  # Modulus of elasticity (ksi)
-    Fy = 2.400  # Yield stress (ksi)
-    nu = 0.3  # Poisson's ratio
-    G = E / (2 * (1 + nu))  # Shear modulus of elasticity (ksi)
-    rho = 33 / (12**3) / 1000  # Density (kci)
-    _ = base_model.add_material(name="glulam", E=E, G=G, nu=nu, rho=rho, fy=Fy)
-
-    if not isinstance(list, materials):
+    if not isinstance(materials, list):
         materials = [materials]
 
     for material in materials:
@@ -143,3 +138,177 @@ def create_base_model(
     )
 
     return deepcopy(base_model)
+
+
+def _ensure_load_metadata(obj) -> None:
+    """Ensure metadata storage exists."""
+
+    if not hasattr(obj, "_load_metadata"):
+        obj._load_metadata = defaultdict(list)
+
+
+def add_named_node_load(
+    model,
+    node_name: str,
+    direction: str,
+    p: float,
+    case: str = "Case 1",
+    name: str | None = None,
+    category: str | None = None,
+) -> None:
+    """Add a named nodal load.
+
+    Args:
+        model: PyNite model.
+        node_name: Node name.
+        direction: Load direction.
+        p: Load magnitude.
+        case: Load case.
+        name: Human-readable load name.
+        category: Optional grouping category.
+    """
+
+    model.add_node_load(
+        node_name=node_name,
+        direction=direction,
+        P=p,
+        case=case,
+    )
+
+    node = model.nodes[node_name]
+
+    _ensure_load_metadata(node)
+
+    node._load_metadata["node_loads"].append({
+        "direction": direction,
+        "P": p,
+        "case": case,
+        "name": name or case,
+        "category": category,
+    })
+
+
+def add_named_member_pt_load(
+    model,
+    member_name: str,
+    direction: str,
+    p: float,
+    x: float,
+    case: str = "Case 1",
+    name: str | None = None,
+    category: str | None = None,
+) -> None:
+    """Add a named member point load.
+
+    Args:
+        model: PyNite model.
+        member_name: Member name.
+        direction: Load direction.
+        p: Load magnitude.
+        x: Location along member.
+        case: Load case.
+        name: Human-readable load name.
+        category: Optional grouping category.
+    """
+
+    model.add_member_pt_load(
+        member_name=member_name,
+        direction=direction,
+        P=p,
+        x=x,
+        case=case,
+    )
+
+    member = model.members[member_name]
+
+    _ensure_load_metadata(member)
+
+    member._load_metadata["point_loads"].append({
+        "direction": direction,
+        "P": p,
+        "x": x,
+        "case": case,
+        "name": name or case,
+        "category": category,
+    })
+
+
+def add_named_member_dist_load(
+    model,
+    member_name: str,
+    direction: str,
+    w1: float,
+    w2: float,
+    x1: float | None = None,
+    x2: float | None = None,
+    case: str = "Case 1",
+    name: str | None = None,
+    category: str | None = None,
+    self_weight: bool = False,
+) -> None:
+    """Add a named distributed member load.
+
+    Args:
+        model: PyNite model.
+        member_name: Member name.
+        direction: Load direction.
+        w1: Start load magnitude.
+        w2: End load magnitude.
+        x1: Start location.
+        x2: End location.
+        case: Load case.
+        name: Human-readable load name.
+        category: Optional grouping category.
+        self_weight: Indicates a self-weight load.
+    """
+
+    model.add_member_dist_load(
+        member_name=member_name,
+        direction=direction,
+        w1=w1,
+        w2=w2,
+        x1=x1,
+        x2=x2,
+        case=case,
+        self_weight=self_weight,
+    )
+
+    member = model.members[member_name]
+
+    _ensure_load_metadata(member)
+
+    member._load_metadata["dist_loads"].append({
+        "direction": direction,
+        "w1": w1,
+        "w2": w2,
+        "x1": x1,
+        "x2": x2,
+        "case": case,
+        "name": name or case,
+        "category": category,
+        "self_weight": self_weight,
+    })
+
+
+def add_named_self_weight(
+    model,
+    global_direction: str,
+    factor: float,
+    case: str = "D",
+    name: str = "Self weight",
+) -> None:
+    """Add named self-weight loads."""
+
+    for member in model.members.values():
+        self_weight = factor * member.material.rho * member.section.A
+
+        add_named_member_dist_load(
+            model=model,
+            member_name=member.name,
+            direction=global_direction,
+            w1=self_weight,
+            w2=self_weight,
+            case=case,
+            name=name,
+            self_weight=True,
+        )
