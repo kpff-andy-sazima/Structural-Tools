@@ -1,0 +1,797 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>AISC 360-22 F2 — Lateral-Torsional Buckling Calculator</title>
+    <style>
+      :root {
+        --accent: #0b5cad;
+        --ok: #1a8a3f;
+        --warn: #c0392b;
+        --bg: #f7f8fa;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family:
+          system-ui,
+          -apple-system,
+          Segoe UI,
+          sans-serif;
+        margin: 0;
+        background: var(--bg);
+        color: #1b1b1b;
+      }
+
+      header {
+        background: var(--accent);
+        color: #fff;
+        padding: 1rem 1.5rem;
+      }
+
+      header h1 {
+        margin: 0;
+        font-size: 1.15rem;
+      }
+
+      header p {
+        margin: 0.25rem 0 0;
+        font-size: 0.8rem;
+        opacity: 0.9;
+      }
+
+      .wrap {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1.5rem;
+        padding: 1.5rem;
+        max-width: 1100px;
+        margin: 0 auto;
+      }
+
+      .panel {
+        background: #fff;
+        border: 1px solid #e0e0e0;
+        border-radius: 8px;
+        padding: 1.25rem;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+      }
+
+      .controls {
+        flex: 1 1 280px;
+      }
+
+      .output {
+        flex: 2 1 520px;
+      }
+
+      label {
+        display: block;
+        font-size: 0.8rem;
+        font-weight: 600;
+        margin: 0.85rem 0 0.25rem;
+      }
+
+      select,
+      input {
+        width: 100%;
+        padding: 0.5rem;
+        border: 1px solid #bbb;
+        border-radius: 5px;
+        font-size: 0.95rem;
+      }
+
+      .radio-row {
+        display: flex;
+        gap: 1rem;
+        margin-top: 0.4rem;
+      }
+
+      .radio-row label {
+        display: flex;
+        align-items: center;
+        gap: 0.35rem;
+        font-weight: 400;
+        margin: 0;
+      }
+
+      .radio-row input {
+        width: auto;
+      }
+
+      canvas {
+        width: 100%;
+        height: auto;
+        border: 1px solid #eee;
+        border-radius: 6px;
+        margin-top: 0.5rem;
+      }
+
+      table {
+        border-collapse: collapse;
+        width: 100%;
+        margin-top: 1rem;
+        font-size: 0.9rem;
+      }
+
+      td,
+      th {
+        border: 1px solid #ddd;
+        padding: 5px 10px;
+        text-align: right;
+      }
+
+      th {
+        background: #f3f3f3;
+      }
+
+      td.lbl {
+        text-align: center;
+        font-weight: 600;
+      }
+
+      td.desc {
+        text-align: left;
+        color: #333;
+        font-weight: 400;
+      }
+
+      .region {
+        display: inline-block;
+        padding: 0.15rem 0.6rem;
+        border-radius: 12px;
+        color: #fff;
+        font-size: 0.8rem;
+      }
+
+      .plastic {
+        background: var(--ok);
+      }
+
+      .inelastic {
+        background: #d68910;
+      }
+
+      .elastic {
+        background: var(--warn);
+      }
+
+      .note {
+        font-size: 0.72rem;
+        color: #666;
+        margin-top: 1rem;
+        line-height: 1.4;
+      }
+
+      .pdf-btn {
+        margin-top: 1rem;
+        padding: 0.55rem 1rem;
+        background: var(--accent);
+        color: #fff;
+        border: none;
+        border-radius: 6px;
+        font-size: 0.9rem;
+        cursor: pointer;
+      }
+
+      .pdf-btn:hover {
+        background: #094a8c;
+      }
+
+      .eqbox {
+        margin-top: 1rem;
+        padding: 0.75rem 1rem;
+        background: #fafcff;
+        border: 1px solid #e2e8f2;
+        border-radius: 6px;
+      }
+
+      .eqbox h3 {
+        margin: 0 0 0.35rem;
+        font-size: 0.85rem;
+        color: var(--accent);
+      }
+
+      .eqrow {
+        margin: 0.4rem 0;
+      }
+
+      .eqrow .cap {
+        display: block;
+        font-size: 0.75rem;
+        color: #555;
+        margin-bottom: 0.1rem;
+      }
+
+      math {
+        font-size: 1.05rem;
+      }
+      math[display="block"] {
+        margin: 0.55rem 0;
+      }
+      .eqrow + .eqrow {
+        margin-top: 0.5rem;
+      }
+
+      @media print {
+        .pdf-btn {
+          display: none;
+        }
+
+        header {
+          -webkit-print-color-adjust: exact;
+          print-color-adjust: exact;
+        }
+
+        .wrap {
+          display: block;
+          padding: 0;
+        }
+
+        .panel {
+          box-shadow: none;
+          border: none;
+          break-inside: avoid;
+        }
+
+        .region {
+          -webkit-print-color-adjust: exact;
+          print-color-adjust: exact;
+        }
+
+        .controls {
+          border-bottom: 1px solid #ccc;
+        }
+      }
+    </style>
+  </head>
+
+  <body>
+    <header>
+      <h1>Lateral-Torsional Buckling Calculator — AISC 360-22 §F2</h1>
+      <p>
+        Compact doubly symmetric I-shapes &amp; channels, major-axis bending.
+        Nominal M<sub>n</sub>; apply φ/Ω as selected.
+      </p>
+    </header>
+
+    <div class="wrap">
+      <div class="panel controls">
+        <label for="shape">Steel shape</label>
+        <select id="shape"></select>
+
+        <label for="lenUnit">Length units</label>
+        <select id="lenUnit">
+          <option value="ft">feet (ft)</option>
+          <option value="in">inches (in)</option>
+        </select>
+
+        <label for="Lb">Unbraced length, L<sub>b</sub></label>
+        <input id="Lb" type="number" value="12" min="0" step="0.5" />
+
+        <label for="Fy">Yield stress, F<sub>y</sub> (ksi)</label>
+        <input id="Fy" type="number" value="50" min="1" step="1" />
+
+        <label for="Emod">Elastic modulus, E (ksi)</label>
+        <input id="Emod" type="number" value="29000" min="1" step="1000" />
+
+        <label for="Cb">LTB modification factor, C<sub>b</sub></label>
+        <input id="Cb" type="number" value="1.0" min="1" step="0.05" />
+
+        <label>Design method</label>
+        <div class="radio-row">
+          <label
+            ><input type="radio" name="method" value="LRFD" checked /> LRFD (φ =
+            0.90)</label
+          >
+          <label
+            ><input type="radio" name="method" value="ASD" /> ASD (Ω =
+            1.67)</label
+          >
+        </div>
+      </div>
+
+      <div class="panel output">
+        <canvas id="chart" width="720" height="440"></canvas>
+        <table id="results"></table>
+        <div id="equation" class="eqbox"></div>
+        <button id="pdfBtn" class="pdf-btn">Export to PDF</button>
+        <p class="note">
+          Properties from the AISC Shapes Database via steelpy (generated into
+          shapes.js). r<sub>ts</sub> (Eq. F2-7) and c (Eq. F2-8) are derived
+          in-browser to match WSection. Moments are reported in kip-ft; lengths
+          follow the selected unit. PDF export uses your browser's print dialog
+          — choose "Save as PDF".
+        </p>
+      </div>
+    </div>
+
+    <script src="shapes.js"></script>
+    <!-- generated by scripts/generate_shapes.py; defines const SHAPES -->
+    <script>
+      let E = 29000; // ksi — default matches YOUNGS_MODULUS_KSI in steel.py; overridden by the E input
+
+      // --- Derived properties + AISC 360-22 F2 equations (mirror steel.py / WSection) ---
+      function props(name) {
+        const s = SHAPES[name];
+        const r_ts = Math.sqrt(Math.sqrt(s.Iy * s.Cw) / s.Sx); // Eq. F2-7
+        const c =
+          s.type === "channel" // Eq. F2-8a / F2-8b
+            ? (s.ho / 2) * Math.sqrt(s.Iy / s.Cw)
+            : 1.0;
+        return {
+          Zx: s.Zx,
+          Sx: s.Sx,
+          ry: s.ry,
+          rts: r_ts,
+          J: s.J,
+          ho: s.ho,
+          c: c,
+          type: s.type,
+        };
+      }
+      function Lp(Fy, p) {
+        return 1.76 * p.ry * Math.sqrt(E / Fy);
+      } // F2-5
+      function Lr(Fy, p) {
+        const FL = 0.7 * Fy,
+          b = (p.J * p.c) / (p.Sx * p.ho);
+        return (
+          1.95 *
+          p.rts *
+          (E / FL) *
+          Math.sqrt(b + Math.sqrt(b * b + 6.76 * Math.pow(FL / E, 2)))
+        );
+      } // F2-6
+      function Fcr(Lb, Cb, p) {
+        const s = Lb / p.rts;
+        return (
+          ((Cb * Math.PI * Math.PI * E) / (s * s)) *
+          Math.sqrt(1 + ((0.078 * (p.J * p.c)) / (p.Sx * p.ho)) * s * s)
+        );
+      } // F2-4
+
+      function Mn(Lb_in, Fy, Cb, name) {
+        // Lb in INCHES; returns kip-in
+        const p = props(name);
+        const Mp = Fy * p.Zx,
+          lp = Lp(Fy, p),
+          lr = Lr(Fy, p);
+        let region, M;
+        if (Lb_in <= lp) {
+          region = "plastic moment";
+          M = Mp;
+        } // F2-1
+        else if (Lb_in <= lr) {
+          region = "inelastic ltb";
+          const Fp = Mp / p.Sx,
+            Fn = Cb * (Fp - ((Fp - 0.7 * Fy) * (Lb_in - lp)) / (lr - lp));
+          M = Math.min(Fn, Fp) * p.Sx;
+        } // F2-2
+        else {
+          region = "elastic ltb";
+          M = Math.min(Fcr(Lb_in, Cb, p) * p.Sx, Mp);
+        } // F2-3/4
+        return { Mn: M, Mp, Lp: lp, Lr: lr, region };
+      }
+
+      // --- Canvas text with true subscripts ---
+      function drawRuns(g, runs, x, y, align, baseSize) {
+        baseSize = baseSize || 12;
+        const bFont = baseSize + "px system-ui",
+          sFont = baseSize - 3 + "px system-ui";
+        let w = 0;
+        for (const r of runs) {
+          g.font = r.sub ? sFont : bFont;
+          w += g.measureText(r.t).width;
+        }
+        let sx = align === "center" ? x - w / 2 : align === "right" ? x - w : x;
+        const pa = g.textAlign,
+          pb = g.textBaseline;
+        g.textAlign = "left";
+        g.textBaseline = "alphabetic";
+        for (const r of runs) {
+          g.font = r.sub ? sFont : bFont;
+          g.fillText(r.t, sx, y + (r.sub ? baseSize * 0.28 : 0));
+          sx += g.measureText(r.t).width;
+        }
+        g.textAlign = pa;
+        g.textBaseline = pb;
+      }
+
+      // --- Canvas plot of Mn vs Lb ---
+      function draw(name, Fy, Cb, Lb_in, phi, lenDiv, lenUnit) {
+        const cv = document.getElementById("chart"),
+          g = cv.getContext("2d");
+        const W = cv.width,
+          H = cv.height,
+          mL = 62,
+          mR = 70,
+          mT = 20,
+          mB = 45;
+        g.clearRect(0, 0, W, H);
+        const base = Mn(1e-4, Fy, Cb, name);
+        // (1) x-limit expands if Lb runs past the default 1.6*Lr window
+        const xMax = Math.max(1.6 * base.Lr, Lb_in * 1.1); // inches
+        const N = 400,
+          xs = [],
+          ys = [];
+        for (let i = 0; i <= N; i++) {
+          const x = (xMax * i) / N;
+          xs.push(x);
+          ys.push(Mn(x, Fy, Cb, name).Mn / 12);
+        }
+        const yMax = (1.08 * base.Mp) / 12;
+        const X = (x) => mL + ((W - mL - mR) * x) / xMax,
+          Y = (y) => H - mB - ((H - mT - mB) * y) / yMax;
+
+        g.strokeStyle = "#eee";
+        g.fillStyle = "#555";
+        g.font = "11px system-ui";
+        g.lineWidth = 1;
+        for (let i = 0; i <= 5; i++) {
+          const y = (yMax * i) / 5;
+          g.beginPath();
+          g.moveTo(mL, Y(y));
+          g.lineTo(W - mR, Y(y));
+          g.stroke();
+          g.fillStyle = "#555";
+          g.textBaseline = "alphabetic";
+          g.textAlign = "right";
+          g.fillText(y.toFixed(0), mL - 6, Y(y) + 3); // left: kip-ft
+          g.textAlign = "left";
+          g.fillText((y * 12).toFixed(0), W - mR + 6, Y(y) + 3); // right: kip-in
+        }
+        for (let i = 0; i <= 6; i++) {
+          const x = (xMax * i) / 6;
+          g.textAlign = "center";
+          g.fillText((x / lenDiv).toFixed(0), X(x), H - mB + 15);
+        }
+        g.strokeStyle = "#333";
+        g.beginPath();
+        g.moveTo(mL, mT);
+        g.lineTo(mL, H - mB);
+        g.lineTo(W - mR, H - mB);
+        g.stroke();
+        g.beginPath();
+        g.moveTo(W - mR, mT);
+        g.lineTo(W - mR, H - mB);
+        g.stroke(); // secondary (right) axis
+        g.save();
+        g.translate(W - 14, (mT + H - mB) / 2);
+        g.rotate(Math.PI / 2); // note +90° so text faces inward
+        drawRuns(
+          g,
+          [{ t: "M" }, { t: "n", sub: true }, { t: "  (kip-in)" }],
+          0,
+          0,
+          "center",
+          12,
+        );
+        g.restore();
+
+        // (5) x-axis title with proper L_b subscript
+        g.fillStyle = "#333";
+        drawRuns(
+          g,
+          [
+            { t: "Unbraced length  " },
+            { t: "L" },
+            { t: "b", sub: true },
+            { t: `  (${lenUnit})` },
+          ],
+          (mL + W - mR) / 2,
+          H - 8,
+          "center",
+          12,
+        );
+        // (4) y-axis title with proper M_n subscript
+        g.save();
+        g.translate(16, (mT + H - mB) / 2);
+        g.rotate(-Math.PI / 2);
+        drawRuns(
+          g,
+          [{ t: "M" }, { t: "n", sub: true }, { t: "  (kip-ft)" }],
+          0,
+          0,
+          "center",
+          12,
+        );
+        g.restore();
+
+        // Mp line
+        g.strokeStyle = "#999";
+        g.setLineDash([4, 3]);
+        g.beginPath();
+        g.moveTo(mL, Y(base.Mp / 12));
+        g.lineTo(W - mR, Y(base.Mp / 12));
+        g.stroke();
+        g.setLineDash([]);
+
+        // Lp / Lr markers (typeset subscripts)
+        [
+          ["#1a8a3f", base.Lp, "p"],
+          ["#c0392b", base.Lr, "r"],
+        ].forEach(([col, xin, sub]) => {
+          if (xin > xMax) return;
+          g.strokeStyle = col;
+          g.setLineDash([2, 3]);
+          g.beginPath();
+          g.moveTo(X(xin), mT);
+          g.lineTo(X(xin), H - mB);
+          g.stroke();
+          g.setLineDash([]);
+          g.fillStyle = col;
+          drawRuns(
+            g,
+            [{ t: "L" }, { t: sub, sub: true }],
+            X(xin) + 3,
+            mT + 11,
+            "left",
+            11,
+          );
+        });
+
+        // Mn nominal — now DASHED
+        g.strokeStyle = "#0b5cad";
+        g.setLineDash([6, 4]);
+        g.lineWidth = 1.8;
+        g.beginPath();
+        xs.forEach((x, i) => {
+          const py = Y(ys[i]);
+          i ? g.lineTo(X(x), py) : g.moveTo(X(x), py);
+        });
+        g.stroke();
+        g.setLineDash([]);
+
+        // phi*Mn (design) — now SOLID
+        g.strokeStyle = "#0b5cad";
+        g.lineWidth = 2.4;
+        g.beginPath();
+        xs.forEach((x, i) => {
+          const py = Y(ys[i] * phi);
+          i ? g.lineTo(X(x), py) : g.moveTo(X(x), py);
+        });
+        g.stroke();
+
+        // design point crosshairs + dots on BOTH lines
+        if (Lb_in > 0 && Lb_in <= xMax) {
+          const r = Mn(Lb_in, Fy, Cb, name);
+          const px = X(Lb_in),
+            pyN = Y(r.Mn / 12),
+            pyD = Y((r.Mn / 12) * phi);
+
+          // crosshair lines: vertical down to L_b axis, horizontal to both moment axes
+          g.strokeStyle = "#111";
+          g.lineWidth = 1;
+          g.setLineDash([3, 3]);
+          g.beginPath();
+          g.moveTo(px, pyD);
+          g.lineTo(px, H - mB);
+          g.stroke(); // vertical → L_b
+          g.beginPath();
+          g.moveTo(px, pyD);
+          g.lineTo(mL, pyD);
+          g.stroke(); // horizontal → left (kip-ft) axis
+          g.beginPath();
+          g.moveTo(px, pyD);
+          g.lineTo(W - mR, pyD);
+          g.stroke(); // horizontal → right (kip-in) axis
+          g.setLineDash([]);
+
+          // dot on the design (solid) line — filled
+          g.fillStyle = "#111";
+          g.beginPath();
+          g.arc(px, pyD, 5, 0, 2 * Math.PI);
+          g.fill();
+          // dot on the nominal (dashed) line — hollow, to distinguish
+          g.fillStyle = "#fff";
+          g.strokeStyle = "#111";
+          g.lineWidth = 1.6;
+          g.beginPath();
+          g.arc(px, pyN, 4.5, 0, 2 * Math.PI);
+          g.fill();
+          g.stroke();
+        }
+      }
+
+      // --- (7) Governing equation, typeset with MathML ---
+      function sectionCBlock(type) {
+        if (type === "channel") {
+          return `<div class="eqrow"><span class="cap">Cross-section: channel — coefficient c (Eq. F2-8b)</span>
+      <math display="inline"><mi>c</mi><mo>=</mo>
+        <mfrac><msub><mi>h</mi><mi>o</mi></msub><mn>2</mn></mfrac>
+        <msqrt><mfrac><msub><mi>I</mi><mi>y</mi></msub><msub><mi>C</mi><mi>w</mi></msub></mfrac></msqrt>
+      </math></div>`;
+        }
+        return `<div class="eqrow"><span class="cap">Cross-section: doubly symmetric I-shape — coefficient c (Eq. F2-8a)</span>
+    <math display="inline"><mi>c</mi><mo>=</mo><mn>1.0</mn></math></div>`;
+      }
+
+      function governingEquation(region) {
+        if (region === "plastic") {
+          return {
+            num: "F2-1",
+            name: "yielding (plastic)",
+            math: `
+      <math display="block">
+        <msub><mi>M</mi><mi>n</mi></msub><mo>=</mo><msub><mi>M</mi><mi>p</mi></msub><mo>=</mo>
+        <msub><mi>F</mi><mi>y</mi></msub><msub><mi>Z</mi><mi>x</mi></msub>
+      </math>`,
+          };
+        }
+        if (region === "inelastic") {
+          return {
+            num: "F2-2",
+            name: "inelastic LTB",
+            math: `
+      <math display="block">
+        <msub><mi>M</mi><mi>n</mi></msub><mo>=</mo><msub><mi>C</mi><mi>b</mi></msub>
+        <mrow>
+          <mo fence="true" stretchy="true">[</mo>
+          <mrow>
+            <msub><mi>M</mi><mi>p</mi></msub><mo>&#8722;</mo>
+            <mrow>
+              <mo fence="true" stretchy="true">(</mo>
+              <mrow><msub><mi>M</mi><mi>p</mi></msub><mo>&#8722;</mo><mn>0.7</mn><msub><mi>F</mi><mi>y</mi></msub><msub><mi>S</mi><mi>x</mi></msub></mrow>
+              <mo fence="true" stretchy="true">)</mo>
+            </mrow>
+            <mfrac>
+              <mrow><msub><mi>L</mi><mi>b</mi></msub><mo>&#8722;</mo><msub><mi>L</mi><mi>p</mi></msub></mrow>
+              <mrow><msub><mi>L</mi><mi>r</mi></msub><mo>&#8722;</mo><msub><mi>L</mi><mi>p</mi></msub></mrow>
+            </mfrac>
+          </mrow>
+          <mo fence="true" stretchy="true">]</mo>
+        </mrow>
+        <mo>&#8804;</mo><msub><mi>M</mi><mi>p</mi></msub>
+      </math>`,
+          };
+        }
+        return {
+          num: "F2-3 / F2-4",
+          name: "elastic LTB",
+          math: `
+    <math display="block">
+      <msub><mi>M</mi><mi>n</mi></msub><mo>=</mo><msub><mi>F</mi><mi>cr</mi></msub><msub><mi>S</mi><mi>x</mi></msub>
+      <mo>&#8804;</mo><msub><mi>M</mi><mi>p</mi></msub>
+    </math>
+    <math display="block">
+      <msub><mi>F</mi><mi>cr</mi></msub><mo>=</mo>
+      <mfrac>
+        <mrow><msub><mi>C</mi><mi>b</mi></msub><msup><mi>&#960;</mi><mn>2</mn></msup><mi>E</mi></mrow>
+        <msup>
+          <mrow>
+            <mo fence="true" stretchy="true">(</mo>
+            <mfrac><msub><mi>L</mi><mi>b</mi></msub><msub><mi>r</mi><mi>ts</mi></msub></mfrac>
+            <mo fence="true" stretchy="true">)</mo>
+          </mrow>
+          <mn>2</mn>
+        </msup>
+      </mfrac>
+      <msqrt><mn>1</mn><mo>+</mo><mn>0.078</mn>
+        <mfrac><mrow><mi>J</mi><mi>c</mi></mrow><mrow><msub><mi>S</mi><mi>x</mi></msub><msub><mi>h</mi><mi>o</mi></msub></mrow></mfrac>
+        <msup>
+          <mrow>
+            <mo fence="true" stretchy="true">(</mo>
+            <mfrac><msub><mi>L</mi><mi>b</mi></msub><msub><mi>r</mi><mi>ts</mi></msub></mfrac>
+            <mo fence="true" stretchy="true">)</mo>
+          </mrow>
+          <mn>2</mn>
+        </msup>
+      </msqrt>
+    </math>`,
+        };
+      }
+
+      // --- UI wiring ---
+      function refresh() {
+        const name = shape.value,
+          Fy = +Fy_.value,
+          Cb = +Cb_.value,
+          Emod = +Emod_.value,
+          LbRaw = +Lb_.value;
+        const lenUnit = lenUnit_.value,
+          lenDiv = lenUnit === "ft" ? 12 : 1;
+
+        // --- validation: all must be strictly positive ---
+        const errs = [];
+        if (!(LbRaw > 0)) errs.push("L_b must be > 0");
+        if (!(Fy > 0)) errs.push("F_y must be > 0");
+        if (!(Emod > 0)) errs.push("E must be > 0");
+        if (!(Cb > 0)) errs.push("C_b must be > 0");
+        if (errs.length) {
+          document.getElementById("results").innerHTML =
+            `<tr><td style="color:#c0392b;text-align:left;padding:.6rem">
+         <b>Invalid input:</b><br>${errs.join("<br>")}</td></tr>`;
+          document.getElementById("equation").innerHTML = "";
+          const g = document.getElementById("chart").getContext("2d");
+          g.clearRect(0, 0, 720, 440);
+          return;
+        }
+
+        E = Emod;
+        const Lb_in = LbRaw * lenDiv;
+        const method = document.querySelector(
+          'input[name="method"]:checked',
+        ).value;
+        const phi = method === "LRFD" ? 0.9 : 1 / 1.67;
+        const r = Mn(Lb_in, Fy, Cb, name);
+        const cap = (r.Mn / 12) * phi;
+        const st = SHAPES[name].type;
+
+        draw(name, Fy, Cb, Lb_in, phi, lenDiv, lenUnit);
+
+        // (2) table: Symbol | Description | Value | Unit
+        document.getElementById("results").innerHTML = `
+    <tr><th>Symbol</th><th style="text-align:left">Description</th><th>Value</th><th>Unit</th></tr>
+
+    <tr><td class="lbl" rowspan="2">M<sub>p</sub></td><td class="desc" rowspan="2">Plastic moment</td>
+        <td>${(r.Mp / 12).toFixed(1)}</td><td>kip-ft</td></tr>
+    <tr><td>${r.Mp.toFixed(0)}</td><td>kip-in</td></tr>
+
+    <tr><td class="lbl">L<sub>p</sub></td><td class="desc">Yielding (plastic) limit length</td><td>${(r.Lp / lenDiv).toFixed(2)}</td><td>${lenUnit}</td></tr>
+    <tr><td class="lbl">L<sub>r</sub></td><td class="desc">Inelastic LTB limit length</td><td>${(r.Lr / lenDiv).toFixed(2)}</td><td>${lenUnit}</td></tr>
+
+    <tr><td class="lbl" rowspan="2">M<sub>n</sub></td><td class="desc" rowspan="2">Nominal flexural strength at L<sub>b</sub> = ${+Lb_.value} ${lenUnit}</td>
+        <td>${(r.Mn / 12).toFixed(1)}</td><td>kip-ft</td></tr>
+    <tr><td>${r.Mn.toFixed(0)}</td><td>kip-in</td></tr>
+
+    <tr><td class="lbl" rowspan="2">${method === "LRFD" ? "φM<sub>n</sub>" : "M<sub>n</sub>/Ω"}</td><td class="desc" rowspan="2">Design flexural strength (${method})</td>
+        <td><b>${cap.toFixed(1)}</b></td><td>kip-ft</td></tr>
+    <tr><td><b>${(cap * 12).toFixed(0)}</b></td><td>kip-in</td></tr>
+
+    <tr><td class="lbl">—</td><td class="desc">Governing limit state</td>
+        <td colspan="2" style="text-align:center"><span class="region ${r.region}">${r.region.toUpperCase()}</span></td></tr>
+    `;
+
+        // (7) equation panel: section coefficient + governing equation, typeset
+        const eq = governingEquation(r.region);
+        document.getElementById("equation").innerHTML =
+          `<h3>Governing equation — Eq. ${eq.num} (${eq.name})</h3>` +
+          sectionCBlock(st) +
+          `<div class="eqrow">${eq.math}</div>`;
+      }
+
+      const shape = document.getElementById("shape"),
+        Fy_ = document.getElementById("Fy"),
+        Cb_ = document.getElementById("Cb"),
+        Lb_ = document.getElementById("Lb"),
+        Emod_ = document.getElementById("Emod"),
+        lenUnit_ = document.getElementById("lenUnit");
+
+      Object.keys(SHAPES).forEach((n) => {
+        const o = document.createElement("option");
+        o.value = o.textContent = n;
+        shape.appendChild(o);
+      });
+      shape.value = SHAPES["W18X50"] ? "W18X50" : Object.keys(SHAPES)[0];
+
+      // (6) converting units keeps the physical length constant
+      let prevLenUnit = "ft";
+      lenUnit_.addEventListener("change", () => {
+        const from = prevLenUnit === "ft" ? 12 : 1,
+          to = lenUnit_.value === "ft" ? 12 : 1;
+        Lb_.value = (+Lb_.value * from) / to;
+        Lb_.step = lenUnit_.value === "ft" ? "0.5" : "1";
+        prevLenUnit = lenUnit_.value;
+        refresh();
+      });
+
+      [shape, Fy_, Cb_, Lb_, Emod_].forEach((el) =>
+        el.addEventListener("input", refresh),
+      );
+      document
+        .querySelectorAll('input[name="method"]')
+        .forEach((el) => el.addEventListener("change", refresh));
+      // (3) export to PDF via the browser's print dialog
+      document
+        .getElementById("pdfBtn")
+        .addEventListener("click", () => window.print());
+      refresh();
+    </script>
+  </body>
+</html>
