@@ -3,11 +3,12 @@
 from __future__ import annotations
 
 from collections import defaultdict
+from math import isclose
 
 import matplotlib
+import matplotlib.patheffects as pe
 import matplotlib.pyplot as plt
 import numpy as np
-import matplotlib.patheffects as pe
 
 matplotlib.use("Agg")
 from matplotlib.axes import Axes
@@ -211,7 +212,7 @@ def _stagger_labels(xs, min_gap):
     return tiers
 
 
-def _plane_dofs(direction_filter: str | None) -> tuple[str, str, str]:
+def _plane_dofs(direction_filter):
     """Return the in-plane DOF names for a load direction filter.
 
     The diagram plane is defined by the transverse direction being plotted.
@@ -219,8 +220,7 @@ def _plane_dofs(direction_filter: str | None) -> tuple[str, str, str]:
     and the in-plane rotation:
         FY -> ("DX", "DY", "RZ")   bending about local z
         FZ -> ("DX", "DZ", "RY")   bending about local y
-    Any other or None filter defaults to the FY plane, matching the function's
-    own default and the common beam convention.
+    Any other or None filter defaults to the FY plane.
 
     Args:
         direction_filter: The load direction filter (e.g. "FY", "FZ").
@@ -232,22 +232,18 @@ def _plane_dofs(direction_filter: str | None) -> tuple[str, str, str]:
     return ("DX", "DY", "RZ")
 
 
-def _classify_support(node, dofs=("DX", "DY", "RZ")) -> str | None:
+def _classify_support(node, dofs=("DX", "DY", "RZ")):
     """Classify a node's restraint as fixed, pin, roller, or free.
 
     Reads PyNite ``support_*`` boolean flags but considers only the three
-    in-plane DOFs of the diagram plane (axial translation, transverse
-    translation, in-plane rotation). Out-of-plane restraints, which models
-    often add purely for numerical stability, are ignored so they can't
-    over-classify a support. In-plane rule: both translations plus rotation
-    reads as fixed; both translations with free rotation as pin; a single
-    translation as roller. Missing attributes are treated as unrestrained so
-    non-PyNite objects degrade gracefully.
+    in-plane DOFs of the diagram plane. Out-of-plane restraints are ignored
+    so they can't over-classify a support. In-plane rule: both translations
+    plus rotation reads as fixed; both translations with free rotation as
+    pin; a single translation as roller.
 
     Args:
         node: PyNite Node3D (or any object exposing support_* booleans).
-        dofs: (axial, transverse, rotation) support flag names defining the
-            diagram plane, from _plane_dofs.
+        dofs: (axial, transverse, rotation) support flag names from _plane_dofs.
     Returns:
         One of "fixed", "pin", "roller", or None when unrestrained.
     """
@@ -268,10 +264,8 @@ def _classify_support(node, dofs=("DX", "DY", "RZ")) -> str | None:
 def _draw_support(ax, x, kind, L, size, color="#333333"):
     """Draw a schematic support glyph hanging below the baseline at x.
 
-    Glyph widths scale with L (x-data) and heights with ``size`` (y-data),
-    so proportions track the axes rather than being physically equal. Pin is
-    a hollow triangle, roller a triangle riding on rollers, fixed a hatched
-    ground line.
+    Pin is a gray-filled triangle, roller a gray triangle riding on rollers,
+    fixed a hatched ground line.
 
     Args:
         ax: Target axes.
@@ -279,9 +273,9 @@ def _draw_support(ax, x, kind, L, size, color="#333333"):
         kind: "fixed", "pin", or "roller".
         L: Member length, used to scale glyph width.
         size: Triangle/glyph height in y-data units.
-        color: Glyph color.
+        color: Glyph edge color.
     Returns:
-        The lowest y-value reached by the glyph (for layout bookkeeping).
+        The lowest y-value reached by the glyph.
     """
     w = 0.012 * L
     fill = "0.7"
@@ -310,13 +304,16 @@ def plot_member_loads(
     direction_filter: str | None = "FY",
     include_node_loads: bool = True,
     color_by: str = "case",
+    force_unit: str | None = "kip",
+    length_unit: str | None = "inch",
+    sort_by_case: bool = True,
     lane_height: float = 0.6,
-    lane_pitch: float = 1.15,
+    lane_pitch: float = 1.45,
     min_height_frac: float = 0.6,
-    min_point_frac: float = 0.85,
-    max_height_frac: float = 0.95,
+    min_point_frac: float = 1.0,
+    max_height_frac: float = 1.25,
     arrow_head: float = 9.0,
-    figsize: tuple[float, float] = (11, 6),
+    figsize: tuple[float, float] = (12, 8),
     ax=None,
     save_png: str | None = None,
     show_plt: bool = False,
@@ -329,10 +326,10 @@ def plot_member_loads(
     Reads the member's (and optionally every node along it) ``_load_metadata``
     populated by the add_named_* helpers. Each load occupies its own lane
     stacked above the member baseline at its correct x-location. Distributed
-    loads render as trapezoids, point loads as single arrows. Point and
-    distributed magnitudes are scaled independently since they are different
-    physical quantities. Arrowheads are a fixed display size so they never
-    distort on short or long shafts.
+    loads render as trapezoids, point loads as single arrows with a leader
+    line down to the beam. Point and distributed magnitudes are scaled
+    independently. Supports are drawn from node restraint flags matched to
+    the diagram plane. Load names are bold; values/units are normal weight.
 
     Args:
         member: PyNite PhysMember/Member3D whose loads to plot.
@@ -340,14 +337,16 @@ def plot_member_loads(
             case-insensitive. Use None to include every direction.
         include_node_loads: Include loads on nodes along the member.
         color_by: Metadata key used to color loads ("case" or "category").
+        force_unit: Force unit label. Defaults to "kip"; pass None to omit.
+        length_unit: Length unit label. Defaults to "inch"; pass None to omit.
+        sort_by_case: Group lanes by their color_by key (all of one case
+            together) instead of insertion order.
         lane_height: Nominal lane graphic height in data units.
         lane_pitch: Vertical spacing between lane baselines.
-        min_height_frac: Minimum graphic height as a fraction of lane_height.
+        min_height_frac: Minimum dist graphic height as a fraction of lane_height.
         min_point_frac: Minimum point-load arrow length as a fraction of
-            lane_height, kept taller than min_height_frac so concentrated
-            loads always show a clear tail.
-        max_height_frac: Maximum graphic height as a fraction of lane_height,
-            leaving a gap for corner labels below the next lane.
+            lane_height.
+        max_height_frac: Maximum graphic height as a fraction of lane_height.
         arrow_head: Arrowhead size (points) passed to mutation_scale.
         figsize: Figure size when ax is None.
         ax: Existing axes; created if None.
@@ -364,10 +363,22 @@ def plot_member_loads(
     meta = getattr(member, "_load_metadata", defaultdict(list))
     nodes_on_member = _member_nodes(member, L)
 
-    def _keep(direction: str) -> bool:
+    def _keep(direction):
         if direction_filter is None:
             return True
         return direction.upper() == direction_filter.upper()
+
+    def _fmt_dist(v):
+        s = _sig3(v)
+        if force_unit and length_unit:
+            return f"{s} {force_unit}/{length_unit}"
+        if force_unit:
+            return f"{s} {force_unit}/len"
+        return s
+
+    def _fmt_pt(v):
+        s = _sig3(v)
+        return f"{s} {force_unit}" if force_unit else s
 
     lanes = []
     for d in meta.get("dist_loads", []):
@@ -418,6 +429,15 @@ def plot_member_loads(
                         "key": case,
                     })
 
+    # Group lanes by case (color_by key), preserving first-appearance order.
+    key_order = []
+    for ln in lanes:
+        if ln["key"] not in key_order:
+            key_order.append(ln["key"])
+    if sort_by_case:
+        order_idx = {k: i for i, k in enumerate(key_order)}
+        lanes.sort(key=lambda ln: order_idx[ln["key"]])
+
     dist_mags = [abs(v) for ln in lanes if ln["kind"] == "dist" for v in (ln["w1"], ln["w2"])]
     pt_mags = [abs(ln["P"]) for ln in lanes if ln["kind"] == "point"]
     max_dist = max(dist_mags) if dist_mags else 1.0
@@ -426,16 +446,12 @@ def plot_member_loads(
     min_pt_h = min_point_frac * lane_height
     max_h = max_height_frac * lane_height
 
-    def _height(mag: float, scale: float, floor: float) -> float:
+    def _height(mag, scale, floor):
         h = lane_height * abs(mag) / scale
         return max(floor, min(max_h, h))
 
-    keys = []
-    for ln in lanes:
-        if ln["key"] not in keys:
-            keys.append(ln["key"])
     cmap = plt.get_cmap("tab10")
-    color_of = {k: cmap(i % 10) for i, k in enumerate(keys)}
+    color_of = {k: cmap(i % 10) for i, k in enumerate(key_order)}
 
     if ax is None:
         _, ax = plt.subplots(figsize=figsize)
@@ -463,32 +479,44 @@ def plot_member_loads(
                 xa = ln["x1"] + (ln["x2"] - ln["x1"]) * t
                 ha = h1 + (h2 - h1) * t
                 _v_arrow(ax, xa, y0, y0 + ha, sign, color, head=arrow_head)
-            # Corner values sit just above the top chord with a white halo so
-            # they read cleanly; left value hugs the left corner, right the right.
-            ax.annotate(
-                _sig3(ln["w1"]),
-                xy=(ln["x1"], y0 + h1),
-                xytext=(2, 3),
-                textcoords="offset points",
-                ha="left",
-                va="bottom",
-                fontsize=8,
-                fontweight="bold",
-                color=color,
-                path_effects=_halo(),
-            )
-            ax.annotate(
-                _sig3(ln["w2"]),
-                xy=(ln["x2"], y0 + h2),
-                xytext=(-2, 3),
-                textcoords="offset points",
-                ha="right",
-                va="bottom",
-                fontsize=8,
-                fontweight="bold",
-                color=color,
-                path_effects=_halo(),
-            )
+            # Uniform loads print one centered value; only trapezoidal loads
+            # get the left/right corner pair. Values are normal weight.
+            if isclose(ln["w1"], ln["w2"], rel_tol=1e-6, abs_tol=1e-12):
+                xc = 0.5 * (ln["x1"] + ln["x2"])
+                ax.annotate(
+                    _fmt_dist(ln["w1"]),
+                    xy=(xc, y0 + max(h1, h2)),
+                    xytext=(0, 3),
+                    textcoords="offset points",
+                    ha="center",
+                    va="bottom",
+                    fontsize=8,
+                    color=color,
+                    path_effects=_halo(),
+                )
+            else:
+                ax.annotate(
+                    _fmt_dist(ln["w1"]),
+                    xy=(ln["x1"], y0 + h1),
+                    xytext=(2, 3),
+                    textcoords="offset points",
+                    ha="left",
+                    va="bottom",
+                    fontsize=8,
+                    color=color,
+                    path_effects=_halo(),
+                )
+                ax.annotate(
+                    _fmt_dist(ln["w2"]),
+                    xy=(ln["x2"], y0 + h2),
+                    xytext=(-2, 3),
+                    textcoords="offset points",
+                    ha="right",
+                    va="bottom",
+                    fontsize=8,
+                    color=color,
+                    path_effects=_halo(),
+                )
             ax.annotate(
                 ln["name"],
                 xy=(ln["x2"], y0 + max(h1, h2) / 2),
@@ -497,22 +525,24 @@ def plot_member_loads(
                 ha="left",
                 va="center",
                 fontsize=9,
+                fontweight="bold",
                 color=color,
                 clip_on=False,
             )
         else:
             h = _height(ln["P"], max_pt, min_pt_h)
             sign = -1 if ln["P"] < 0 else 1
+            # Leader line ties the elevated arrow back to its x on the beam.
+            ax.plot([ln["x"], ln["x"]], [0, y0], color=color, lw=0.7, ls=":", alpha=0.55, zorder=2)
             _v_arrow(ax, ln["x"], y0, y0 + h, sign, color, lw=2.2, head=arrow_head + 2)
             ax.annotate(
-                _sig3(ln["P"]),
+                _fmt_pt(ln["P"]),
                 xy=(ln["x"], y0 + h),
                 xytext=(0, 3),
                 textcoords="offset points",
                 ha="center",
                 va="bottom",
                 fontsize=8,
-                fontweight="bold",
                 color=color,
                 path_effects=_halo(),
             )
@@ -524,18 +554,18 @@ def plot_member_loads(
                 ha="left",
                 va="center",
                 fontsize=9,
+                fontweight="bold",
                 color=color,
                 clip_on=False,
             )
 
     n_dots = 0
-    label_top = 0.0
+    label_bottom = 0.0
     if show_nodes:
         pairs = sorted(nodes_on_member, key=lambda p: p[0])
         node_xs = [x for x, _ in pairs]
         ax.plot(node_xs, [0] * len(node_xs), "o", color="black", markersize=8, zorder=7, clip_on=False)
 
-        # Draw supports first so we know how far below the beam labels start.
         sup_reach = 0.0
         if show_supports:
             plane_dofs = _plane_dofs(direction_filter)
@@ -546,8 +576,6 @@ def plot_member_loads(
                 low = _draw_support(ax, x, kind, L, support_size)
                 sup_reach = min(sup_reach, low)
 
-        # Node labels sit below whatever the supports occupy, in data units so
-        # they stack cleanly with the glyphs. Staggered when x-crowded.
         label_top = sup_reach - 0.18
         step = 0.34
         tiers = _stagger_labels(node_xs, min_gap=0.07 * L)
@@ -567,17 +595,25 @@ def plot_member_loads(
         label_bottom = label_top - max(0, n_dots - 1) * step
 
     top = 0.5 + len(lanes) * lane_pitch + 0.5 if lanes else 1.0
-    # Reserve vertical room below the lowest node label for the tick labels.
     bottom = (label_bottom - 0.45) if show_nodes else -0.5
     ax.set_xlim(-0.05 * L, 1.05 * L)
     ax.set_ylim(bottom, top)
     ax.set_yticks([])
-    # Tick labels ride just under the ylim floor.
     ax.tick_params(axis="x", length=0, pad=6)
-    ax.set_xlabel("Distance along member", labelpad=12)
-    ax.set_title(f"Loads on '{member_name}'  (L = {_sig3(L)})")
-    # Hide all spines; the member baseline serves as the visual x-axis so the
-    # bottom spine would otherwise cut through the node labels.
+
+    # Gridlines clipped to the load region (beam up), not through supports.
+    ax.grid(False)
+    for xt in ax.get_xticks():
+        if -0.05 * L <= xt <= 1.05 * L:
+            ax.plot([xt, xt], [0, top], color="0.88", lw=0.8, zorder=0)
+
+    xlabel = "Distance along member"
+    if length_unit:
+        xlabel += f" ({length_unit})"
+    ax.set_xlabel(xlabel, labelpad=12)
+
+    title_L = f"L = {_sig3(L)} {length_unit}" if length_unit else f"L = {_sig3(L)}"
+    ax.set_title(f"Loads on '{member_name}'  ({title_L})")
     ax.spines[["left", "right", "top", "bottom"]].set_visible(False)
 
     fig = ax.figure
