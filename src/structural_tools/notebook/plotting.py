@@ -621,4 +621,4 @@ def plot_member_loads(
         fig.savefig(save_png, dpi=200, bbox_inches="tight")
     if show_plt:
         plt.show()
-    return ax
+    return fig, ax
