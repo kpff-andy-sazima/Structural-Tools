@@ -6,6 +6,12 @@ import pandas as pd
 
 from ..asce import DesignMethod
 
+
+LOAD_CASE_FACTOR_SEISMIC_ASD = 1 / 2.8
+LOAD_CASE_FACTOR_WIND_ASD = 1 / 2
+LOAD_CASE_FACTOR_SEISMIC_LRFD = 0.5
+LOAD_CASE_FACTOR_WIND_LRFD = 0.8
+
 SDPWS_TABLE_4_3_A = pd.read_csv(
     filepath_or_buffer=resources
     .files("structural_tools.data")
@@ -206,14 +212,14 @@ def get_viable_sheathing(
     # Scale by load case
     if design_method == DesignMethod.ASD:
         if load_case == LoadCase.SEISMIC:
-            load_case_factor = 1 / 2.8
+            load_case_factor = LOAD_CASE_FACTOR_SEISMIC_ASD
         else:
-            load_case_factor = 1 / 2
+            load_case_factor = LOAD_CASE_FACTOR_WIND_ASD
     else:
         if load_case == LoadCase.SEISMIC:
-            load_case_factor = 0.5
+            load_case_factor = LOAD_CASE_FACTOR_SEISMIC_LRFD
         else:
-            load_case_factor = 0.8
+            load_case_factor = LOAD_CASE_FACTOR_WIND_LRFD
 
     # Scale by 1 or 2 based on number of sheathed sides and load case
     filtered_sheathing_options["Adjusted Unit Shear"] = (
