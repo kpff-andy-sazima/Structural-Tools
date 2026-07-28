@@ -1,0 +1,384 @@
+from __future__ import annotations
+
+from bisect import bisect_right
+from dataclasses import dataclass
+from enum import Enum
+from importlib import resources
+import pandas as pd
+
+
+LOAD_FACTOR_SEISMIC_ASD = 0.7
+LOAD_FACTOR_SEISMIC_LRFD = 1.0
+
+
+class SiteClass(Enum):
+    A = "A"
+    B = "B"
+    C = "C"
+    D = "D"
+    E = "E"
+    F = "F"
+
+    @property
+    def severity(self):
+        order = {
+            SiteClass.A: 1,
+            SiteClass.B: 2,
+            SiteClass.C: 3,
+            SiteClass.D: 4,
+            SiteClass.E: 5,
+            SiteClass.F: 6,
+        }
+        return order[self]
+
+    def __lt__(self, other):
+        return self.severity < other.severity
+
+
+class RiskCategory(Enum):
+    I = "I"  # noqa: E741
+    II = "II"
+    III = "III"
+    IV = "IV"
+
+    @property
+    def severity(self):
+        order = {
+            RiskCategory.I: 1,
+            RiskCategory.II: 2,
+            RiskCategory.III: 3,
+            RiskCategory.IV: 4,
+        }
+        return order[self]
+
+    def __lt__(self, other):
+        return self.severity < other.severity
+
+
+class SeismicDesignCategory(Enum):
+    A = "A"
+    B = "B"
+    C = "C"
+    D = "D"
+    E = "E"
+    F = "F"
+
+    @property
+    def severity(self):
+        order = {
+            SeismicDesignCategory.A: 1,
+            SeismicDesignCategory.B: 2,
+            SeismicDesignCategory.C: 3,
+            SeismicDesignCategory.D: 4,
+            SeismicDesignCategory.E: 5,
+            SeismicDesignCategory.F: 6,
+        }
+        return order[self]
+
+    def __lt__(self, other):
+        return self.severity < other.severity
+
+
+class DesignMethod(Enum):
+    ASD = "ASD"
+    LRFD = "LRFD"
+
+
+# ============================================================================
+# ASCE 7-16 TABLES
+# ============================================================================
+
+SEISMIC_IMPORTANCE_FACTORS: dict[RiskCategory, float] = {
+    RiskCategory.I: 1.0,
+    RiskCategory.II: 1.0,
+    RiskCategory.III: 1.25,
+    RiskCategory.IV: 1.5,
+}
+
+F_A_TABLE_11_4_1: dict[SiteClass, dict[str, list]] = {
+    SiteClass.A: {
+        "s_s": [0.25, 0.50, 0.75, 1.00, 1.25, 1.5],
+        "f_a": [0.8, 0.8, 0.8, 0.8, 0.8, 0.8],
+    },
+    SiteClass.B: {
+        "s_s": [0.25, 0.50, 0.75, 1.00, 1.25, 1.5],
+        "f_a": [0.9, 0.9, 0.9, 0.9, 0.9, 0.9],
+    },
+    SiteClass.C: {
+        "s_s": [0.25, 0.50, 0.75, 1.00, 1.25, 1.5],
+        "f_a": [1.3, 1.3, 1.2, 1.2, 1.2, 1.2],
+    },
+    SiteClass.D: {
+        "s_s": [0.25, 0.50, 0.75, 1.00, 1.25, 1.5],
+        "f_a": [1.6, 1.4, 1.2, 1.1, 1.0, 1.0],
+    },
+    SiteClass.E: {
+        "s_s": [0.25, 0.50, 0.75, 1.00, 1.25, 1.5],
+        "f_a": [2.4, 1.7, 1.3, None, None, None],
+    },
+    SiteClass.F: {
+        "s_s": [0.25, 0.50, 0.75, 1.00, 1.25, 1.5],
+        "f_a": [None, None, None, None, None, None],
+    },
+}
+
+F_V_TABLE_11_4_2: dict[SiteClass, dict[str, list]] = {
+    SiteClass.A: {
+        "s_1": [0.1, 0.2, 0.3, 0.4, 0.5, 0.6],
+        "f_v": [0.8, 0.8, 0.8, 0.8, 0.8, 0.8],
+    },
+    SiteClass.B: {
+        "s_1": [0.1, 0.2, 0.3, 0.4, 0.5, 0.6],
+        "f_v": [0.8, 0.8, 0.8, 0.8, 0.8, 0.8],
+    },
+    SiteClass.C: {
+        "s_1": [0.1, 0.2, 0.3, 0.4, 0.5, 0.6],
+        "f_v": [1.5, 1.5, 1.5, 1.5, 1.5, 1.4],
+    },
+    SiteClass.D: {
+        "s_1": [0.1, 0.2, 0.3, 0.4, 0.5, 0.6],
+        "f_v": [2.4, 2.2, 2.0, 1.9, 1.8, 1.7],
+    },
+    SiteClass.E: {
+        "s_1": [0.1, 0.2, 0.3, 0.4, 0.5, 0.6],
+        "f_v": [4.2, None, None, None, None, None],
+    },
+    SiteClass.F: {
+        "s_1": [0.1, 0.2, 0.3, 0.4, 0.5, 0.6],
+        "f_v": [None, None, None, None, None, None],
+    },
+}
+
+C_U_TABLE_12_8_1: dict[str, list[float]] = {
+    "s_d1": [0.1, 0.15, 0.2, 0.3, 0.4],
+    "c_u": [1.7, 1.6, 1.5, 1.4, 1.4],
+}
+
+DESIGN_COEFFICIENTS_TABLE_12_2_1 = pd.read_csv(
+    filepath_or_buffer=resources
+    .files("structural_tools.data")
+    .joinpath("asce_7_22_table_12_2_1.csv")
+    .open("r", encoding="utf-8"),
+).set_index("Index")
+
+# ============================================================================
+# GENERIC INTERPOLATION UTILITIES
+# ============================================================================
+
+
+def _linear_interpolate(
+    x: float,
+    x1: float,
+    y1: float,
+    x2: float,
+    y2: float,
+) -> float:
+    """
+    Perform straight-line interpolation between two points.
+    """
+
+    if x2 == x1:
+        raise ValueError("Interpolation points must have different x values.")
+
+    return y1 + (x - x1) * (y2 - y1) / (x2 - x1)
+
+
+def _interpolate_table(
+    x: float,
+    x_values: list[float],
+    y_values: list[float],
+) -> float:
+    """
+    Interpolate a value from tabulated data.
+
+    Parameters
+    ----------
+    x : float
+        Input x value.
+
+    x_values : list[float]
+        Ordered x-axis table values.
+
+    y_values : list[float]
+        Corresponding y-axis table values.
+
+    Returns
+    -------
+    float
+        Interpolated value.
+    """
+
+    if len(x_values) != len(y_values):
+        raise ValueError("x_values and y_values must have equal length.")
+
+    if sorted(x_values) != x_values:
+        raise ValueError("x_values must be sorted ascending.")
+
+    # Clamp below table range
+    if x <= x_values[0]:
+        return y_values[0]
+
+    # Clamp above table range
+    if x >= x_values[-1]:
+        return y_values[-1]
+
+    idx = bisect_right(x_values, x)
+
+    if y_values[idx - 1] is None or y_values[idx] is None:
+        raise ValueError(
+            "This combination of Spectral Response Acceleration Parameter and Site Class requires that you see ASCE 7-16 Section 11.4.8."
+        )
+
+    return _linear_interpolate(
+        x=x,
+        x1=x_values[idx - 1],
+        y1=y_values[idx - 1],
+        x2=x_values[idx],
+        y2=y_values[idx],
+    )
+
+
+# ============================================================================
+# SEISMIC PARAMETERS DATACLASS
+# ============================================================================
+
+
+@dataclass
+class SeismicParameters:
+    """
+    Encapsulates seismic parameters for a given site and spectral response acceleration.
+    """
+
+    s_s: float
+    s_1: float
+    site_class: SiteClass = SiteClass.D
+    risk_category: RiskCategory = RiskCategory.II
+    t_l: float = 16
+
+    def __post_init__(self):
+        self.f_a = self._get_f_a_coefficient()
+        self.f_v = self._get_f_v_coefficient()
+
+        self.s_ms = self.s_s * self.f_a
+        self.s_m1 = self.s_1 * self.f_v
+
+        self.s_ds = 2 / 3 * self.s_ms
+        self.s_d1 = 2 / 3 * self.s_m1
+
+        self.c_u = self._get_c_u_coefficient()
+
+        self.i_e = SEISMIC_IMPORTANCE_FACTORS[self.risk_category]
+        self.sdc = self._get_seismic_design_category()
+
+    def _get_f_a_coefficient(self) -> float:
+        """
+        Compute F_a from ASCE 7-16 Table 11.4-1.
+
+        Parameters
+        ----------
+        s_s : float
+            Mapped spectral acceleration parameter at short periods.
+
+        site_class : str
+            Site class designation ('A', 'B', 'C', 'D', 'E', or 'F').
+
+        Returns
+        -------
+        float
+            Interpolated F_a coefficient.
+        """
+
+        table = F_A_TABLE_11_4_1[self.site_class]
+
+        return _interpolate_table(
+            x=self.s_s,
+            x_values=table["s_s"],
+            y_values=table["f_a"],
+        )
+
+    def _get_f_v_coefficient(self) -> float:
+        """
+        Compute F_v from ASCE 7-16 Table 11.4-2.
+
+        Parameters
+        ----------
+        s_1 : float
+            Mapped spectral acceleration parameter at 1.0 second period.
+
+        site_class : str
+            Site class designation ('A', 'B', 'C', 'D', 'E', or 'F').
+
+        Returns
+        -------
+        float
+            Interpolated F_v coefficient.
+        """
+
+        table = F_V_TABLE_11_4_2[self.site_class]
+
+        return _interpolate_table(
+            x=self.s_1,
+            x_values=table["s_1"],
+            y_values=table["f_v"],
+        )
+
+    def _get_c_u_coefficient(self) -> float:
+        """
+        Compute C_u from ASCE 7-16 Table 12.8-1.
+
+        Parameters
+        ----------
+        s_d1 : float
+            Design spectral acceleration parameter at 1.0 second period.
+
+        Returns
+        -------
+        float
+            Interpolated C_u coefficient.
+        """
+
+        table = C_U_TABLE_12_8_1
+
+        return _interpolate_table(
+            x=self.s_d1,
+            x_values=table["s_d1"],
+            y_values=table["c_u"],
+        )
+
+    def _get_seismic_design_category(self) -> str:
+        """
+        Determine seismic design category from ASCE 7-16 Table 11.6-1 or 11.6-2.
+
+        Returns
+        -------
+        SeismicDesignCategory
+            Seismic design category.
+        """
+        SDC = SeismicDesignCategory
+        is_risk_iv = self.risk_category == RiskCategory.IV
+
+        # S_1 >= 0.75 check takes precedence per Tables 11.6-1/2
+        if self.s_1 >= 0.75:
+            return (SDC.F if is_risk_iv else SDC.E).name
+
+        # Thresholds and categories per Table 11.6-1 (I/II/III) and 11.6-2 (IV)
+        sds_thresholds = [
+            (0.167, SDC.A),
+            (0.33, SDC.B if not is_risk_iv else SDC.C),
+            (0.50, SDC.C if not is_risk_iv else SDC.D),
+            (float("inf"), SDC.D),
+        ]
+        sd1_thresholds = [
+            (0.067, SDC.A),
+            (0.133, SDC.B if not is_risk_iv else SDC.C),
+            (0.20, SDC.C if not is_risk_iv else SDC.D),
+            (float("inf"), SDC.D),
+        ]
+
+        def lookup(value: float, thresholds: list) -> SeismicDesignCategory:
+            return next(category for limit, category in thresholds if value < limit)
+
+        sdc_short = lookup(self.s_ds, sds_thresholds)
+        sdc_long = lookup(self.s_d1, sd1_thresholds)
+
+        return max(sdc_short, sdc_long).name

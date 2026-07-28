@@ -5,8 +5,7 @@ without depending on the internal module layout.
 """
 
 from .constants import YOUNGS_MODULUS_KSI
-from .section import WSection
-from .database import get_section
+from .section import Section
 from .compression import (
     calculate_critical_stress,
     calculate_euler_buckling_stress,
@@ -28,8 +27,7 @@ from .ltb_report import build_ltb_report
 
 __all__ = [
     "YOUNGS_MODULUS_KSI",
-    "WSection",
-    "get_section",
+    "Section",
     "LateralTorsionalBucklingResult",
     "build_ltb_report",
     "calculate_slenderness_ratio",

@@ -564,7 +564,7 @@ def plot_member_loads(
     if show_nodes:
         pairs = sorted(nodes_on_member, key=lambda p: p[0])
         node_xs = [x for x, _ in pairs]
-        ax.plot(node_xs, [0] * len(node_xs), "o", color="black", markersize=8, zorder=7, clip_on=False)
+        ax.plot(node_xs, [0] * len(node_xs), "s", color="black", markersize=8, zorder=7, clip_on=False)
 
         sup_reach = 0.0
         if show_supports:
@@ -612,8 +612,7 @@ def plot_member_loads(
         xlabel += f" ({length_unit})"
     ax.set_xlabel(xlabel, labelpad=12)
 
-    title_L = f"L = {_sig3(L)} {length_unit}" if length_unit else f"L = {_sig3(L)}"
-    ax.set_title(f"Loads on '{member_name}'  ({title_L})")
+    ax.set_title(f"Loads on member '{member_name}'")
     ax.spines[["left", "right", "top", "bottom"]].set_visible(False)
 
     fig = ax.figure

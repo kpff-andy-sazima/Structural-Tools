@@ -92,7 +92,7 @@ def display_table(
             for function, axis in style_functions:
                 styler = styler.apply(function, axis)
 
-        styler.format_index(escape="latex", axis=0)
+        styler.format_index(escape="latex-math", axis=0)
 
         display(
             Latex(

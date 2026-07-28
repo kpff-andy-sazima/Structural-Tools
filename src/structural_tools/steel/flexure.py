@@ -7,17 +7,38 @@ Units: kip-inch.
 
 from __future__ import annotations
 
+import pandas as pd
 from dataclasses import dataclass
+from enum import Enum
 from math import sqrt
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Literal, Sequence, Union
 
 import numpy as np
 
-from ..typing import FloatLike  # NOTE: two dots now
+from ..typing import FloatLike
 from .constants import YOUNGS_MODULUS_KSI
 
 if TYPE_CHECKING:
     from .section import WSection
+
+
+class Bracing(Enum):
+    """Lateral bracing condition for a single flange.
+
+    CONTINUOUS: braced along the entire length (e.g. by a floor slab/deck),
+        so the flange cannot buckle laterally and develops M_p (L_b = 0).
+    UNBRACED: no bracing. L_b = full span
+    TENSION_ONLY: braced flange is the tension flange
+    """
+
+    CONTINUOUS = "continuous"
+    UNBRACED = "unbraced"
+    TENSION_ONLY = "tension_only"
+
+
+# A flange's bracing is either explicit brace-point x-coordinates or a
+# Bracing member (currently just CONTINUOUS).
+BracePoints = Union[Sequence[FloatLike], Bracing]
 
 
 def calculate_effective_radius_of_gyration(
@@ -118,7 +139,7 @@ def calculate_lateral_torsional_buckling_modification_factor(
 
 def calculate_inelastic_lateral_torsional_buckling_stress(
     yield_stress: FloatLike,
-    plastic_section_modulus: FloatLike,
+    plastic_section_modulus_x_axis: FloatLike,
     section_modulus_x_axis: FloatLike,
     unbraced_length: FloatLike,
     limiting_yield_length: FloatLike,
@@ -130,7 +151,7 @@ def calculate_inelastic_lateral_torsional_buckling_stress(
     Capped at M_p / S_x so M_n never exceeds M_p.
     """
     F_y = float(yield_stress)
-    Z_x = float(plastic_section_modulus)
+    Z_x = float(plastic_section_modulus_x_axis)
     S_x = float(section_modulus_x_axis)
     L_b = float(unbraced_length)
     L_p = float(limiting_yield_length)
@@ -205,7 +226,7 @@ def calculate_nominal_flexural_strength(
     C_b = float(ltb_modification_factor)
     L_b = float(unbraced_length)
 
-    Z_x = section.plastic_section_modulus
+    Z_x = section.plastic_section_modulus_x_axis
     S_x = section.section_modulus_x_axis
     r_y = section.radius_of_gyration_y_axis
     J = section.torsional_constant
@@ -218,13 +239,13 @@ def calculate_nominal_flexural_strength(
     L_r = calculate_limiting_inelastic_length(F_y, r_ts, J, c, S_x, h_o, E)  # F2-6
 
     if L_b <= L_p:
-        region, M_n = "plastic", M_p  # F2-1
+        region, M_n = "Plastic", M_p  # F2-1
     elif L_b <= L_r:
-        region = "inelastic"  # F2-2
+        region = "Inelastic LTB"  # F2-2
         F_n = calculate_inelastic_lateral_torsional_buckling_stress(F_y, Z_x, S_x, L_b, L_p, L_r, C_b)
         M_n = min(F_n * S_x, M_p)
     else:
-        region = "elastic"  # F2-3 / F2-4
+        region = "Elastic LTB"  # F2-3 / F2-4
         F_cr = calculate_elastic_lateral_torsional_buckling_stress(L_b, r_ts, J, c, S_x, h_o, C_b, E)
         M_n = min(F_cr * S_x, M_p)
 
@@ -238,3 +259,157 @@ def calculate_nominal_flexural_strength(
         torsional_coefficient=c,
         region=region,
     )
+
+
+def calculate_cb_from_moment_diagram(
+    positions: Sequence[FloatLike],
+    moments: Sequence[FloatLike],
+) -> float:
+    """C_b via the quarter-point method (Eq. F1-1) from a sampled diagram.
+
+    Moments are interpolated at the quarter points of the sampled span and
+    M_max is the largest absolute moment over the samples, so `positions`
+    and `moments` may be irregularly spaced (e.g. straight from a solver).
+
+    Args:
+        positions: x-coordinates along the segment (consistent length unit).
+        moments: bending moment at each x (consistent moment unit).
+    """
+    x = np.asarray(positions, dtype=float)
+    M = np.asarray(moments, dtype=float)
+    order = np.argsort(x)
+    x, M = x[order], M[order]
+    L = x[-1] - x[0]
+    if L <= 0:
+        return 1.0
+    quarter, mid, three_quarter = np.interp(x[0] + L * np.array([0.25, 0.50, 0.75]), x, M)
+    return calculate_lateral_torsional_buckling_modification_factor(np.max(np.abs(M)), quarter, mid, three_quarter)
+
+
+def _slice_moment_segment(
+    x: np.ndarray,
+    M: np.ndarray,
+    start: float,
+    end: float,
+) -> tuple[np.ndarray, np.ndarray]:
+    """Samples of (x, M) on [start, end] with interpolated endpoints added."""
+    mask = (x >= start) & (x <= end)
+    xs, Ms = x[mask], M[mask]
+    if xs.size == 0 or xs[0] > start:
+        xs = np.insert(xs, 0, start)
+        Ms = np.insert(Ms, 0, np.interp(start, x, M))
+    if xs[-1] < end:
+        xs = np.append(xs, end)
+        Ms = np.append(Ms, np.interp(end, x, M))
+    return xs, Ms
+
+
+@dataclass
+class FlexuralSegmentResult:
+    """One unbraced-segment flexure check on a single compression flange.
+
+    Moments in kip-in, lengths in inches.
+    """
+
+    flange: str  # "top" | "bottom"
+    x_start: float
+    x_end: float
+    moment_demand: float  # M_u causing compression in this flange
+    lateral_torsional_buckling: LateralTorsionalBucklingResult
+    ltb_modification_factor: float  # C_b
+    continuously_braced: bool = False
+    governing: bool = False
+
+    @property
+    def demand_capacity_ratio(self) -> float:
+        """M_u / M_n (apply phi=0.90 or Omega=1.67 at the call site)."""
+        return self.moment_demand / self.lateral_torsional_buckling.nominal_moment
+
+
+def _brace_segments(braces, x_min, x_max):
+    """(start, end, continuous) unbraced segments for a flange.
+
+    If `braces` is Bracing.CONTINUOUS, yields one whole-member segment flagged
+    continuous. If `braces` is Bracing.UNBRACED, yields one whole-member segment
+    flagged unbraced. Otherwise the member ends are added to the brace list and
+    consecutive pairs are returned.
+    """
+    if braces is Bracing.CONTINUOUS:  # <- `is`, not string compare
+        yield (x_min, x_max, True)
+        return
+    if braces is Bracing.UNBRACED:
+        yield (x_min, x_max, False)
+        return
+    brace_x = sorted({x_min, x_max, *(float(b) for b in braces)})
+    for start, end in zip(brace_x[:-1], brace_x[1:]):
+        yield (start, end, False)
+
+
+def evaluate_beam_flexure(
+    section: WSection,
+    yield_stress: FloatLike,
+    positions: Sequence[FloatLike],
+    moments: Sequence[FloatLike],
+    top_flange_brace_points: Sequence[FloatLike],
+    bottom_flange_brace_points: Sequence[FloatLike],
+    youngs_modulus: FloatLike = YOUNGS_MODULUS_KSI,
+    positive_moment_compresses: str = "bottom",
+    zero_atol: float = 1e-6,
+) -> list:
+    """Full major-axis LTB check of a beam directly from a moment diagram.
+
+    The compression flange is chosen automatically from the sign of the
+    moment. Each flange is broken into unbraced segments by its own brace
+    points (member ends added automatically); segments where that flange sees
+    compression are checked with L_b = segment length, C_b from the
+    quarter-point method over the segment, and the limit state (plastic /
+    inelastic / elastic LTB) selected by calculate_nominal_flexural_strength.
+
+    Args:
+        section: WSection providing Z_x, S_x, r_y, J, h_o, r_ts, c.
+        yield_stress: F_y (ksi).
+        positions: x-coordinates of the moment diagram (inches).
+        moments: bending moment at each x (kip-in).
+        top_flange_brace_points: x of lateral braces on the top flange.
+        bottom_flange_brace_points: x of lateral braces on the bottom flange.
+        youngs_modulus: E (ksi), default 29000.
+        positive_moment_compresses: flange a positive moment compresses,
+            "top" (sagging convention) or "bottom".
+    Returns:
+        FlexuralSegmentResult per checked segment, sorted by x, with the
+        highest demand/capacity segment flagged governing.
+    """
+    x = np.asarray(positions, dtype=float)
+    M = np.asarray(moments, dtype=float)
+    order = np.argsort(x)
+    x, M = x[order], M[order]
+    x_min, x_max = float(x[0]), float(x[-1])
+    F_y = float(yield_stress)
+    E = float(youngs_modulus)
+
+    top_sign = 1.0 if positive_moment_compresses == "top" else -1.0
+    flanges = {
+        "top": (top_sign, top_flange_brace_points),
+        "bottom": (-top_sign, bottom_flange_brace_points),
+    }
+
+    results: list[FlexuralSegmentResult] = []
+    for flange, (compress_sign, braces) in flanges.items():
+        for start, end, continuous in _brace_segments(braces, x_min, x_max):
+            xs, Ms = _slice_moment_segment(x, M, start, end)
+            compressing = compress_sign * Ms
+            if np.max(compressing) <= zero_atol:
+                continue  # flange never in compression here -> no check
+            demand = float(np.max(compressing))
+            if continuous:
+                C_b = 1.0  # irrelevant: L_b = 0 -> plastic
+                ltb = calculate_nominal_flexural_strength(section, F_y, 0.0, C_b, E)
+            else:
+                C_b = calculate_cb_from_moment_diagram(xs, Ms)
+                ltb = calculate_nominal_flexural_strength(section, F_y, end - start, C_b, E)
+            results.append(FlexuralSegmentResult(flange, start, end, demand, ltb, C_b, continuously_braced=continuous))
+
+    results.sort(key=lambda r: r.x_start)
+    if results:
+        max(results, key=lambda r: r.demand_capacity_ratio).governing = True
+    return results
