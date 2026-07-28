@@ -79,11 +79,6 @@ class SeismicDesignCategory(Enum):
         return self.severity < other.severity
 
 
-class DesignMethod(Enum):
-    ASD = "ASD"
-    LRFD = "LRFD"
-
-
 # ============================================================================
 # ASCE 7-16 TABLES
 # ============================================================================
