@@ -7,13 +7,14 @@ Units: kip-inch.
 
 from __future__ import annotations
 
-import pandas as pd
+from collections.abc import Sequence
 from dataclasses import dataclass
 from enum import Enum
 from math import sqrt
-from typing import TYPE_CHECKING, Literal, Sequence, Union
+from typing import TYPE_CHECKING, Union
 
 import numpy as np
+import pandas as pd
 
 from ..typing import FloatLike
 from .constants import YOUNGS_MODULUS_KSI

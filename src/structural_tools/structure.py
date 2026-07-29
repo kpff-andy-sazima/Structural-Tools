@@ -5,8 +5,8 @@ from importlib import resources
 import pandas as pd
 from forallpeople import Physical
 
-from structural_tools.seismic.asce.parameters import RiskCategory, SiteClass
-from structural_tools.typing import FloatLike
+from .asce import RiskCategory, SiteClass
+from .typing import FloatLike
 
 DESIGN_COEFFICIENTS_TABLE_12_2_1 = pd.read_csv(
     filepath_or_buffer=resources

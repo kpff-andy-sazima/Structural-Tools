@@ -2,10 +2,10 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 from enum import Enum, auto
 from importlib import resources
+
 import pandas as pd
 
 from ..asce import DesignMethod
-
 
 LOAD_CASE_FACTOR_SEISMIC_ASD = 1 / 2.8
 LOAD_CASE_FACTOR_WIND_ASD = 1 / 2

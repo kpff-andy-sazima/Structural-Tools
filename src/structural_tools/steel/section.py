@@ -6,8 +6,6 @@ from dataclasses import dataclass, field
 from math import sqrt
 from typing import Any, ClassVar
 
-from .constants import YOUNGS_MODULUS_KSI
-
 
 def _get(obj: Any, *names: str) -> float:
     """First attribute found on obj among names, as float.

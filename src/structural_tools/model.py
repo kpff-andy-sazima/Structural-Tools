@@ -3,19 +3,20 @@
 from __future__ import annotations
 
 from collections import defaultdict
+from collections.abc import Sequence
 from dataclasses import dataclass
-from enum import Enum, auto
-from typing import TYPE_CHECKING, Literal, Sequence, Union
+from enum import Enum
+from typing import TYPE_CHECKING, Literal
 
 import numpy as np
 import pandas as pd
 from Pynite import FEModel3D
 from Pynite.LoadCombo import LoadCombo
 
-from .typing import FloatLike
 from .general import DesignMethod
 from .steel.constants import YOUNGS_MODULUS_KSI
-from .steel.flexure import evaluate_beam_flexure, Bracing
+from .steel.flexure import Bracing, evaluate_beam_flexure
+from .typing import FloatLike
 
 if TYPE_CHECKING:
     from .section import WSection

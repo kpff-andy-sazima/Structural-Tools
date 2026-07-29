@@ -1,6 +1,8 @@
-import pandas as pd
-from ..seismic.util import generate_levels_list
 from pathlib import Path
+
+import pandas as pd
+
+from ..seismic.util import generate_levels_list
 
 
 def _set_shear_wall_heights(
