@@ -3,12 +3,13 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>AISC 360-22 F2 — Lateral-Torsional Buckling Calculator</title>
+    <title>AISC 360-22 Chapter F — Flexural Strength Calculator</title>
     <style>
       :root {
         --accent: #0b5cad;
         --ok: #1a8a3f;
         --warn: #c0392b;
+        --mid: #d68910;
         --bg: #f7f8fa;
       }
 
@@ -49,7 +50,7 @@
         flex-wrap: wrap;
         gap: 1.5rem;
         padding: 1.5rem;
-        max-width: 1100px;
+        max-width: 1180px;
         margin: 0 auto;
       }
 
@@ -62,11 +63,12 @@
       }
 
       .controls {
-        flex: 1 1 280px;
+        flex: 1 1 300px;
+        align-self: flex-start;
       }
 
       .output {
-        flex: 2 1 520px;
+        flex: 2 1 560px;
       }
 
       label {
@@ -89,6 +91,7 @@
         display: flex;
         gap: 1rem;
         margin-top: 0.4rem;
+        flex-wrap: wrap;
       }
 
       .radio-row label {
@@ -115,7 +118,7 @@
         border-collapse: collapse;
         width: 100%;
         margin-top: 1rem;
-        font-size: 0.9rem;
+        font-size: 0.88rem;
       }
 
       td,
@@ -140,31 +143,53 @@
         font-weight: 400;
       }
 
+      tr.governs td {
+        background: #eef6ff;
+        font-weight: 600;
+      }
+
+      tr.na td {
+        color: #999;
+      }
+
       .region {
         display: inline-block;
         padding: 0.15rem 0.6rem;
         border-radius: 12px;
         color: #fff;
-        font-size: 0.8rem;
+        font-size: 0.78rem;
       }
 
-      .plastic {
+      .plastic,
+      .compact {
         background: var(--ok);
       }
 
-      .inelastic {
-        background: #d68910;
+      .inelastic,
+      .noncompact {
+        background: var(--mid);
       }
 
-      .elastic {
+      .elastic,
+      .slender {
         background: var(--warn);
+      }
+
+      .badge {
+        display: inline-block;
+        padding: 0.2rem 0.7rem;
+        border-radius: 12px;
+        background: var(--accent);
+        color: #fff;
+        font-size: 0.8rem;
+        font-weight: 600;
       }
 
       .note {
         font-size: 0.72rem;
         color: #666;
         margin-top: 1rem;
-        line-height: 1.4;
+        line-height: 1.45;
       }
 
       .pdf-btn {
@@ -217,6 +242,121 @@
         margin-top: 0.5rem;
       }
 
+      .warnbox {
+        margin-top: 0.9rem;
+        padding: 0.6rem 0.9rem;
+        border-radius: 6px;
+        background: #fff7e6;
+        border: 1px solid #f0d9a8;
+        font-size: 0.78rem;
+        line-height: 1.45;
+        color: #6b4c00;
+      }
+
+      .warnbox ul {
+        margin: 0.3rem 0 0;
+        padding-left: 1.1rem;
+      }
+
+      .errbox {
+        margin-top: 0.9rem;
+        padding: 0.6rem 0.9rem;
+        border-radius: 6px;
+        background: #fdeceb;
+        border: 1px solid #f2b8b4;
+        font-size: 0.82rem;
+        color: #8c2019;
+      }
+
+      .cb-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0.65rem;
+      }
+
+      .cb-grid label {
+        margin-top: 0.65rem;
+      }
+
+      .small-note {
+        font-size: 0.72rem;
+        color: #666;
+        margin-top: 0.35rem;
+        line-height: 1.35;
+      }
+
+      .is-readonly {
+        background: #f3f3f3;
+        color: #555;
+      }
+
+      /* --- lightweight math rendering --- */
+      .math {
+        font-family: "Cambria Math", Cambria, "Times New Roman", serif;
+        font-size: 1.05rem;
+        line-height: 2.1;
+      }
+
+      .math i {
+        font-style: italic;
+      }
+
+      .math sub,
+      .math sup {
+        font-size: 0.68em;
+      }
+
+      .frac {
+        display: inline-flex;
+        flex-direction: column;
+        vertical-align: middle;
+        text-align: center;
+        margin: 0 0.2em;
+      }
+
+      .frac .fnum {
+        border-bottom: 1px solid currentColor;
+        padding: 0 0.3em;
+      }
+
+      .frac .fden {
+        padding: 0 0.3em;
+      }
+
+      .rad {
+        display: inline-flex;
+        align-items: flex-start;
+      }
+
+      .rad .rand {
+        border-top: 1px solid currentColor;
+        padding: 0 0.15em;
+        margin-left: -0.06em;
+      }
+
+      details.adv {
+        margin-top: 1rem;
+        border-top: 1px solid #eee;
+        padding-top: 0.6rem;
+      }
+
+      details.adv > summary {
+        cursor: pointer;
+        font-size: 0.82rem;
+        font-weight: 700;
+        color: var(--accent);
+        list-style: revert;
+      }
+
+      .sechead {
+        margin: 1.1rem 0 0.2rem;
+        font-size: 0.8rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        color: #777;
+      }
+
       @media print {
         .pdf-btn {
           display: none;
@@ -230,6 +370,7 @@
         .wrap {
           display: block;
           padding: 0;
+          max-width: none;
         }
 
         .panel {
@@ -238,7 +379,9 @@
           break-inside: avoid;
         }
 
-        .region {
+        .region,
+        .badge,
+        tr.governs td {
           -webkit-print-color-adjust: exact;
           print-color-adjust: exact;
         }
@@ -246,24 +389,62 @@
         .controls {
           border-bottom: 1px solid #ccc;
         }
+
+        details.adv {
+          display: none;
+        }
       }
     </style>
   </head>
 
   <body>
     <header>
-      <h1>Lateral-Torsional Buckling Calculator — AISC 360-22 §F2</h1>
+      <h1>Flexural Strength Calculator — AISC 360-22 Chapter F</h1>
       <p>
-        Compact doubly symmetric I-shapes &amp; channels, major-axis bending. Nominal M<sub>n</sub>; apply φ/Ω as
-        selected.
+        Sections F2–F13. Computes nominal M<sub>n</sub> as the lowest value of all applicable limit states, then applies
+        &phi;<sub>b</sub> = 0.90 (LRFD) or &Omega;<sub>b</sub> = 1.67 (ASD).
       </p>
     </header>
 
     <div class="wrap">
       <div class="panel controls">
-        <label for="shape">Steel shape</label>
+        <div class="sechead">Design basis</div>
+        <div class="radio-row">
+          <label><input type="radio" name="method" value="LRFD" checked /> LRFD (&phi; = 0.90)</label>
+          <label><input type="radio" name="method" value="ASD" /> ASD (&Omega; = 1.67)</label>
+        </div>
+
+        <div class="sechead">Section</div>
+        <label for="family">Shape family</label>
+        <select id="family">
+          <option value="W">W — wide flange</option>
+          <option value="M">M — miscellaneous I</option>
+          <option value="S">S — American standard I</option>
+          <option value="HP">HP — bearing pile</option>
+          <option value="C">C — American standard channel</option>
+          <option value="MC">MC — miscellaneous channel</option>
+          <option value="HSS_RECT">HSS — square / rectangular</option>
+          <option value="HSS_ROUND">HSS — round</option>
+          <option value="PIPE">Pipe</option>
+          <option value="WT">WT / MT / ST — tee</option>
+          <option value="2L">2L — double angle</option>
+          <option value="L">L — single angle</option>
+          <option value="BAR_RECT">Rectangular bar / plate</option>
+          <option value="BAR_ROUND">Round bar</option>
+          <option value="BUILTUP_I">Built-up I / plate girder</option>
+          <option value="GENERAL">Unsymmetrical / general (F12)</option>
+        </select>
+
+        <label for="shape">Shape designation</label>
         <select id="shape"></select>
 
+        <label for="axis">Bending axis</label>
+        <select id="axis">
+          <option value="major">Major axis (x-x)</option>
+          <option value="minor">Minor axis (y-y)</option>
+        </select>
+
+        <div class="sechead">Material &amp; geometry</div>
         <label for="lenUnit">Length units</label>
         <select id="lenUnit">
           <option value="ft">feet (ft)</option>
@@ -276,530 +457,2061 @@
         <label for="Fy">Yield stress, F<sub>y</sub> (ksi)</label>
         <input id="Fy" type="number" value="50" min="1" step="1" />
 
+        <label for="Fu">Tensile strength, F<sub>u</sub> (ksi)</label>
+        <input id="Fu" type="number" value="65" min="1" step="1" />
+
         <label for="Emod">Elastic modulus, E (ksi)</label>
         <input id="Emod" type="number" value="29000" min="1" step="1000" />
 
-        <label for="Cb">LTB modification factor, C<sub>b</sub></label>
-        <input id="Cb" type="number" value="1.0" min="1" step="0.05" />
-
-        <label>Design method</label>
+        <div class="sechead">Moment gradient</div>
+        <label>LTB modification factor, C<sub>b</sub> (Eq. F1-1)</label>
         <div class="radio-row">
-          <label><input type="radio" name="method" value="LRFD" checked /> LRFD (φ = 0.90)</label>
-          <label><input type="radio" name="method" value="ASD" /> ASD (Ω = 1.67)</label>
+          <label><input type="radio" name="cbMode" value="manual" checked /> Manual</label>
+          <label><input type="radio" name="cbMode" value="auto" /> Auto from moments</label>
         </div>
+
+        <label for="Cb">C<sub>b</sub></label>
+        <input id="Cb" type="number" value="1.0" min="0" step="0.05" />
+
+        <div id="cbMomentInputs" style="display: none">
+          <div class="cb-grid">
+            <div>
+              <label for="Mmax">M<sub>max</sub></label>
+              <input id="Mmax" type="number" value="1" step="1" />
+            </div>
+            <div>
+              <label for="Ma">M<sub>A</sub></label>
+              <input id="Ma" type="number" value="1" step="1" />
+            </div>
+            <div>
+              <label for="Mb">M<sub>B</sub></label>
+              <input id="Mb" type="number" value="1" step="1" />
+            </div>
+            <div>
+              <label for="Mc">M<sub>C</sub></label>
+              <input id="Mc" type="number" value="1" step="1" />
+            </div>
+          </div>
+
+          <p class="small-note">
+            Absolute required moments within the unbraced segment — any consistent unit. AISC Eq. F1-1: C<sub>b</sub> =
+            12.5M<sub>max</sub> / (2.5M<sub>max</sub> + 3M<sub>A</sub> + 4M<sub>B</sub> + 3M<sub>C</sub>). Capped at 1.5
+            for single angles (F10) and forced to 1.0 for tee/double-angle stems in compression (F9).
+          </p>
+        </div>
+
+        <details class="adv" id="advCustom">
+          <summary>Custom section properties</summary>
+          <p class="small-note">
+            Populated from the database on shape change. Edit any value to analyze a section that is not in the database
+            (built-up girders, plates, bars, imported shapes). Units: kip-inch.
+          </p>
+          <div class="cb-grid" id="customGrid"></div>
+        </details>
+
+        <details class="adv" id="advOptions">
+          <summary>Analysis options</summary>
+
+          <label for="teeStem">Tee stem / double-angle web leg (F9)</label>
+          <select id="teeStem">
+            <option value="tension">In tension over the unbraced length</option>
+            <option value="compression">In compression anywhere along L<sub>b</sub></option>
+          </select>
+
+          <label for="angBend">Single-angle bending (F10)</label>
+          <select id="angBend">
+            <option value="principal">Major principal axis (w-w)</option>
+            <option value="geometric_free">Geometric axis, no LTB restraint</option>
+            <option value="geometric_restrained">Geometric axis, restrained at max moment</option>
+          </select>
+
+          <label for="angToe">Single-angle leg-tip stress (F10)</label>
+          <select id="angToe">
+            <option value="compression">Maximum compression at leg toe</option>
+            <option value="tension">Maximum tension at leg toe</option>
+          </select>
+
+          <label for="builtUp">Flange local buckling basis</label>
+          <select id="builtUp">
+            <option value="rolled">Rolled shape (&lambda;<sub>rf</sub> = 1.0&radic;(E/F<sub>y</sub>))</option>
+            <option value="welded">
+              Built-up / welded (&lambda;<sub>rf</sub> = 0.95&radic;(k<sub>c</sub>E/F<sub>L</sub>))
+            </option>
+          </select>
+
+          <label for="Afg">Gross tension-flange area, A<sub>fg</sub> (in&sup2;) — F13.1</label>
+          <input id="Afg" type="number" value="0" min="0" step="0.1" />
+
+          <label for="Afn">Net tension-flange area, A<sub>fn</sub> (in&sup2;) — F13.1</label>
+          <input id="Afn" type="number" value="0" min="0" step="0.1" />
+          <p class="small-note">Leave both at 0 to skip the tension-flange rupture check (no holes).</p>
+
+          <label>Show every limit-state curve on the chart</label>
+          <div class="radio-row">
+            <label><input type="radio" name="curveMode" value="all" checked /> All limit states</label>
+            <label><input type="radio" name="curveMode" value="env" /> Envelope only</label>
+          </div>
+        </details>
       </div>
 
       <div class="panel output">
-        <canvas id="chart" width="720" height="440"></canvas>
-        <table id="results"></table>
+        <div id="applies"></div>
+        <canvas id="chart" width="760" height="450"></canvas>
+        <div id="errors"></div>
+        <div id="classTable"></div>
+        <div id="lsTable"></div>
+        <div id="results"></div>
         <div id="equation" class="eqbox"></div>
+        <div id="warnings"></div>
         <button id="pdfBtn" class="pdf-btn">Export to PDF</button>
         <p class="note">
-          Properties from the AISC Shapes Database via steelpy (generated into shapes.js). r<sub>ts</sub> (Eq. F2-7) and
-          c (Eq. F2-8) are derived in-browser to match WSection. Moments are reported in kip-ft; lengths follow the
-          selected unit. PDF export uses your browser's print dialog — choose "Save as PDF".
+          Section properties come from the AISC Shapes Database v16.0 via steelpy (generated into
+          <code>shapes.js</code>). r<sub>ts</sub> (Eq. F2-7), c (Eq. F2-8), r<sub>t</sub> (Eq. F4-11) and the tee
+          S<sub>xc</sub>/S<sub>xt</sub> split are derived in-browser. Moments are reported in kip-ft and kip-in; lengths
+          follow the selected unit. <br /><br />
+          The nominal strength reported is the <b>lowest</b> value among all limit states applicable to the section and
+          axis, per the User Note table in Section F1. Limit states that do not apply are shown greyed out with the
+          reason. Review the assumptions listed in the amber box before using results for design. <br /><br />
+          PDF export uses your browser's print dialog. Choose "Save as PDF".
         </p>
       </div>
     </div>
-
-    //
+    <!-- Optional: full AISC Shapes Database generated by scripts/generate_shapes.py -->
     <script src="shapes.js"></script>
+
     <script>
-      // AUTO-GENERATED by scripts/generate_shapes.py from steelpy — do not edit.
-      // AISC Shapes Database (kip-inch). r_ts and c are derived in-browser.
-      const SHAPES = {
-        W44X408: { Zx: 2000, Sx: 1730, Iy: 1520, Cw: 691000, ry: 3.56, J: 134, ho: 42.6, type: "i_shape" },
-        W44X368: { Zx: 1800, Sx: 1560, Iy: 1350, Cw: 608000, ry: 3.54, J: 100, ho: 42.4, type: "i_shape" },
-        W44X335: { Zx: 1620, Sx: 1410, Iy: 1200, Cw: 535000, ry: 3.49, J: 74.7, ho: 42.2, type: "i_shape" },
-        W44X290: { Zx: 1410, Sx: 1240, Iy: 1040, Cw: 461000, ry: 3.49, J: 50.9, ho: 42, type: "i_shape" },
-        W44X262: { Zx: 1270, Sx: 1110, Iy: 923, Cw: 405000, ry: 3.47, J: 37.3, ho: 41.9, type: "i_shape" },
-        W44X230: { Zx: 1100, Sx: 971, Iy: 796, Cw: 346000, ry: 3.43, J: 24.9, ho: 41.7, type: "i_shape" },
-        W40X655: { Zx: 3080, Sx: 2590, Iy: 2870, Cw: 1150000, ry: 3.86, J: 589, ho: 40.1, type: "i_shape" },
-        W40X593: { Zx: 2760, Sx: 2340, Iy: 2520, Cw: 997000, ry: 3.8, J: 445, ho: 39.8, type: "i_shape" },
-        W40X503: { Zx: 2320, Sx: 1980, Iy: 2040, Cw: 789000, ry: 3.72, J: 277, ho: 39.3, type: "i_shape" },
-        W40X431: { Zx: 1960, Sx: 1690, Iy: 1690, Cw: 638000, ry: 3.65, J: 177, ho: 38.9, type: "i_shape" },
-        W40X397: { Zx: 1800, Sx: 1560, Iy: 1540, Cw: 579000, ry: 3.64, J: 142, ho: 38.8, type: "i_shape" },
-        W40X372: { Zx: 1680, Sx: 1460, Iy: 1420, Cw: 528000, ry: 3.6, J: 116, ho: 38.6, type: "i_shape" },
-        W40X362: { Zx: 1640, Sx: 1420, Iy: 1380, Cw: 513000, ry: 3.6, J: 109, ho: 38.6, type: "i_shape" },
-        W40X324: { Zx: 1460, Sx: 1280, Iy: 1220, Cw: 448000, ry: 3.58, J: 79.4, ho: 38.4, type: "i_shape" },
-        W40X297: { Zx: 1330, Sx: 1170, Iy: 1090, Cw: 399000, ry: 3.54, J: 61.2, ho: 38.2, type: "i_shape" },
-        W40X277: { Zx: 1250, Sx: 1100, Iy: 1040, Cw: 379000, ry: 3.58, J: 51.5, ho: 38.1, type: "i_shape" },
-        W40X249: { Zx: 1120, Sx: 993, Iy: 926, Cw: 334000, ry: 3.55, J: 38.1, ho: 38, type: "i_shape" },
-        W40X215: { Zx: 964, Sx: 859, Iy: 803, Cw: 284000, ry: 3.54, J: 24.8, ho: 37.8, type: "i_shape" },
-        W40X199: { Zx: 869, Sx: 770, Iy: 695, Cw: 246000, ry: 3.45, J: 18.3, ho: 37.6, type: "i_shape" },
-        W40X392: { Zx: 1710, Sx: 1440, Iy: 803, Cw: 306000, ry: 2.64, J: 172, ho: 39.1, type: "i_shape" },
-        W40X331: { Zx: 1430, Sx: 1210, Iy: 644, Cw: 241000, ry: 2.57, J: 105, ho: 38.7, type: "i_shape" },
-        W40X327: { Zx: 1410, Sx: 1200, Iy: 640, Cw: 239000, ry: 2.58, J: 103, ho: 38.7, type: "i_shape" },
-        W40X294: { Zx: 1270, Sx: 1080, Iy: 562, Cw: 208000, ry: 2.55, J: 76.6, ho: 38.5, type: "i_shape" },
-        W40X278: { Zx: 1190, Sx: 1020, Iy: 521, Cw: 192000, ry: 2.52, J: 65, ho: 38.4, type: "i_shape" },
-        W40X264: { Zx: 1130, Sx: 971, Iy: 493, Cw: 181000, ry: 2.52, J: 56.1, ho: 38.3, type: "i_shape" },
-        W40X235: { Zx: 1010, Sx: 875, Iy: 444, Cw: 161000, ry: 2.54, J: 41.3, ho: 38.1, type: "i_shape" },
-        W40X211: { Zx: 906, Sx: 786, Iy: 390, Cw: 141000, ry: 2.51, J: 30.4, ho: 38, type: "i_shape" },
-        W40X183: { Zx: 774, Sx: 675, Iy: 331, Cw: 118000, ry: 2.49, J: 19.3, ho: 37.8, type: "i_shape" },
-        W40X167: { Zx: 693, Sx: 600, Iy: 283, Cw: 99700, ry: 2.4, J: 14, ho: 37.6, type: "i_shape" },
-        W40X149: { Zx: 598, Sx: 513, Iy: 229, Cw: 80000, ry: 2.29, J: 9.36, ho: 37.4, type: "i_shape" },
-        W36X925: { Zx: 4130, Sx: 3390, Iy: 4940, Cw: 1840000, ry: 4.26, J: 1430, ho: 38.6, type: "i_shape" },
-        W36X853: { Zx: 3920, Sx: 3250, Iy: 4600, Cw: 1710000, ry: 4.28, J: 1240, ho: 38.6, type: "i_shape" },
-        W36X802: { Zx: 3660, Sx: 3040, Iy: 4210, Cw: 1540000, ry: 4.22, J: 1050, ho: 38.3, type: "i_shape" },
-        W36X723: { Zx: 3270, Sx: 2740, Iy: 3700, Cw: 1330000, ry: 4.17, J: 785, ho: 37.9, type: "i_shape" },
-        W36X652: { Zx: 2910, Sx: 2460, Iy: 3230, Cw: 1130000, ry: 4.1, J: 593, ho: 37.6, type: "i_shape" },
-        W36X529: { Zx: 2330, Sx: 1990, Iy: 2490, Cw: 846000, ry: 4, J: 327, ho: 36.9, type: "i_shape" },
-        W36X487: { Zx: 2130, Sx: 1830, Iy: 2250, Cw: 754000, ry: 3.96, J: 258, ho: 36.6, type: "i_shape" },
-        W36X441: { Zx: 1910, Sx: 1650, Iy: 1990, Cw: 661000, ry: 3.92, J: 194, ho: 36.5, type: "i_shape" },
-        W36X395: { Zx: 1710, Sx: 1490, Iy: 1750, Cw: 575000, ry: 3.88, J: 142, ho: 36.2, type: "i_shape" },
-        W36X361: { Zx: 1550, Sx: 1350, Iy: 1570, Cw: 509000, ry: 3.85, J: 109, ho: 36, type: "i_shape" },
-        W36X330: { Zx: 1410, Sx: 1240, Iy: 1420, Cw: 456000, ry: 3.83, J: 84.3, ho: 35.9, type: "i_shape" },
-        W36X302: { Zx: 1280, Sx: 1130, Iy: 1300, Cw: 412000, ry: 3.82, J: 64.3, ho: 35.6, type: "i_shape" },
-        W36X282: { Zx: 1190, Sx: 1050, Iy: 1200, Cw: 378000, ry: 3.8, J: 52.7, ho: 35.5, type: "i_shape" },
-        W36X262: { Zx: 1100, Sx: 972, Iy: 1090, Cw: 342000, ry: 3.76, J: 41.6, ho: 35.5, type: "i_shape" },
-        W36X247: { Zx: 1030, Sx: 913, Iy: 1010, Cw: 316000, ry: 3.74, J: 34.7, ho: 35.4, type: "i_shape" },
-        W36X231: { Zx: 963, Sx: 854, Iy: 940, Cw: 292000, ry: 3.71, J: 28.7, ho: 35.2, type: "i_shape" },
-        W36X387: { Zx: 1610, Sx: 1360, Iy: 882, Cw: 294000, ry: 2.78, J: 172, ho: 36.5, type: "i_shape" },
-        W36X350: { Zx: 1440, Sx: 1220, Iy: 780, Cw: 257000, ry: 2.75, J: 129, ho: 36.3, type: "i_shape" },
-        W36X318: { Zx: 1300, Sx: 1110, Iy: 682, Cw: 222000, ry: 2.7, J: 98.3, ho: 36.1, type: "i_shape" },
-        W36X286: { Zx: 1160, Sx: 1000, Iy: 602, Cw: 194000, ry: 2.68, J: 72.8, ho: 35.9, type: "i_shape" },
-        W36X256: { Zx: 1040, Sx: 895, Iy: 528, Cw: 168000, ry: 2.65, J: 52.9, ho: 35.7, type: "i_shape" },
-        W36X232: { Zx: 936, Sx: 809, Iy: 468, Cw: 148000, ry: 2.62, J: 39.6, ho: 35.5, type: "i_shape" },
-        W36X210: { Zx: 833, Sx: 719, Iy: 411, Cw: 128000, ry: 2.58, J: 28, ho: 35.3, type: "i_shape" },
-        W36X194: { Zx: 767, Sx: 664, Iy: 375, Cw: 116000, ry: 2.56, J: 22.2, ho: 35.2, type: "i_shape" },
-        W36X182: { Zx: 718, Sx: 623, Iy: 347, Cw: 107000, ry: 2.55, J: 18.5, ho: 35.1, type: "i_shape" },
-        W36X170: { Zx: 668, Sx: 581, Iy: 320, Cw: 98500, ry: 2.53, J: 15.1, ho: 35.1, type: "i_shape" },
-        W36X160: { Zx: 624, Sx: 542, Iy: 295, Cw: 90200, ry: 2.5, J: 12.4, ho: 35, type: "i_shape" },
-        W36X150: { Zx: 581, Sx: 504, Iy: 270, Cw: 82200, ry: 2.47, J: 10.1, ho: 35, type: "i_shape" },
-        W36X135: { Zx: 509, Sx: 439, Iy: 225, Cw: 68100, ry: 2.38, J: 7, ho: 34.8, type: "i_shape" },
-        W33X387: { Zx: 1560, Sx: 1350, Iy: 1620, Cw: 459000, ry: 3.77, J: 148, ho: 33.7, type: "i_shape" },
-        W33X354: { Zx: 1420, Sx: 1240, Iy: 1460, Cw: 408000, ry: 3.74, J: 115, ho: 33.5, type: "i_shape" },
-        W33X318: { Zx: 1270, Sx: 1110, Iy: 1290, Cw: 357000, ry: 3.71, J: 84.4, ho: 33.3, type: "i_shape" },
-        W33X291: { Zx: 1160, Sx: 1020, Iy: 1160, Cw: 319000, ry: 3.68, J: 65.1, ho: 33.1, type: "i_shape" },
-        W33X263: { Zx: 1040, Sx: 919, Iy: 1040, Cw: 281000, ry: 3.66, J: 48.7, ho: 32.9, type: "i_shape" },
-        W33X241: { Zx: 940, Sx: 831, Iy: 933, Cw: 251000, ry: 3.62, J: 36.2, ho: 32.8, type: "i_shape" },
-        W33X221: { Zx: 857, Sx: 759, Iy: 840, Cw: 224000, ry: 3.59, J: 27.8, ho: 32.6, type: "i_shape" },
-        W33X201: { Zx: 773, Sx: 686, Iy: 749, Cw: 198000, ry: 3.56, J: 20.8, ho: 32.6, type: "i_shape" },
-        W33X169: { Zx: 629, Sx: 549, Iy: 310, Cw: 82400, ry: 2.5, J: 17.7, ho: 32.6, type: "i_shape" },
-        W33X152: { Zx: 559, Sx: 487, Iy: 273, Cw: 71700, ry: 2.47, J: 12.4, ho: 32.4, type: "i_shape" },
-        W33X141: { Zx: 514, Sx: 448, Iy: 246, Cw: 64400, ry: 2.43, J: 9.7, ho: 32.3, type: "i_shape" },
-        W33X130: { Zx: 467, Sx: 406, Iy: 218, Cw: 56600, ry: 2.39, J: 7.37, ho: 32.2, type: "i_shape" },
-        W33X118: { Zx: 415, Sx: 359, Iy: 187, Cw: 48300, ry: 2.32, J: 5.3, ho: 32.2, type: "i_shape" },
-        W30X391: { Zx: 1450, Sx: 1250, Iy: 1550, Cw: 366000, ry: 3.67, J: 173, ho: 30.8, type: "i_shape" },
-        W30X357: { Zx: 1320, Sx: 1140, Iy: 1390, Cw: 324000, ry: 3.64, J: 134, ho: 30.6, type: "i_shape" },
-        W30X326: { Zx: 1190, Sx: 1040, Iy: 1240, Cw: 287000, ry: 3.6, J: 103, ho: 30.4, type: "i_shape" },
-        W30X292: { Zx: 1060, Sx: 930, Iy: 1100, Cw: 250000, ry: 3.58, J: 75.2, ho: 30.2, type: "i_shape" },
-        W30X261: { Zx: 943, Sx: 829, Iy: 959, Cw: 215000, ry: 3.53, J: 54.1, ho: 30, type: "i_shape" },
-        W30X235: { Zx: 847, Sx: 748, Iy: 855, Cw: 190000, ry: 3.51, J: 40.3, ho: 29.8, type: "i_shape" },
-        W30X211: { Zx: 751, Sx: 665, Iy: 757, Cw: 166000, ry: 3.49, J: 28.4, ho: 29.6, type: "i_shape" },
-        W30X191: { Zx: 675, Sx: 600, Iy: 673, Cw: 146000, ry: 3.46, J: 21, ho: 29.5, type: "i_shape" },
-        W30X173: { Zx: 607, Sx: 541, Iy: 598, Cw: 129000, ry: 3.42, J: 15.6, ho: 29.3, type: "i_shape" },
-        W30X148: { Zx: 500, Sx: 436, Iy: 227, Cw: 49400, ry: 2.28, J: 14.5, ho: 29.5, type: "i_shape" },
-        W30X132: { Zx: 437, Sx: 380, Iy: 196, Cw: 42100, ry: 2.25, J: 9.72, ho: 29.3, type: "i_shape" },
-        W30X124: { Zx: 408, Sx: 355, Iy: 181, Cw: 38600, ry: 2.23, J: 7.99, ho: 29.3, type: "i_shape" },
-        W30X116: { Zx: 378, Sx: 329, Iy: 164, Cw: 34900, ry: 2.19, J: 6.43, ho: 29.2, type: "i_shape" },
-        W30X108: { Zx: 346, Sx: 299, Iy: 146, Cw: 30900, ry: 2.15, J: 4.99, ho: 29, type: "i_shape" },
-        W30X99: { Zx: 312, Sx: 269, Iy: 128, Cw: 26800, ry: 2.1, J: 3.77, ho: 29, type: "i_shape" },
-        W30X90: { Zx: 283, Sx: 245, Iy: 115, Cw: 24000, ry: 2.09, J: 2.84, ho: 28.9, type: "i_shape" },
-        W27X539: { Zx: 1890, Sx: 1570, Iy: 2110, Cw: 443000, ry: 3.65, J: 496, ho: 29, type: "i_shape" },
-        W27X368: { Zx: 1240, Sx: 1060, Iy: 1310, Cw: 255000, ry: 3.48, J: 170, ho: 27.9, type: "i_shape" },
-        W27X336: { Zx: 1130, Sx: 972, Iy: 1180, Cw: 226000, ry: 3.45, J: 131, ho: 27.7, type: "i_shape" },
-        W27X307: { Zx: 1030, Sx: 887, Iy: 1050, Cw: 199000, ry: 3.41, J: 101, ho: 27.5, type: "i_shape" },
-        W27X281: { Zx: 936, Sx: 814, Iy: 953, Cw: 178000, ry: 3.39, J: 79.5, ho: 27.4, type: "i_shape" },
-        W27X258: { Zx: 852, Sx: 745, Iy: 859, Cw: 159000, ry: 3.36, J: 61.6, ho: 27.2, type: "i_shape" },
-        W27X235: { Zx: 772, Sx: 677, Iy: 769, Cw: 141000, ry: 3.33, J: 47, ho: 27.1, type: "i_shape" },
-        W27X217: { Zx: 711, Sx: 627, Iy: 704, Cw: 128000, ry: 3.32, J: 37.6, ho: 26.9, type: "i_shape" },
-        W27X194: { Zx: 631, Sx: 559, Iy: 619, Cw: 111000, ry: 3.29, J: 27.1, ho: 26.8, type: "i_shape" },
-        W27X178: { Zx: 570, Sx: 505, Iy: 555, Cw: 98400, ry: 3.25, J: 20.1, ho: 26.6, type: "i_shape" },
-        W27X161: { Zx: 515, Sx: 458, Iy: 497, Cw: 87300, ry: 3.23, J: 15.1, ho: 26.5, type: "i_shape" },
-        W27X146: { Zx: 464, Sx: 414, Iy: 443, Cw: 77200, ry: 3.2, J: 11.3, ho: 26.4, type: "i_shape" },
-        W27X129: { Zx: 395, Sx: 345, Iy: 184, Cw: 32500, ry: 2.21, J: 11.1, ho: 26.5, type: "i_shape" },
-        W27X114: { Zx: 343, Sx: 299, Iy: 159, Cw: 27600, ry: 2.18, J: 7.33, ho: 26.4, type: "i_shape" },
-        W27X102: { Zx: 305, Sx: 267, Iy: 139, Cw: 24000, ry: 2.15, J: 5.28, ho: 26.3, type: "i_shape" },
-        W27X94: { Zx: 278, Sx: 243, Iy: 124, Cw: 21300, ry: 2.12, J: 4.03, ho: 26.2, type: "i_shape" },
-        W27X84: { Zx: 244, Sx: 213, Iy: 106, Cw: 17900, ry: 2.07, J: 2.81, ho: 26.1, type: "i_shape" },
-        W24X370: { Zx: 1130, Sx: 957, Iy: 1160, Cw: 186000, ry: 3.27, J: 201, ho: 25.3, type: "i_shape" },
-        W24X335: { Zx: 1020, Sx: 864, Iy: 1030, Cw: 161000, ry: 3.23, J: 152, ho: 25, type: "i_shape" },
-        W24X306: { Zx: 922, Sx: 789, Iy: 919, Cw: 142000, ry: 3.2, J: 117, ho: 24.8, type: "i_shape" },
-        W24X279: { Zx: 835, Sx: 718, Iy: 823, Cw: 125000, ry: 3.17, J: 90.5, ho: 24.6, type: "i_shape" },
-        W24X250: { Zx: 744, Sx: 644, Iy: 724, Cw: 108000, ry: 3.14, J: 66.6, ho: 24.4, type: "i_shape" },
-        W24X229: { Zx: 675, Sx: 588, Iy: 651, Cw: 96100, ry: 3.11, J: 51.3, ho: 24.3, type: "i_shape" },
-        W24X207: { Zx: 606, Sx: 531, Iy: 578, Cw: 84100, ry: 3.08, J: 38.3, ho: 24.1, type: "i_shape" },
-        W24X192: { Zx: 559, Sx: 491, Iy: 530, Cw: 76300, ry: 3.07, J: 30.8, ho: 24, type: "i_shape" },
-        W24X176: { Zx: 511, Sx: 450, Iy: 479, Cw: 68400, ry: 3.04, J: 23.9, ho: 23.9, type: "i_shape" },
-        W24X162: { Zx: 468, Sx: 414, Iy: 443, Cw: 62600, ry: 3.05, J: 18.5, ho: 23.8, type: "i_shape" },
-        W24X146: { Zx: 418, Sx: 371, Iy: 391, Cw: 54600, ry: 3.01, J: 13.4, ho: 23.6, type: "i_shape" },
-        W24X131: { Zx: 370, Sx: 329, Iy: 340, Cw: 47100, ry: 2.97, J: 9.5, ho: 23.5, type: "i_shape" },
-        W24X117: { Zx: 327, Sx: 291, Iy: 297, Cw: 40800, ry: 2.94, J: 6.72, ho: 23.5, type: "i_shape" },
-        W24X104: { Zx: 289, Sx: 258, Iy: 259, Cw: 35200, ry: 2.91, J: 4.72, ho: 23.4, type: "i_shape" },
-        W24X103: { Zx: 280, Sx: 245, Iy: 119, Cw: 16600, ry: 1.99, J: 7.07, ho: 23.5, type: "i_shape" },
-        W24X94: { Zx: 254, Sx: 222, Iy: 109, Cw: 15000, ry: 1.98, J: 5.26, ho: 23.4, type: "i_shape" },
-        W24X84: { Zx: 224, Sx: 196, Iy: 94.4, Cw: 12800, ry: 1.95, J: 3.7, ho: 23.3, type: "i_shape" },
-        W24X76: { Zx: 200, Sx: 176, Iy: 82.5, Cw: 11100, ry: 1.92, J: 2.68, ho: 23.2, type: "i_shape" },
-        W24X68: { Zx: 177, Sx: 154, Iy: 70.4, Cw: 9430, ry: 1.87, J: 1.87, ho: 23.1, type: "i_shape" },
-        W24X62: { Zx: 153, Sx: 131, Iy: 34.5, Cw: 4620, ry: 1.38, J: 1.71, ho: 23.1, type: "i_shape" },
-        W24X55: { Zx: 134, Sx: 114, Iy: 29.1, Cw: 3870, ry: 1.34, J: 1.18, ho: 23.1, type: "i_shape" },
-        W21X275: { Zx: 749, Sx: 638, Iy: 787, Cw: 94400, ry: 3.1, J: 107, ho: 21.9, type: "i_shape" },
-        W21X248: { Zx: 671, Sx: 576, Iy: 699, Cw: 82400, ry: 3.08, J: 80.7, ho: 21.7, type: "i_shape" },
-        W21X223: { Zx: 601, Sx: 520, Iy: 614, Cw: 71700, ry: 3.04, J: 59.5, ho: 21.6, type: "i_shape" },
-        W21X201: { Zx: 530, Sx: 461, Iy: 542, Cw: 62000, ry: 3.02, J: 40.9, ho: 21.4, type: "i_shape" },
-        W21X182: { Zx: 476, Sx: 417, Iy: 483, Cw: 54400, ry: 3, J: 30.7, ho: 21.2, type: "i_shape" },
-        W21X166: { Zx: 432, Sx: 380, Iy: 435, Cw: 48500, ry: 2.99, J: 23.6, ho: 21.1, type: "i_shape" },
-        W21X147: { Zx: 373, Sx: 329, Iy: 376, Cw: 41100, ry: 2.95, J: 15.4, ho: 21, type: "i_shape" },
-        W21X132: { Zx: 333, Sx: 295, Iy: 333, Cw: 36000, ry: 2.93, J: 11.3, ho: 20.8, type: "i_shape" },
-        W21X122: { Zx: 307, Sx: 273, Iy: 305, Cw: 32700, ry: 2.92, J: 8.98, ho: 20.7, type: "i_shape" },
-        W21X111: { Zx: 279, Sx: 249, Iy: 274, Cw: 29200, ry: 2.9, J: 6.83, ho: 20.6, type: "i_shape" },
-        W21X101: { Zx: 253, Sx: 227, Iy: 248, Cw: 26200, ry: 2.89, J: 5.21, ho: 20.6, type: "i_shape" },
-        W21X93: { Zx: 221, Sx: 192, Iy: 92.9, Cw: 9940, ry: 1.84, J: 6.03, ho: 20.7, type: "i_shape" },
-        W21X83: { Zx: 196, Sx: 171, Iy: 81.4, Cw: 8630, ry: 1.83, J: 4.34, ho: 20.6, type: "i_shape" },
-        W21X73: { Zx: 172, Sx: 151, Iy: 70.6, Cw: 7410, ry: 1.81, J: 3.02, ho: 20.5, type: "i_shape" },
-        W21X68: { Zx: 160, Sx: 140, Iy: 64.7, Cw: 6760, ry: 1.8, J: 2.45, ho: 20.4, type: "i_shape" },
-        W21X62: { Zx: 144, Sx: 127, Iy: 57.5, Cw: 5960, ry: 1.77, J: 1.83, ho: 20.4, type: "i_shape" },
-        W21X55: { Zx: 126, Sx: 110, Iy: 48.4, Cw: 4980, ry: 1.73, J: 1.24, ho: 20.3, type: "i_shape" },
-        W21X48: { Zx: 107, Sx: 93, Iy: 38.7, Cw: 3950, ry: 1.66, J: 0.803, ho: 20.2, type: "i_shape" },
-        W21X57: { Zx: 129, Sx: 111, Iy: 30.6, Cw: 3190, ry: 1.35, J: 1.77, ho: 20.5, type: "i_shape" },
-        W21X50: { Zx: 110, Sx: 94.5, Iy: 24.9, Cw: 2570, ry: 1.3, J: 1.14, ho: 20.3, type: "i_shape" },
-        W21X44: { Zx: 95.4, Sx: 81.6, Iy: 20.7, Cw: 2110, ry: 1.26, J: 0.77, ho: 20.3, type: "i_shape" },
-        W18X311: { Zx: 754, Sx: 624, Iy: 795, Cw: 76200, ry: 2.95, J: 176, ho: 19.6, type: "i_shape" },
-        W18X283: { Zx: 676, Sx: 565, Iy: 704, Cw: 65900, ry: 2.91, J: 134, ho: 19.4, type: "i_shape" },
-        W18X258: { Zx: 611, Sx: 514, Iy: 628, Cw: 57600, ry: 2.88, J: 103, ho: 19.2, type: "i_shape" },
-        W18X234: { Zx: 549, Sx: 466, Iy: 558, Cw: 50100, ry: 2.85, J: 78.7, ho: 19, type: "i_shape" },
-        W18X211: { Zx: 490, Sx: 419, Iy: 493, Cw: 43400, ry: 2.82, J: 58.6, ho: 18.8, type: "i_shape" },
-        W18X192: { Zx: 442, Sx: 380, Iy: 440, Cw: 38000, ry: 2.79, J: 44.7, ho: 18.7, type: "i_shape" },
-        W18X175: { Zx: 398, Sx: 344, Iy: 391, Cw: 33300, ry: 2.76, J: 33.8, ho: 18.4, type: "i_shape" },
-        W18X158: { Zx: 356, Sx: 310, Iy: 347, Cw: 29000, ry: 2.74, J: 25.2, ho: 18.3, type: "i_shape" },
-        W18X143: { Zx: 322, Sx: 282, Iy: 311, Cw: 25700, ry: 2.72, J: 19.2, ho: 18.2, type: "i_shape" },
-        W18X130: { Zx: 290, Sx: 256, Iy: 278, Cw: 22700, ry: 2.7, J: 14.5, ho: 18.1, type: "i_shape" },
-        W18X119: { Zx: 262, Sx: 231, Iy: 253, Cw: 20300, ry: 2.69, J: 10.6, ho: 17.9, type: "i_shape" },
-        W18X106: { Zx: 230, Sx: 204, Iy: 220, Cw: 17400, ry: 2.66, J: 7.48, ho: 17.8, type: "i_shape" },
-        W18X97: { Zx: 211, Sx: 188, Iy: 201, Cw: 15800, ry: 2.65, J: 5.86, ho: 17.7, type: "i_shape" },
-        W18X86: { Zx: 186, Sx: 166, Iy: 175, Cw: 13600, ry: 2.63, J: 4.1, ho: 17.6, type: "i_shape" },
-        W18X76: { Zx: 163, Sx: 146, Iy: 152, Cw: 11700, ry: 2.61, J: 2.83, ho: 17.5, type: "i_shape" },
-        W18X71: { Zx: 146, Sx: 127, Iy: 60.3, Cw: 4700, ry: 1.7, J: 3.49, ho: 17.7, type: "i_shape" },
-        W18X65: { Zx: 133, Sx: 117, Iy: 54.8, Cw: 4240, ry: 1.69, J: 2.73, ho: 17.7, type: "i_shape" },
-        W18X60: { Zx: 123, Sx: 108, Iy: 50.1, Cw: 3850, ry: 1.68, J: 2.17, ho: 17.5, type: "i_shape" },
-        W18X55: { Zx: 112, Sx: 98.3, Iy: 44.9, Cw: 3430, ry: 1.67, J: 1.66, ho: 17.5, type: "i_shape" },
-        W18X50: { Zx: 101, Sx: 88.9, Iy: 40.1, Cw: 3040, ry: 1.65, J: 1.24, ho: 17.4, type: "i_shape" },
-        W18X46: { Zx: 90.7, Sx: 78.8, Iy: 22.5, Cw: 1720, ry: 1.29, J: 1.22, ho: 17.5, type: "i_shape" },
-        W18X40: { Zx: 78.4, Sx: 68.4, Iy: 19.1, Cw: 1440, ry: 1.27, J: 0.81, ho: 17.4, type: "i_shape" },
-        W18X35: { Zx: 66.5, Sx: 57.6, Iy: 15.3, Cw: 1140, ry: 1.22, J: 0.506, ho: 17.3, type: "i_shape" },
-        W16X100: { Zx: 198, Sx: 175, Iy: 186, Cw: 11900, ry: 2.51, J: 7.73, ho: 16, type: "i_shape" },
-        W16X89: { Zx: 175, Sx: 155, Iy: 163, Cw: 10200, ry: 2.49, J: 5.45, ho: 15.9, type: "i_shape" },
-        W16X77: { Zx: 150, Sx: 134, Iy: 138, Cw: 8590, ry: 2.47, J: 3.57, ho: 15.7, type: "i_shape" },
-        W16X67: { Zx: 130, Sx: 117, Iy: 119, Cw: 7300, ry: 2.46, J: 2.39, ho: 15.6, type: "i_shape" },
-        W16X57: { Zx: 105, Sx: 92.2, Iy: 43.1, Cw: 2660, ry: 1.6, J: 2.22, ho: 15.7, type: "i_shape" },
-        W16X50: { Zx: 92, Sx: 81, Iy: 37.2, Cw: 2270, ry: 1.59, J: 1.52, ho: 15.7, type: "i_shape" },
-        W16X45: { Zx: 82.3, Sx: 72.7, Iy: 32.8, Cw: 1990, ry: 1.57, J: 1.11, ho: 15.5, type: "i_shape" },
-        W16X40: { Zx: 73, Sx: 64.7, Iy: 28.9, Cw: 1730, ry: 1.57, J: 0.794, ho: 15.5, type: "i_shape" },
-        W16X36: { Zx: 64, Sx: 56.5, Iy: 24.5, Cw: 1460, ry: 1.52, J: 0.545, ho: 15.5, type: "i_shape" },
-        W16X31: { Zx: 54, Sx: 47.2, Iy: 12.4, Cw: 739, ry: 1.17, J: 0.461, ho: 15.5, type: "i_shape" },
-        W16X26: { Zx: 44.2, Sx: 38.4, Iy: 9.59, Cw: 565, ry: 1.12, J: 0.262, ho: 15.4, type: "i_shape" },
-        W14X873: { Zx: 2030, Sx: 1530, Iy: 6170, Cw: 505000, ry: 4.9, J: 2270, ho: 18.1, type: "i_shape" },
-        W14X808: { Zx: 1830, Sx: 1390, Iy: 5550, Cw: 434000, ry: 4.83, J: 1840, ho: 17.7, type: "i_shape" },
-        W14X730: { Zx: 1660, Sx: 1280, Iy: 4720, Cw: 362000, ry: 4.69, J: 1450, ho: 17.5, type: "i_shape" },
-        W14X665: { Zx: 1480, Sx: 1150, Iy: 4170, Cw: 305000, ry: 4.62, J: 1120, ho: 17.1, type: "i_shape" },
-        W14X605: { Zx: 1320, Sx: 1040, Iy: 3680, Cw: 258000, ry: 4.55, J: 869, ho: 16.7, type: "i_shape" },
-        W14X550: { Zx: 1180, Sx: 931, Iy: 3250, Cw: 219000, ry: 4.49, J: 669, ho: 16.4, type: "i_shape" },
-        W14X500: { Zx: 1050, Sx: 838, Iy: 2880, Cw: 187000, ry: 4.43, J: 514, ho: 16.1, type: "i_shape" },
-        W14X455: { Zx: 936, Sx: 756, Iy: 2560, Cw: 160000, ry: 4.38, J: 395, ho: 15.8, type: "i_shape" },
-        W14X426: { Zx: 869, Sx: 706, Iy: 2360, Cw: 144000, ry: 4.34, J: 331, ho: 15.7, type: "i_shape" },
-        W14X398: { Zx: 801, Sx: 656, Iy: 2170, Cw: 129000, ry: 4.31, J: 273, ho: 15.5, type: "i_shape" },
-        W14X370: { Zx: 736, Sx: 607, Iy: 1990, Cw: 116000, ry: 4.27, J: 222, ho: 15.2, type: "i_shape" },
-        W14X342: { Zx: 672, Sx: 558, Iy: 1810, Cw: 103000, ry: 4.24, J: 178, ho: 15, type: "i_shape" },
-        W14X311: { Zx: 603, Sx: 506, Iy: 1610, Cw: 89100, ry: 4.2, J: 136, ho: 14.8, type: "i_shape" },
-        W14X283: { Zx: 542, Sx: 459, Iy: 1440, Cw: 77700, ry: 4.17, J: 104, ho: 14.6, type: "i_shape" },
-        W14X257: { Zx: 487, Sx: 415, Iy: 1290, Cw: 67800, ry: 4.13, J: 79.1, ho: 14.5, type: "i_shape" },
-        W14X233: { Zx: 436, Sx: 375, Iy: 1150, Cw: 59000, ry: 4.1, J: 59.5, ho: 14.3, type: "i_shape" },
-        W14X211: { Zx: 390, Sx: 338, Iy: 1030, Cw: 51500, ry: 4.07, J: 44.6, ho: 14.1, type: "i_shape" },
-        W14X193: { Zx: 355, Sx: 310, Iy: 931, Cw: 45900, ry: 4.05, J: 34.8, ho: 14.1, type: "i_shape" },
-        W14X176: { Zx: 320, Sx: 281, Iy: 838, Cw: 40500, ry: 4.02, J: 26.5, ho: 13.9, type: "i_shape" },
-        W14X159: { Zx: 287, Sx: 254, Iy: 748, Cw: 35600, ry: 4, J: 19.7, ho: 13.8, type: "i_shape" },
-        W14X145: { Zx: 260, Sx: 232, Iy: 677, Cw: 31700, ry: 3.98, J: 15.2, ho: 13.7, type: "i_shape" },
-        W14X132: { Zx: 234, Sx: 209, Iy: 548, Cw: 25500, ry: 3.76, J: 12.3, ho: 13.7, type: "i_shape" },
-        W14X120: { Zx: 212, Sx: 190, Iy: 495, Cw: 22700, ry: 3.74, J: 9.37, ho: 13.6, type: "i_shape" },
-        W14X109: { Zx: 192, Sx: 173, Iy: 447, Cw: 20200, ry: 3.73, J: 7.12, ho: 13.4, type: "i_shape" },
-        W14X99: { Zx: 173, Sx: 157, Iy: 402, Cw: 18000, ry: 3.71, J: 5.37, ho: 13.4, type: "i_shape" },
-        W14X90: { Zx: 157, Sx: 143, Iy: 362, Cw: 16000, ry: 3.7, J: 4.06, ho: 13.3, type: "i_shape" },
-        W14X82: { Zx: 139, Sx: 123, Iy: 148, Cw: 6710, ry: 2.48, J: 5.07, ho: 13.4, type: "i_shape" },
-        W14X74: { Zx: 126, Sx: 112, Iy: 134, Cw: 5990, ry: 2.48, J: 3.87, ho: 13.4, type: "i_shape" },
-        W14X68: { Zx: 115, Sx: 103, Iy: 121, Cw: 5380, ry: 2.46, J: 3.01, ho: 13.3, type: "i_shape" },
-        W14X61: { Zx: 102, Sx: 92.1, Iy: 107, Cw: 4710, ry: 2.45, J: 2.19, ho: 13.3, type: "i_shape" },
-        W14X53: { Zx: 87.1, Sx: 77.8, Iy: 57.7, Cw: 2540, ry: 1.92, J: 1.94, ho: 13.2, type: "i_shape" },
-        W14X48: { Zx: 78.4, Sx: 70.2, Iy: 51.4, Cw: 2240, ry: 1.91, J: 1.45, ho: 13.2, type: "i_shape" },
-        W14X43: { Zx: 69.6, Sx: 62.6, Iy: 45.2, Cw: 1950, ry: 1.89, J: 1.05, ho: 13.2, type: "i_shape" },
-        W14X38: { Zx: 61.5, Sx: 54.6, Iy: 26.7, Cw: 1230, ry: 1.55, J: 0.798, ho: 13.6, type: "i_shape" },
-        W14X34: { Zx: 54.6, Sx: 48.6, Iy: 23.3, Cw: 1070, ry: 1.53, J: 0.569, ho: 13.5, type: "i_shape" },
-        W14X30: { Zx: 47.3, Sx: 42, Iy: 19.6, Cw: 887, ry: 1.49, J: 0.38, ho: 13.4, type: "i_shape" },
-        W14X26: { Zx: 40.2, Sx: 35.3, Iy: 8.91, Cw: 405, ry: 1.08, J: 0.358, ho: 13.5, type: "i_shape" },
-        W14X22: { Zx: 33.2, Sx: 29, Iy: 7, Cw: 314, ry: 1.04, J: 0.208, ho: 13.4, type: "i_shape" },
-        W12X336: { Zx: 603, Sx: 483, Iy: 1190, Cw: 57000, ry: 3.47, J: 243, ho: 13.8, type: "i_shape" },
-        W12X305: { Zx: 537, Sx: 435, Iy: 1050, Cw: 48600, ry: 3.42, J: 185, ho: 13.6, type: "i_shape" },
-        W12X279: { Zx: 481, Sx: 393, Iy: 937, Cw: 42000, ry: 3.38, J: 143, ho: 13.4, type: "i_shape" },
-        W12X252: { Zx: 428, Sx: 353, Iy: 828, Cw: 35800, ry: 3.34, J: 108, ho: 13.2, type: "i_shape" },
-        W12X230: { Zx: 386, Sx: 321, Iy: 742, Cw: 31200, ry: 3.31, J: 83.8, ho: 13, type: "i_shape" },
-        W12X210: { Zx: 348, Sx: 292, Iy: 664, Cw: 27200, ry: 3.28, J: 64.7, ho: 12.8, type: "i_shape" },
-        W12X190: { Zx: 311, Sx: 263, Iy: 589, Cw: 23600, ry: 3.25, J: 48.8, ho: 12.7, type: "i_shape" },
-        W12X170: { Zx: 275, Sx: 235, Iy: 517, Cw: 20100, ry: 3.22, J: 35.6, ho: 12.4, type: "i_shape" },
-        W12X152: { Zx: 243, Sx: 209, Iy: 454, Cw: 17200, ry: 3.19, J: 25.8, ho: 12.3, type: "i_shape" },
-        W12X136: { Zx: 214, Sx: 186, Iy: 398, Cw: 14700, ry: 3.16, J: 18.5, ho: 12.2, type: "i_shape" },
-        W12X120: { Zx: 186, Sx: 163, Iy: 345, Cw: 12400, ry: 3.13, J: 12.9, ho: 12, type: "i_shape" },
-        W12X106: { Zx: 164, Sx: 145, Iy: 301, Cw: 10700, ry: 3.11, J: 9.13, ho: 11.9, type: "i_shape" },
-        W12X96: { Zx: 147, Sx: 131, Iy: 270, Cw: 9410, ry: 3.09, J: 6.85, ho: 11.8, type: "i_shape" },
-        W12X87: { Zx: 132, Sx: 118, Iy: 241, Cw: 8270, ry: 3.07, J: 5.1, ho: 11.7, type: "i_shape" },
-        W12X79: { Zx: 119, Sx: 107, Iy: 216, Cw: 7330, ry: 3.05, J: 3.84, ho: 11.7, type: "i_shape" },
-        W12X72: { Zx: 108, Sx: 97.4, Iy: 195, Cw: 6540, ry: 3.04, J: 2.93, ho: 11.6, type: "i_shape" },
-        W12X65: { Zx: 96.8, Sx: 87.9, Iy: 174, Cw: 5780, ry: 3.02, J: 2.18, ho: 11.5, type: "i_shape" },
-        W12X58: { Zx: 86.4, Sx: 78, Iy: 107, Cw: 3570, ry: 2.51, J: 2.1, ho: 11.6, type: "i_shape" },
-        W12X53: { Zx: 77.9, Sx: 70.6, Iy: 95.8, Cw: 3160, ry: 2.48, J: 1.58, ho: 11.5, type: "i_shape" },
-        W12X50: { Zx: 71.9, Sx: 64.2, Iy: 56.3, Cw: 1880, ry: 1.96, J: 1.71, ho: 11.6, type: "i_shape" },
-        W12X45: { Zx: 64.2, Sx: 57.7, Iy: 50, Cw: 1650, ry: 1.95, J: 1.26, ho: 11.5, type: "i_shape" },
-        W12X40: { Zx: 57, Sx: 51.5, Iy: 44.1, Cw: 1440, ry: 1.94, J: 0.906, ho: 11.4, type: "i_shape" },
-        W12X35: { Zx: 51.2, Sx: 45.6, Iy: 24.5, Cw: 879, ry: 1.54, J: 0.741, ho: 12, type: "i_shape" },
-        W12X30: { Zx: 43.1, Sx: 38.6, Iy: 20.3, Cw: 720, ry: 1.52, J: 0.457, ho: 11.9, type: "i_shape" },
-        W12X26: { Zx: 37.2, Sx: 33.4, Iy: 17.3, Cw: 607, ry: 1.51, J: 0.3, ho: 11.8, type: "i_shape" },
-        W12X22: { Zx: 29.3, Sx: 25.4, Iy: 4.66, Cw: 164, ry: 0.848, J: 0.293, ho: 11.9, type: "i_shape" },
-        W12X19: { Zx: 24.7, Sx: 21.3, Iy: 3.76, Cw: 131, ry: 0.822, J: 0.18, ho: 11.9, type: "i_shape" },
-        W12X16: { Zx: 20.1, Sx: 17.1, Iy: 2.82, Cw: 96.9, ry: 0.773, J: 0.103, ho: 11.7, type: "i_shape" },
-        W12X14: { Zx: 17.4, Sx: 14.9, Iy: 2.36, Cw: 80.4, ry: 0.753, J: 0.0704, ho: 11.7, type: "i_shape" },
-        W10X112: { Zx: 147, Sx: 126, Iy: 236, Cw: 6020, ry: 2.68, J: 15.1, ho: 10.2, type: "i_shape" },
-        W10X100: { Zx: 130, Sx: 112, Iy: 207, Cw: 5150, ry: 2.65, J: 10.9, ho: 10, type: "i_shape" },
-        W10X88: { Zx: 113, Sx: 98.5, Iy: 179, Cw: 4330, ry: 2.63, J: 7.53, ho: 9.81, type: "i_shape" },
-        W10X77: { Zx: 97.6, Sx: 85.9, Iy: 154, Cw: 3630, ry: 2.6, J: 5.11, ho: 9.73, type: "i_shape" },
-        W10X68: { Zx: 85.3, Sx: 75.7, Iy: 134, Cw: 3100, ry: 2.59, J: 3.56, ho: 9.63, type: "i_shape" },
-        W10X60: { Zx: 74.6, Sx: 66.7, Iy: 116, Cw: 2640, ry: 2.57, J: 2.48, ho: 9.52, type: "i_shape" },
-        W10X54: { Zx: 66.6, Sx: 60, Iy: 103, Cw: 2320, ry: 2.56, J: 1.82, ho: 9.49, type: "i_shape" },
-        W10X49: { Zx: 60.4, Sx: 54.6, Iy: 93.4, Cw: 2070, ry: 2.54, J: 1.39, ho: 9.44, type: "i_shape" },
-        W10X45: { Zx: 54.9, Sx: 49.1, Iy: 53.4, Cw: 1200, ry: 2.01, J: 1.51, ho: 9.48, type: "i_shape" },
-        W10X39: { Zx: 46.8, Sx: 42.1, Iy: 45, Cw: 992, ry: 1.98, J: 0.976, ho: 9.39, type: "i_shape" },
-        W10X33: { Zx: 38.8, Sx: 35, Iy: 36.6, Cw: 791, ry: 1.94, J: 0.583, ho: 9.3, type: "i_shape" },
-        W10X30: { Zx: 36.6, Sx: 32.4, Iy: 16.7, Cw: 414, ry: 1.37, J: 0.622, ho: 9.99, type: "i_shape" },
-        W10X26: { Zx: 31.3, Sx: 27.9, Iy: 14.1, Cw: 345, ry: 1.36, J: 0.402, ho: 9.86, type: "i_shape" },
-        W10X22: { Zx: 26, Sx: 23.2, Iy: 11.4, Cw: 275, ry: 1.33, J: 0.239, ho: 9.84, type: "i_shape" },
-        W10X19: { Zx: 21.6, Sx: 18.8, Iy: 4.29, Cw: 104, ry: 0.874, J: 0.233, ho: 9.81, type: "i_shape" },
-        W10X17: { Zx: 18.7, Sx: 16.2, Iy: 3.56, Cw: 85.1, ry: 0.845, J: 0.156, ho: 9.77, type: "i_shape" },
-        W10X15: { Zx: 16, Sx: 13.8, Iy: 2.89, Cw: 68.3, ry: 0.81, J: 0.104, ho: 9.72, type: "i_shape" },
-        W10X12: { Zx: 12.6, Sx: 10.9, Iy: 2.18, Cw: 50.9, ry: 0.785, J: 0.0547, ho: 9.66, type: "i_shape" },
-        W8X67: { Zx: 70.1, Sx: 60.4, Iy: 88.6, Cw: 1440, ry: 2.12, J: 5.05, ho: 8.07, type: "i_shape" },
-        W8X58: { Zx: 59.8, Sx: 52, Iy: 75.1, Cw: 1180, ry: 2.1, J: 3.33, ho: 7.94, type: "i_shape" },
-        W8X48: { Zx: 49, Sx: 43.2, Iy: 60.9, Cw: 931, ry: 2.08, J: 1.96, ho: 7.82, type: "i_shape" },
-        W8X40: { Zx: 39.8, Sx: 35.5, Iy: 49.1, Cw: 726, ry: 2.04, J: 1.12, ho: 7.69, type: "i_shape" },
-        W8X35: { Zx: 34.7, Sx: 31.2, Iy: 42.6, Cw: 619, ry: 2.03, J: 0.769, ho: 7.63, type: "i_shape" },
-        W8X31: { Zx: 30.4, Sx: 27.5, Iy: 37.1, Cw: 530, ry: 2.02, J: 0.536, ho: 7.57, type: "i_shape" },
-        W8X28: { Zx: 27.2, Sx: 24.3, Iy: 21.7, Cw: 312, ry: 1.62, J: 0.537, ho: 7.6, type: "i_shape" },
-        W8X24: { Zx: 23.1, Sx: 20.9, Iy: 18.3, Cw: 259, ry: 1.61, J: 0.346, ho: 7.53, type: "i_shape" },
-        W8X21: { Zx: 20.4, Sx: 18.2, Iy: 9.77, Cw: 152, ry: 1.26, J: 0.282, ho: 7.88, type: "i_shape" },
-        W8X18: { Zx: 17, Sx: 15.2, Iy: 7.97, Cw: 122, ry: 1.23, J: 0.172, ho: 7.81, type: "i_shape" },
-        W8X15: { Zx: 13.6, Sx: 11.8, Iy: 3.41, Cw: 51.8, ry: 0.876, J: 0.137, ho: 7.8, type: "i_shape" },
-        W8X13: { Zx: 11.4, Sx: 9.91, Iy: 2.73, Cw: 40.8, ry: 0.843, J: 0.0871, ho: 7.74, type: "i_shape" },
-        W8X10: { Zx: 8.87, Sx: 7.81, Iy: 2.09, Cw: 30.9, ry: 0.841, J: 0.0426, ho: 7.69, type: "i_shape" },
-        W6X25: { Zx: 18.9, Sx: 16.7, Iy: 17.1, Cw: 150, ry: 1.52, J: 0.461, ho: 5.93, type: "i_shape" },
-        W6X20: { Zx: 14.9, Sx: 13.4, Iy: 13.3, Cw: 113, ry: 1.5, J: 0.24, ho: 5.84, type: "i_shape" },
-        W6X15: { Zx: 10.8, Sx: 9.72, Iy: 9.32, Cw: 76.5, ry: 1.45, J: 0.101, ho: 5.73, type: "i_shape" },
-        W6X16: { Zx: 11.7, Sx: 10.2, Iy: 4.43, Cw: 38.2, ry: 0.967, J: 0.223, ho: 5.88, type: "i_shape" },
-        W6X12: { Zx: 8.3, Sx: 7.31, Iy: 2.99, Cw: 24.7, ry: 0.918, J: 0.0903, ho: 5.75, type: "i_shape" },
-        W6X9: { Zx: 6.23, Sx: 5.56, Iy: 2.2, Cw: 17.7, ry: 0.905, J: 0.0405, ho: 5.69, type: "i_shape" },
-        W6X8_5: { Zx: 5.73, Sx: 5.1, Iy: 1.99, Cw: 15.8, ry: 0.89, J: 0.0333, ho: 5.64, type: "i_shape" },
-        W5X19: { Zx: 11.6, Sx: 10.2, Iy: 9.13, Cw: 50.9, ry: 1.28, J: 0.316, ho: 4.72, type: "i_shape" },
-        W5X16: { Zx: 9.63, Sx: 8.55, Iy: 7.51, Cw: 40.6, ry: 1.26, J: 0.192, ho: 4.65, type: "i_shape" },
-        W4X13: { Zx: 6.28, Sx: 5.46, Iy: 3.86, Cw: 14, ry: 1, J: 0.151, ho: 3.82, type: "i_shape" },
-        M12_5X12_4: { Zx: 16.5, Sx: 14.2, Iy: 2.01, Cw: 76, ry: 0.744, J: 0.0493, ho: 12.3, type: "i_shape" },
-        M12_5X11_6: { Zx: 15, Sx: 12.8, Iy: 1.51, Cw: 57.1, ry: 0.667, J: 0.0414, ho: 12.3, type: "i_shape" },
-        M12X11_8: { Zx: 14.3, Sx: 12, Iy: 1.09, Cw: 37.7, ry: 0.559, J: 0.05, ho: 11.8, type: "i_shape" },
-        M12X10_8: { Zx: 13.2, Sx: 11.1, Iy: 1.01, Cw: 35, ry: 0.564, J: 0.0393, ho: 11.8, type: "i_shape" },
-        M12X10: { Zx: 12.2, Sx: 10.3, Iy: 1.03, Cw: 35.9, ry: 0.592, J: 0.0292, ho: 11.8, type: "i_shape" },
-        M10X9: { Zx: 9.22, Sx: 7.79, Iy: 0.672, Cw: 16.1, ry: 0.503, J: 0.0314, ho: 9.79, type: "i_shape" },
-        M10X8: { Zx: 8.2, Sx: 6.95, Iy: 0.593, Cw: 14.2, ry: 0.5, J: 0.0224, ho: 9.77, type: "i_shape" },
-        M10X7_5: { Zx: 7.77, Sx: 6.6, Iy: 0.562, Cw: 13.5, ry: 0.503, J: 0.0187, ho: 9.82, type: "i_shape" },
-        M8X6_5: { Zx: 5.43, Sx: 4.63, Iy: 0.376, Cw: 5.73, ry: 0.443, J: 0.0184, ho: 7.81, type: "i_shape" },
-        M8X6_2: { Zx: 5.15, Sx: 4.39, Iy: 0.352, Cw: 5.38, ry: 0.439, J: 0.0156, ho: 7.82, type: "i_shape" },
-        M6X4_4: { Zx: 2.8, Sx: 2.41, Iy: 0.18, Cw: 1.53, ry: 0.372, J: 0.0099, ho: 5.83, type: "i_shape" },
-        M6X3_7: { Zx: 2.33, Sx: 2.01, Iy: 0.173, Cw: 1.45, ry: 0.398, J: 0.0053, ho: 5.79, type: "i_shape" },
-        M5X18_9: { Zx: 11.1, Sx: 9.67, Iy: 8.7, Cw: 45.7, ry: 1.25, J: 0.313, ho: 4.58, type: "i_shape" },
-        M4X6: { Zx: 2.74, Sx: 2.48, Iy: 1.47, Cw: 4.87, ry: 0.915, J: 0.0184, ho: 3.64, type: "i_shape" },
-        M4X4_08: { Zx: 2, Sx: 1.77, Iy: 0.325, Cw: 1.19, ry: 0.506, J: 0.0147, ho: 3.83, type: "i_shape" },
-        M3X2_9: { Zx: 1.12, Sx: 1, Iy: 0.248, Cw: 0.511, ry: 0.521, J: 0.0079, ho: 2.87, type: "i_shape" },
-        S24X121: { Zx: 306, Sx: 258, Iy: 83, Cw: 11400, ry: 1.53, J: 12.8, ho: 23.4, type: "i_shape" },
-        S24X106: { Zx: 279, Sx: 240, Iy: 76.8, Cw: 10500, ry: 1.57, J: 10.1, ho: 23.4, type: "i_shape" },
-        S24X100: { Zx: 239, Sx: 199, Iy: 47.4, Cw: 6350, ry: 1.27, J: 7.59, ho: 23.1, type: "i_shape" },
-        S24X90: { Zx: 222, Sx: 187, Iy: 44.7, Cw: 5980, ry: 1.3, J: 6.05, ho: 23.1, type: "i_shape" },
-        S24X80: { Zx: 204, Sx: 175, Iy: 42, Cw: 5620, ry: 1.34, J: 4.89, ho: 23.1, type: "i_shape" },
-        S20X96: { Zx: 198, Sx: 165, Iy: 49.9, Cw: 4690, ry: 1.33, J: 8.4, ho: 19.4, type: "i_shape" },
-        S20X86: { Zx: 183, Sx: 155, Iy: 46.6, Cw: 4370, ry: 1.36, J: 6.65, ho: 19.4, type: "i_shape" },
-        S20X75: { Zx: 152, Sx: 128, Iy: 29.5, Cw: 2720, ry: 1.16, J: 4.59, ho: 19.2, type: "i_shape" },
-        S20X66: { Zx: 139, Sx: 119, Iy: 27.5, Cw: 2530, ry: 1.19, J: 3.58, ho: 19.2, type: "i_shape" },
-        S18X70: { Zx: 124, Sx: 103, Iy: 24, Cw: 1800, ry: 1.08, J: 4.1, ho: 17.3, type: "i_shape" },
-        S18X54_7: { Zx: 104, Sx: 89, Iy: 20.7, Cw: 1550, ry: 1.14, J: 2.33, ho: 17.3, type: "i_shape" },
-        S15X50: { Zx: 77, Sx: 64.7, Iy: 15.6, Cw: 805, ry: 1.03, J: 2.12, ho: 14.4, type: "i_shape" },
-        S15X42_9: { Zx: 69.2, Sx: 59.4, Iy: 14.3, Cw: 737, ry: 1.06, J: 1.54, ho: 14.4, type: "i_shape" },
-        S12X50: { Zx: 60.9, Sx: 50.6, Iy: 15.6, Cw: 501, ry: 1.03, J: 2.77, ho: 11.3, type: "i_shape" },
-        S12X40_8: { Zx: 52.7, Sx: 45.1, Iy: 13.5, Cw: 433, ry: 1.06, J: 1.69, ho: 11.3, type: "i_shape" },
-        S12X35: { Zx: 44.6, Sx: 38.1, Iy: 9.84, Cw: 323, ry: 0.98, J: 1.05, ho: 11.5, type: "i_shape" },
-        S12X31_8: { Zx: 41.8, Sx: 36.2, Iy: 9.33, Cw: 306, ry: 1, J: 0.878, ho: 11.5, type: "i_shape" },
-        S10X35: { Zx: 35.4, Sx: 29.4, Iy: 8.3, Cw: 188, ry: 0.899, J: 1.29, ho: 9.51, type: "i_shape" },
-        S10X25_4: { Zx: 28.3, Sx: 24.6, Iy: 6.73, Cw: 152, ry: 0.95, J: 0.603, ho: 9.51, type: "i_shape" },
-        S8X23: { Zx: 19.2, Sx: 16.2, Iy: 4.27, Cw: 61.2, ry: 0.795, J: 0.55, ho: 7.58, type: "i_shape" },
-        S8X18_4: { Zx: 16.5, Sx: 14.4, Iy: 3.69, Cw: 52.9, ry: 0.827, J: 0.335, ho: 7.58, type: "i_shape" },
-        S6X17_25: { Zx: 10.5, Sx: 8.74, Iy: 2.29, Cw: 18.2, ry: 0.673, J: 0.371, ho: 5.64, type: "i_shape" },
-        S6X12_5: { Zx: 8.45, Sx: 7.34, Iy: 1.8, Cw: 14.3, ry: 0.702, J: 0.167, ho: 5.64, type: "i_shape" },
-        S5X10: { Zx: 5.66, Sx: 4.9, Iy: 1.19, Cw: 6.52, ry: 0.638, J: 0.114, ho: 4.67, type: "i_shape" },
-        S4X9_5: { Zx: 4.04, Sx: 3.38, Iy: 0.887, Cw: 3.05, ry: 0.564, J: 0.12, ho: 3.71, type: "i_shape" },
-        S4X7_7: { Zx: 3.5, Sx: 3.03, Iy: 0.748, Cw: 2.57, ry: 0.576, J: 0.0732, ho: 3.71, type: "i_shape" },
-        S3X7_5: { Zx: 2.35, Sx: 1.94, Iy: 0.578, Cw: 1.08, ry: 0.513, J: 0.0896, ho: 2.74, type: "i_shape" },
-        S3X5_7: { Zx: 1.94, Sx: 1.67, Iy: 0.447, Cw: 0.838, ry: 0.518, J: 0.0433, ho: 2.74, type: "i_shape" },
-        HP18X204: { Zx: 433, Sx: 380, Iy: 1120, Cw: 82500, ry: 4.31, J: 29.5, ho: 17.2, type: "i_shape" },
-        HP18X181: { Zx: 379, Sx: 336, Iy: 974, Cw: 70400, ry: 4.28, J: 20.7, ho: 17, type: "i_shape" },
-        HP18X157: { Zx: 327, Sx: 290, Iy: 833, Cw: 59000, ry: 4.25, J: 13.9, ho: 16.8, type: "i_shape" },
-        HP18X135: { Zx: 281, Sx: 251, Iy: 706, Cw: 49500, ry: 4.21, J: 9.12, ho: 16.8, type: "i_shape" },
-        HP16X183: { Zx: 349, Sx: 304, Iy: 818, Cw: 48300, ry: 3.89, J: 26.9, ho: 15.4, type: "i_shape" },
-        HP16X162: { Zx: 306, Sx: 269, Iy: 697, Cw: 40800, ry: 3.82, J: 18.8, ho: 15.3, type: "i_shape" },
-        HP16X141: { Zx: 264, Sx: 234, Iy: 599, Cw: 34300, ry: 3.79, J: 12.9, ho: 15.1, type: "i_shape" },
-        HP16X121: { Zx: 226, Sx: 201, Iy: 504, Cw: 28500, ry: 3.75, J: 8.35, ho: 15.1, type: "i_shape" },
-        HP16X101: { Zx: 187, Sx: 168, Iy: 412, Cw: 22800, ry: 3.71, J: 5.07, ho: 14.9, type: "i_shape" },
-        HP16X88: { Zx: 161, Sx: 145, Iy: 349, Cw: 19000, ry: 3.68, J: 3.45, ho: 14.8, type: "i_shape" },
-        HP14X117: { Zx: 194, Sx: 172, Iy: 443, Cw: 19900, ry: 3.59, J: 8.02, ho: 13.4, type: "i_shape" },
-        HP14X102: { Zx: 169, Sx: 150, Iy: 380, Cw: 16800, ry: 3.56, J: 5.39, ho: 13.3, type: "i_shape" },
-        HP14X89: { Zx: 146, Sx: 131, Iy: 326, Cw: 14200, ry: 3.53, J: 3.59, ho: 13.2, type: "i_shape" },
-        HP14X73: { Zx: 118, Sx: 107, Iy: 261, Cw: 11200, ry: 3.49, J: 2.01, ho: 13.1, type: "i_shape" },
-        HP12X89: { Zx: 127, Sx: 112, Iy: 224, Cw: 7640, ry: 2.94, J: 4.92, ho: 11.7, type: "i_shape" },
-        HP12X84: { Zx: 120, Sx: 106, Iy: 213, Cw: 7140, ry: 2.94, J: 4.24, ho: 11.6, type: "i_shape" },
-        HP12X74: { Zx: 105, Sx: 93.8, Iy: 186, Cw: 6160, ry: 2.92, J: 2.98, ho: 11.5, type: "i_shape" },
-        HP12X63: { Zx: 88.3, Sx: 79.1, Iy: 153, Cw: 5000, ry: 2.88, J: 1.83, ho: 11.4, type: "i_shape" },
-        HP12X53: { Zx: 74, Sx: 66.7, Iy: 127, Cw: 4080, ry: 2.86, J: 1.12, ho: 11.4, type: "i_shape" },
-        HP10X57: { Zx: 66.5, Sx: 58.8, Iy: 101, Cw: 2240, ry: 2.45, J: 1.97, ho: 9.43, type: "i_shape" },
-        HP10X42: { Zx: 48.3, Sx: 43.4, Iy: 71.7, Cw: 1540, ry: 2.41, J: 0.813, ho: 9.28, type: "i_shape" },
-        HP8X36: { Zx: 33.6, Sx: 29.8, Iy: 40.3, Cw: 578, ry: 1.95, J: 0.77, ho: 7.58, type: "i_shape" },
-        C15X50: { Zx: 68.5, Sx: 53.8, Iy: 11, Cw: 492, ry: 0.865, J: 2.65, ho: 14.4, type: "channel" },
-        C15X40: { Zx: 57.5, Sx: 46.5, Iy: 9.17, Cw: 410, ry: 0.883, J: 1.45, ho: 14.4, type: "channel" },
-        C15X33_9: { Zx: 50.8, Sx: 42, Iy: 8.07, Cw: 358, ry: 0.901, J: 1.01, ho: 14.4, type: "channel" },
-        C12X30: { Zx: 33.8, Sx: 27, Iy: 5.12, Cw: 151, ry: 0.762, J: 0.861, ho: 11.5, type: "channel" },
-        C12X25: { Zx: 29.4, Sx: 24, Iy: 4.45, Cw: 130, ry: 0.779, J: 0.538, ho: 11.5, type: "channel" },
-        C12X20_7: { Zx: 25.6, Sx: 21.5, Iy: 3.86, Cw: 112, ry: 0.797, J: 0.369, ho: 11.5, type: "channel" },
-        C10X30: { Zx: 26.7, Sx: 20.7, Iy: 3.93, Cw: 79.5, ry: 0.668, J: 1.22, ho: 9.56, type: "channel" },
-        C10X25: { Zx: 23.1, Sx: 18.2, Iy: 3.34, Cw: 68.3, ry: 0.675, J: 0.687, ho: 9.56, type: "channel" },
-        C10X20: { Zx: 19.4, Sx: 15.8, Iy: 2.8, Cw: 56.9, ry: 0.69, J: 0.368, ho: 9.56, type: "channel" },
-        C10X15_3: { Zx: 15.9, Sx: 13.5, Iy: 2.27, Cw: 45.5, ry: 0.711, J: 0.209, ho: 9.56, type: "channel" },
-        C9X20: { Zx: 16.9, Sx: 13.5, Iy: 2.41, Cw: 39.4, ry: 0.64, J: 0.427, ho: 8.59, type: "channel" },
-        C9X15: { Zx: 13.6, Sx: 11.3, Iy: 1.91, Cw: 31, ry: 0.659, J: 0.208, ho: 8.59, type: "channel" },
-        C9X13_4: { Zx: 12.6, Sx: 10.6, Iy: 1.75, Cw: 28.2, ry: 0.666, J: 0.168, ho: 8.59, type: "channel" },
-        C8X18_75: { Zx: 13.9, Sx: 11, Iy: 1.97, Cw: 25.1, ry: 0.598, J: 0.434, ho: 7.61, type: "channel" },
-        C8X13_75: { Zx: 11, Sx: 9.02, Iy: 1.52, Cw: 19.2, ry: 0.613, J: 0.186, ho: 7.61, type: "channel" },
-        C8X11_5: { Zx: 9.63, Sx: 8.14, Iy: 1.31, Cw: 16.5, ry: 0.623, J: 0.13, ho: 7.61, type: "channel" },
-        C7X14_75: { Zx: 9.75, Sx: 7.78, Iy: 1.37, Cw: 13.1, ry: 0.561, J: 0.267, ho: 6.63, type: "channel" },
-        C7X12_25: { Zx: 8.46, Sx: 6.92, Iy: 1.16, Cw: 11.2, ry: 0.568, J: 0.161, ho: 6.63, type: "channel" },
-        C7X9_8: { Zx: 7.19, Sx: 6.07, Iy: 0.957, Cw: 9.15, ry: 0.578, J: 0.0996, ho: 6.63, type: "channel" },
-        C6X13: { Zx: 7.29, Sx: 5.78, Iy: 1.05, Cw: 7.19, ry: 0.524, J: 0.237, ho: 5.66, type: "channel" },
-        C6X10_5: { Zx: 6.18, Sx: 5.04, Iy: 0.86, Cw: 5.91, ry: 0.529, J: 0.128, ho: 5.66, type: "channel" },
-        C6X8_2: { Zx: 5.16, Sx: 4.35, Iy: 0.687, Cw: 4.7, ry: 0.536, J: 0.0736, ho: 5.66, type: "channel" },
-        C5X9: { Zx: 4.39, Sx: 3.56, Iy: 0.624, Cw: 2.93, ry: 0.486, J: 0.109, ho: 4.68, type: "channel" },
-        C5X6_7: { Zx: 3.55, Sx: 2.99, Iy: 0.47, Cw: 2.22, ry: 0.489, J: 0.0549, ho: 4.68, type: "channel" },
-        C4X7_25: { Zx: 2.84, Sx: 2.29, Iy: 0.425, Cw: 1.24, ry: 0.447, J: 0.0817, ho: 3.7, type: "channel" },
-        C4X6_25: { Zx: 2.55, Sx: 2.1, Iy: 0.374, Cw: 1.07, ry: 0.451, J: 0.0549, ho: 3.7, type: "channel" },
-        C4X5_4: { Zx: 2.29, Sx: 1.92, Iy: 0.312, Cw: 0.921, ry: 0.444, J: 0.0399, ho: 3.7, type: "channel" },
-        C4X4_5: { Zx: 2.05, Sx: 1.77, Iy: 0.265, Cw: 0.778, ry: 0.445, J: 0.0306, ho: 3.7, type: "channel" },
-        C3X6: { Zx: 1.74, Sx: 1.38, Iy: 0.3, Cw: 0.462, ry: 0.413, J: 0.0725, ho: 2.73, type: "channel" },
-        C3X5: { Zx: 1.52, Sx: 1.23, Iy: 0.241, Cw: 0.379, ry: 0.405, J: 0.0425, ho: 2.73, type: "channel" },
-        C3X4_1: { Zx: 1.32, Sx: 1.1, Iy: 0.191, Cw: 0.307, ry: 0.398, J: 0.0269, ho: 2.73, type: "channel" },
-        C3X3_5: { Zx: 1.24, Sx: 1.04, Iy: 0.169, Cw: 0.276, ry: 0.394, J: 0.0226, ho: 2.73, type: "channel" },
-        MC18X58: { Zx: 95.4, Sx: 75, Iy: 17.6, Cw: 1070, ry: 1.02, J: 2.81, ho: 17.4, type: "channel" },
-        MC18X51_9: { Zx: 87.3, Sx: 69.6, Iy: 16.3, Cw: 985, ry: 1.03, J: 2.03, ho: 17.4, type: "channel" },
-        MC18X45_8: { Zx: 79.2, Sx: 64.2, Iy: 14.9, Cw: 897, ry: 1.05, J: 1.45, ho: 17.4, type: "channel" },
-        MC18X42_7: { Zx: 75.1, Sx: 61.5, Iy: 14.3, Cw: 852, ry: 1.07, J: 1.23, ho: 17.4, type: "channel" },
-        MC13X50: { Zx: 60.8, Sx: 48.3, Iy: 16.4, Cw: 558, ry: 1.06, J: 2.96, ho: 12.4, type: "channel" },
-        MC13X40: { Zx: 51.2, Sx: 41.9, Iy: 13.7, Cw: 462, ry: 1.08, J: 1.55, ho: 12.4, type: "channel" },
-        MC13X35: { Zx: 46.5, Sx: 38.8, Iy: 12.3, Cw: 412, ry: 1.09, J: 1.13, ho: 12.4, type: "channel" },
-        MC13X31_8: { Zx: 43.4, Sx: 36.7, Iy: 11.4, Cw: 380, ry: 1.1, J: 0.937, ho: 12.4, type: "channel" },
-        MC12X50: { Zx: 56.5, Sx: 44.9, Iy: 17.4, Cw: 411, ry: 1.09, J: 3.23, ho: 11.3, type: "channel" },
-        MC12X45: { Zx: 52, Sx: 41.9, Iy: 15.8, Cw: 373, ry: 1.09, J: 2.33, ho: 11.3, type: "channel" },
-        MC12X40: { Zx: 47.7, Sx: 39, Iy: 14.2, Cw: 336, ry: 1.1, J: 1.69, ho: 11.3, type: "channel" },
-        MC12X35: { Zx: 43.2, Sx: 36, Iy: 12.6, Cw: 297, ry: 1.11, J: 1.24, ho: 11.3, type: "channel" },
-        MC12X31: { Zx: 39.7, Sx: 33.7, Iy: 11.3, Cw: 267, ry: 1.11, J: 1, ho: 11.3, type: "channel" },
-        MC12X14_3: { Zx: 15.9, Sx: 12.7, Iy: 1, Cw: 32.8, ry: 0.489, J: 0.117, ho: 11.7, type: "channel" },
-        MC12X10_6: { Zx: 11.6, Sx: 9.22, Iy: 0.378, Cw: 11.7, ry: 0.349, J: 0.0596, ho: 11.7, type: "channel" },
-        MC10X41_1: { Zx: 39.3, Sx: 31.5, Iy: 15.7, Cw: 269, ry: 1.14, J: 2.26, ho: 9.43, type: "channel" },
-        MC10X33_6: { Zx: 33.7, Sx: 27.8, Iy: 13.1, Cw: 224, ry: 1.15, J: 1.2, ho: 9.43, type: "channel" },
-        MC10X28_5: { Zx: 30, Sx: 25.3, Iy: 11.3, Cw: 193, ry: 1.16, J: 0.791, ho: 9.43, type: "channel" },
-        MC10X25: { Zx: 26.2, Sx: 22, Iy: 7.25, Cw: 124, ry: 0.993, J: 0.638, ho: 9.43, type: "channel" },
-        MC10X22: { Zx: 23.9, Sx: 20.5, Iy: 6.4, Cw: 110, ry: 0.997, J: 0.51, ho: 9.43, type: "channel" },
-        MC10X8_4: { Zx: 7.92, Sx: 6.39, Iy: 0.326, Cw: 7, ry: 0.364, J: 0.0413, ho: 9.72, type: "channel" },
-        MC10X6_5: { Zx: 5.9, Sx: 4.59, Iy: 0.133, Cw: 2.76, ry: 0.262, J: 0.0191, ho: 9.8, type: "channel" },
-        MC9X25_4: { Zx: 23.5, Sx: 19.5, Iy: 7.57, Cw: 104, ry: 1.01, J: 0.691, ho: 8.45, type: "channel" },
-        MC9X23_9: { Zx: 22.5, Sx: 18.9, Iy: 7.14, Cw: 98, ry: 1.01, J: 0.599, ho: 8.45, type: "channel" },
-        MC8X22_8: { Zx: 19.1, Sx: 15.9, Iy: 7.01, Cw: 75.2, ry: 1.02, J: 0.572, ho: 7.48, type: "channel" },
-        MC8X21_4: { Zx: 18.2, Sx: 15.4, Iy: 6.58, Cw: 70.8, ry: 1.02, J: 0.495, ho: 7.48, type: "channel" },
-        MC8X20: { Zx: 16.4, Sx: 13.6, Iy: 4.42, Cw: 47.8, ry: 0.867, J: 0.441, ho: 7.5, type: "channel" },
-        MC8X18_7: { Zx: 15.6, Sx: 13.1, Iy: 4.15, Cw: 45, ry: 0.868, J: 0.38, ho: 7.5, type: "channel" },
-        MC8X8_5: { Zx: 6.95, Sx: 5.82, Iy: 0.624, Cw: 8.21, ry: 0.5, J: 0.0587, ho: 7.69, type: "channel" },
-        MC7X22_7: { Zx: 16.4, Sx: 13.5, Iy: 7.24, Cw: 58.3, ry: 1.04, J: 0.625, ho: 6.5, type: "channel" },
-        MC7X19_1: { Zx: 14.5, Sx: 12.3, Iy: 6.06, Cw: 49.3, ry: 1.04, J: 0.407, ho: 6.5, type: "channel" },
-        MC6X18: { Zx: 11.7, Sx: 9.89, Iy: 5.88, Cw: 34.6, ry: 1.05, J: 0.379, ho: 5.53, type: "channel" },
-        MC6X15_3: { Zx: 9.91, Sx: 8.44, Iy: 4.91, Cw: 30, ry: 1.05, J: 0.223, ho: 5.62, type: "channel" },
-        MC6X16_3: { Zx: 10.4, Sx: 8.66, Iy: 3.77, Cw: 22.1, ry: 0.887, J: 0.336, ho: 5.53, type: "channel" },
-        MC6X15_1: { Zx: 9.83, Sx: 8.3, Iy: 3.46, Cw: 20.5, ry: 0.883, J: 0.285, ho: 5.53, type: "channel" },
-        MC6X12: { Zx: 7.47, Sx: 6.24, Iy: 1.85, Cw: 11.3, ry: 0.724, J: 0.155, ho: 5.63, type: "channel" },
-        MC6X7: { Zx: 4.5, Sx: 3.81, Iy: 0.603, Cw: 4, ry: 0.537, J: 0.0464, ho: 5.71, type: "channel" },
-        MC6X6_5: { Zx: 4.28, Sx: 3.66, Iy: 0.565, Cw: 3.75, ry: 0.539, J: 0.0412, ho: 5.71, type: "channel" },
-        MC4X13_8: { Zx: 5.53, Sx: 4.43, Iy: 2.13, Cw: 4.84, ry: 0.727, J: 0.373, ho: 3.5, type: "channel" },
-        MC3X7_1: { Zx: 2.24, Sx: 1.81, Iy: 0.666, Cw: 0.915, ry: 0.562, J: 0.0928, ho: 2.65, type: "channel" },
+      "use strict";
+
+      /* =====================================================================
+       * AISC 360-22 CHAPTER F — FLEXURAL STRENGTH ENGINE
+       * ---------------------------------------------------------------------
+       * Units: kip, inch (moments internally kip-in, reported kip-in & kip-ft)
+       *
+       * Property keys expected per shape (all optional except where a limit
+       * state needs them — missing values disable that check with a note):
+       *
+       *   family : W M S HP C MC HSS_RECT HSS_ROUND PIPE WT 2L L
+       *            BAR_RECT BAR_ROUND BUILTUP_I GENERAL
+       *   A d bf tf tw h ho kdes bf_2tf b_t h_tw d_t D_t
+       *   Ix Zx Sx rx  Iy Zy Sy ry  J Cw  ybar xbar eo
+       *   B Ht tdes                (HSS/box)
+       *   OD                       (round HSS / pipe)
+       *   leg_b leg_d t rz Sz betaw (angles)
+       * ===================================================================== */
+
+      /* --------------------------------------------------------------------
+       * DEMO DATABASE — a small, hand-verified subset so the page works with
+       * no shapes.js present. Run scripts/generate_shapes_chapterF.py to emit
+       * the complete AISC v16.0 database (all families) and this is replaced.
+       * ------------------------------------------------------------------ */
+      const DEMO_SHAPES = {
+        // ---- W shapes (compact flange & web at Fy = 50 ksi, except W21X48) --
+        W6X15: {
+          family: "W",
+          A: 4.43,
+          d: 5.99,
+          bf: 5.99,
+          tf: 0.26,
+          tw: 0.23,
+          bf_2tf: 11.5,
+          h_tw: 21.6,
+          kdes: 0.56,
+          Ix: 29.1,
+          Zx: 10.8,
+          Sx: 9.72,
+          rx: 2.56,
+          Iy: 9.32,
+          Zy: 5.07,
+          Sy: 3.11,
+          ry: 1.45,
+          J: 0.101,
+          Cw: 76.5,
+          ho: 5.73,
+        },
+        W12X26: {
+          family: "W",
+          A: 7.65,
+          d: 12.2,
+          bf: 6.49,
+          tf: 0.38,
+          tw: 0.23,
+          bf_2tf: 8.54,
+          h_tw: 47.2,
+          kdes: 0.75,
+          Ix: 204,
+          Zx: 37.2,
+          Sx: 33.4,
+          rx: 5.17,
+          Iy: 17.3,
+          Zy: 8.17,
+          Sy: 5.34,
+          ry: 1.51,
+          J: 0.3,
+          Cw: 607,
+          ho: 11.8,
+        },
+        W14X90: {
+          family: "W",
+          A: 26.5,
+          d: 14.0,
+          bf: 14.5,
+          tf: 0.71,
+          tw: 0.44,
+          bf_2tf: 10.2,
+          h_tw: 25.9,
+          kdes: 1.31,
+          Ix: 999,
+          Zx: 157,
+          Sx: 143,
+          rx: 6.14,
+          Iy: 362,
+          Zy: 75.6,
+          Sy: 49.9,
+          ry: 3.7,
+          J: 4.06,
+          Cw: 16000,
+          ho: 13.3,
+        },
+        W16X26: {
+          family: "W",
+          A: 7.68,
+          d: 15.7,
+          bf: 5.5,
+          tf: 0.345,
+          tw: 0.25,
+          bf_2tf: 7.97,
+          h_tw: 56.8,
+          kdes: 0.747,
+          Ix: 301,
+          Zx: 44.2,
+          Sx: 38.4,
+          rx: 6.26,
+          Iy: 9.59,
+          Zy: 5.48,
+          Sy: 3.49,
+          ry: 1.12,
+          J: 0.262,
+          Cw: 565,
+          ho: 15.4,
+        },
+        W18X50: {
+          family: "W",
+          A: 14.7,
+          d: 18.0,
+          bf: 7.5,
+          tf: 0.57,
+          tw: 0.355,
+          bf_2tf: 6.57,
+          h_tw: 45.2,
+          kdes: 0.972,
+          Ix: 800,
+          Zx: 101,
+          Sx: 88.9,
+          rx: 7.38,
+          Iy: 40.1,
+          Zy: 17.0,
+          Sy: 10.7,
+          ry: 1.65,
+          J: 1.24,
+          Cw: 3040,
+          ho: 17.4,
+        },
+        W21X48: {
+          family: "W",
+          A: 14.1,
+          d: 20.6,
+          bf: 8.14,
+          tf: 0.43,
+          tw: 0.35,
+          bf_2tf: 9.47,
+          h_tw: 53.6,
+          kdes: 0.93,
+          Ix: 959,
+          Zx: 107,
+          Sx: 93.0,
+          rx: 8.24,
+          Iy: 38.7,
+          Zy: 14.9,
+          Sy: 9.52,
+          ry: 1.66,
+          J: 0.77,
+          Cw: 3950,
+          ho: 20.3,
+        },
+        W24X68: {
+          family: "W",
+          A: 20.1,
+          d: 23.7,
+          bf: 8.97,
+          tf: 0.585,
+          tw: 0.415,
+          bf_2tf: 7.66,
+          h_tw: 52.0,
+          kdes: 1.09,
+          Ix: 1830,
+          Zx: 177,
+          Sx: 154,
+          rx: 9.55,
+          Iy: 70.4,
+          Zy: 24.5,
+          Sy: 15.7,
+          ry: 1.87,
+          J: 1.87,
+          Cw: 9430,
+          ho: 23.1,
+        },
+
+        // ---- Channels -------------------------------------------------------
+        C12X20_7: {
+          family: "C",
+          A: 6.08,
+          d: 12.0,
+          bf: 2.94,
+          tf: 0.501,
+          tw: 0.282,
+          b_t: 5.87,
+          h_tw: 36.4,
+          kdes: 1.13,
+          Ix: 129,
+          Zx: 25.6,
+          Sx: 21.5,
+          rx: 4.61,
+          Iy: 3.86,
+          Zy: 3.47,
+          Sy: 1.73,
+          ry: 0.797,
+          J: 0.369,
+          Cw: 112,
+          ho: 11.5,
+          xbar: 0.698,
+          eo: 0.637,
+        },
+        C15X33_9: {
+          family: "C",
+          A: 10.0,
+          d: 15.0,
+          bf: 3.4,
+          tf: 0.65,
+          tw: 0.4,
+          b_t: 5.23,
+          h_tw: 33.5,
+          kdes: 1.44,
+          Ix: 315,
+          Zx: 50.8,
+          Sx: 42.0,
+          rx: 5.61,
+          Iy: 8.07,
+          Zy: 8.13,
+          Sy: 3.09,
+          ry: 0.901,
+          J: 1.01,
+          Cw: 358,
+          ho: 14.4,
+          xbar: 0.788,
+          eo: 0.583,
+        },
+
+        // ---- Rectangular / square HSS --------------------------------------
+        HSS6X6X3_8: {
+          family: "HSS_RECT",
+          A: 7.58,
+          Ht: 6.0,
+          B: 6.0,
+          tdes: 0.349,
+          b_t: 14.2,
+          h_t: 14.2,
+          Ix: 39.5,
+          Zx: 16.1,
+          Sx: 13.2,
+          rx: 2.28,
+          Iy: 39.5,
+          Zy: 16.1,
+          Sy: 13.2,
+          ry: 2.28,
+          J: 65.6,
+        },
+        HSS8X8X1_2: {
+          family: "HSS_RECT",
+          A: 13.5,
+          Ht: 8.0,
+          B: 8.0,
+          tdes: 0.465,
+          b_t: 14.2,
+          h_t: 14.2,
+          Ix: 125,
+          Zx: 36.2,
+          Sx: 31.2,
+          rx: 3.04,
+          Iy: 125,
+          Zy: 36.2,
+          Sy: 31.2,
+          ry: 3.04,
+          J: 204,
+        },
+        HSS12X8X1_4: {
+          family: "HSS_RECT",
+          A: 8.96,
+          Ht: 12.0,
+          B: 8.0,
+          tdes: 0.233,
+          b_t: 31.3,
+          h_t: 48.5,
+          Ix: 178,
+          Zx: 37.0,
+          Sx: 29.7,
+          rx: 4.46,
+          Iy: 95.8,
+          Zy: 28.1,
+          Sy: 24.0,
+          ry: 3.27,
+          J: 189,
+        },
+
+        // ---- Round HSS & pipe (computed from OD / t_des) --------------------
+        HSS6_000X0_375: {
+          family: "HSS_ROUND",
+          A: 6.2,
+          OD: 6.0,
+          tdes: 0.349,
+          D_t: 17.2,
+          Ix: 24.8,
+          Zx: 11.2,
+          Sx: 8.28,
+          rx: 2.0,
+          J: 49.7,
+        },
+        HSS10_000X0_375: {
+          family: "HSS_ROUND",
+          A: 10.6,
+          OD: 10.0,
+          tdes: 0.349,
+          D_t: 28.7,
+          Ix: 123,
+          Zx: 32.5,
+          Sx: 24.7,
+          rx: 3.41,
+          J: 247,
+        },
+        PIPE5STD: {
+          family: "PIPE",
+          A: 4.03,
+          OD: 5.563,
+          tdes: 0.241,
+          D_t: 23.1,
+          Ix: 14.3,
+          Zx: 6.83,
+          Sx: 5.13,
+          rx: 1.88,
+          J: 28.6,
+        },
       };
-    </script>
-    <!-- generated by scripts/generate_shapes.py; defines const SHAPES -->
-    <script>
-      let E = 29000; // ksi — default matches YOUNGS_MODULUS_KSI in steel.py; overridden by the E input
 
-      // --- Derived properties + AISC 360-22 F2 equations (mirror steel.py / WSection) ---
-      function props(name) {
-        const s = SHAPES[name];
-        const r_ts = Math.sqrt(Math.sqrt(s.Iy * s.Cw) / s.Sx); // Eq. F2-7
-        const c =
-          s.type === "channel" // Eq. F2-8a / F2-8b
-            ? (s.ho / 2) * Math.sqrt(s.Iy / s.Cw)
-            : 1.0;
-        return {
-          Zx: s.Zx,
-          Sx: s.Sx,
-          ry: s.ry,
-          rts: r_ts,
-          J: s.J,
-          ho: s.ho,
-          c: c,
-          type: s.type,
+      /* Families that never have a database entry — always custom input. */
+      const CUSTOM_ONLY = ["BAR_RECT", "BAR_ROUND", "BUILTUP_I", "GENERAL"];
+
+      /* --------------------------------------------------------------------
+       * Shape source: an external shapes.js wins, otherwise use DEMO_SHAPES.
+       * `typeof` guard keeps this safe when shapes.js is absent (404).
+       * ------------------------------------------------------------------ */
+      const RAW_DB = typeof SHAPES !== "undefined" && SHAPES ? SHAPES : DEMO_SHAPES;
+      const USING_DEMO = RAW_DB === DEMO_SHAPES;
+
+      /* --------------------------------------------------------------------
+       * Family inference / normalization (back-compatible with the old
+       * shapes.js that only carried type:"i_shape" | "channel").
+       * ------------------------------------------------------------------ */
+      function familyFromName(n) {
+        if (/^2L/.test(n)) return "2L";
+        if (/^(WT|MT|ST)/.test(n)) return "WT";
+        if (/^HP/.test(n)) return "HP";
+        if (/^MC/.test(n)) return "MC";
+        if (/^PIPE/.test(n)) return "PIPE";
+        if (/^HSS/.test(n)) return (n.match(/X/g) || []).length >= 2 ? "HSS_RECT" : "HSS_ROUND";
+        if (/^W\d/.test(n)) return "W";
+        if (/^M\d/.test(n)) return "M";
+        if (/^S\d/.test(n)) return "S";
+        if (/^C\d/.test(n)) return "C";
+        if (/^L\d/.test(n)) return "L";
+        return "GENERAL";
+      }
+
+      function familyFromLegacyType(t) {
+        if (t === "i_shape") return null; // ambiguous W/M/S/HP — fall back to the name
+        if (t === "channel") return null; // ambiguous C/MC — fall back to the name
+        return null;
+      }
+
+      /* Coarse grouping used by the dispatcher. */
+      function groupOf(fam) {
+        if (["W", "M", "S", "HP", "BUILTUP_I"].includes(fam)) return "I";
+        if (["C", "MC"].includes(fam)) return "C";
+        if (fam === "PIPE") return "HSS_ROUND";
+        return fam;
+      }
+
+      const DB = {};
+      Object.keys(RAW_DB).forEach((n) => {
+        const s = Object.assign({}, RAW_DB[n]);
+        s.name = n;
+        s.family = s.family || familyFromLegacyType(s.type) || familyFromName(n);
+        s.group = groupOf(s.family);
+        DB[n] = s;
+      });
+
+      function shapesInFamily(fam) {
+        return Object.keys(DB).filter((n) => DB[n].family === fam);
+      }
+
+      /* --------------------------------------------------------------------
+       * Derived properties (computed in-browser to match steel.py / WSection)
+       * ------------------------------------------------------------------ */
+      const sq = (x) => x * x;
+      const clamp = (x, lo, hi) => Math.min(hi, Math.max(lo, x));
+      const num = (x) => (typeof x === "number" && isFinite(x) ? x : null);
+
+      function derive(s, E, Fy) {
+        const p = Object.assign({}, s);
+
+        // Web clear depth h and hc (twice the distance from the centroid to the
+        // inside face of the compression flange). Doubly symmetric => hc = h.
+        if (p.h == null) {
+          if (p.h_tw != null && p.tw != null) p.h = p.h_tw * p.tw;
+          else if (p.d != null && p.kdes != null) p.h = p.d - 2 * p.kdes;
+          else if (p.ho != null && p.tf != null) p.h = p.ho - p.tf;
+        }
+        if (p.hc == null) p.hc = p.h;
+        if (p.hp == null) p.hp = p.hc; // plastic-neutral-axis depth; equal for doubly symmetric
+        if (p.ho == null && p.d != null && p.tf != null) p.ho = p.d - p.tf;
+
+        // Effective radius of gyration, Eq. F2-7
+        if (p.rts == null && p.Iy != null && p.Cw != null && p.Sx != null)
+          p.rts = Math.sqrt(Math.sqrt(p.Iy * p.Cw) / p.Sx);
+
+        // Coefficient c, Eq. F2-8a / F2-8b
+        if (p.c == null) p.c = p.group === "C" && p.ho != null && p.Cw ? (p.ho / 2) * Math.sqrt(p.Iy / p.Cw) : 1.0;
+
+        // Singly symmetric section moduli. Tees: split Ix at the centroid.
+        if (p.Sxc == null || p.Sxt == null) {
+          if (p.family === "WT" && p.Ix != null && p.ybar != null && p.d != null) {
+            p.Sxc = p.Ix / p.ybar; // flange side
+            p.Sxt = p.Ix / (p.d - p.ybar); // stem tip
+            if (p.Sx == null) p.Sx = p.Sxt; // AISC tabulates Sx at the stem tip
+          } else {
+            p.Sxc = p.Sxc != null ? p.Sxc : p.Sx;
+            p.Sxt = p.Sxt != null ? p.Sxt : p.Sx;
+          }
+        }
+
+        // Iyc — moment of inertia of the compression flange about the y axis
+        if (p.Iyc == null) p.Iyc = p.group === "I" && p.Iy != null ? p.Iy / 2 : p.Iy;
+
+        // Compression-flange geometry (defaults to the full flange)
+        if (p.bfc == null) p.bfc = p.bf;
+        if (p.tfc == null) p.tfc = p.tf;
+
+        // rt, Eq. F4-11
+        if (p.rt == null && p.bfc != null && p.tfc != null && p.hc != null && p.tw != null) {
+          const aw = clamp((p.hc * p.tw) / (p.bfc * p.tfc), 0, 10);
+          p.aw = aw;
+          p.rt = p.bfc / Math.sqrt(12 * (1 + aw / 6));
+        }
+
+        // FL, Eq. F4-6 — also needed by Table B4.1b case 11
+        if (p.FL == null && p.Sxt != null && p.Sxc != null)
+          p.FL = p.Sxt / p.Sxc >= 0.7 ? 0.7 * Fy : Math.max((Fy * p.Sxt) / p.Sxc, 0.5 * Fy);
+
+        // Bars and rounds: derive Z and S from the entered dimensions
+        if (p.group === "BAR_ROUND" && p.d) {
+          p.Zx = p.Zy = Math.pow(p.d, 3) / 6;
+          p.Sx = p.Sy = (Math.PI * Math.pow(p.d, 3)) / 32;
+          if (p.A == null) p.A = (Math.PI * p.d * p.d) / 4;
+        } else if (p.group === "BAR_RECT" && p.d && p.t) {
+          p.Zx = (p.t * p.d * p.d) / 4;
+          p.Sx = (p.t * p.d * p.d) / 6;
+          p.Zy = (p.d * p.t * p.t) / 4;
+          p.Sy = (p.d * p.t * p.t) / 6;
+          if (p.A == null) p.A = p.d * p.t;
+        }
+
+        // kc, Table B4.1b footnote
+        if (p.kc == null && p.h_tw != null) p.kc = clamp(4 / Math.sqrt(p.h_tw), 0.35, 0.76);
+
+        return p;
+      }
+
+      /* --------------------------------------------------------------------
+       * Element slenderness — Table B4.1b (flexure)
+       * ------------------------------------------------------------------ */
+      function classOf(lam, lp, lr) {
+        if (lam == null || lp == null || lr == null) return "unknown";
+        return lam <= lp ? "compact" : lam <= lr ? "noncompact" : "slender";
+      }
+
+      function classifySection(p, E, Fy, opts) {
+        const sE = Math.sqrt(E / Fy);
+        const out = { flange: null, web: null };
+        const g = p.group;
+
+        if (g === "I" || g === "C" || g === "WT") {
+          // Case 10/11 (unstiffened): rolled I & tee flanges use b = bf/2;
+          // channel flanges use the full flange width b = bf.
+          const lam = g === "C" ? p.b_t : p.bf_2tf;
+          const lp = 0.38 * sE;
+          let lr = 1.0 * sE;
+          let ref = "B4.1b case 10";
+          const welded = opts.builtUp === "welded" || p.family === "BUILTUP_I";
+          if (welded && p.kc != null) {
+            const FL = p.FL != null ? p.FL : 0.7 * Fy;
+            lr = 0.95 * Math.sqrt((p.kc * E) / FL);
+            ref = "B4.1b case 11";
+          }
+          out.flange = {
+            lam: num(lam),
+            lp,
+            lr,
+            cls: classOf(lam, lp, lr),
+            ref,
+            sym: g === "C" ? "b/t" : "b<sub>f</sub>/2t<sub>f</sub>",
+          };
+        }
+
+        if (g === "I" || g === "C") {
+          // Case 15 (doubly symmetric) / case 16 (singly symmetric)
+          const lam = p.h_tw;
+          const lr = 5.7 * sE;
+          let lp = 3.76 * sE;
+          let ref = "B4.1b case 15";
+          if (p.singlySym && p.Mp != null && p.Myc != null && p.hp) {
+            const rat = p.Mp / p.Myc;
+            lp = Math.min(((p.hc / p.hp) * sE) / sq(0.54 * rat - 0.09), lr);
+            ref = "B4.1b case 16";
+          }
+          out.web = { lam: num(lam), lp, lr, cls: classOf(lam, lp, lr), ref, sym: "h/t<sub>w</sub>" };
+        }
+
+        if (g === "WT") {
+          // Case 14 — tee stems
+          const lam = p.d_t;
+          out.web = {
+            lam: num(lam),
+            lp: 0.84 * sE,
+            lr: 1.52 * sE,
+            cls: classOf(lam, 0.84 * sE, 1.52 * sE),
+            ref: "B4.1b case 14",
+            sym: "d/t<sub>w</sub>",
+          };
+        }
+
+        if (g === "HSS_RECT") {
+          // Case 17 (flanges) & case 19 (webs) of stiffened elements
+          out.flange = {
+            lam: num(p.b_t),
+            lp: 1.12 * sE,
+            lr: 1.4 * sE,
+            cls: classOf(p.b_t, 1.12 * sE, 1.4 * sE),
+            ref: "B4.1b case 17",
+            sym: "b/t",
+          };
+          out.web = {
+            lam: num(p.h_t),
+            lp: 2.42 * sE,
+            lr: 5.7 * sE,
+            cls: classOf(p.h_t, 2.42 * sE, 5.7 * sE),
+            ref: "B4.1b case 19",
+            sym: "h/t",
+          };
+        }
+
+        if (g === "HSS_ROUND") {
+          const lp = (0.07 * E) / Fy,
+            lr = (0.31 * E) / Fy;
+          out.flange = { lam: num(p.D_t), lp, lr, cls: classOf(p.D_t, lp, lr), ref: "B4.1b case 20", sym: "D/t" };
+        }
+
+        if (g === "L" || g === "2L") {
+          const lp = 0.54 * sE,
+            lr = 0.91 * sE;
+          out.flange = { lam: num(p.b_t), lp, lr, cls: classOf(p.b_t, lp, lr), ref: "B4.1b case 12", sym: "b/t" };
+        }
+
+        return out;
+      }
+
+      /* Cb — Eq. F1-1 */
+      function cbFromMoments(Mmax, Ma, Mb, Mc) {
+        const m = Math.abs(Mmax),
+          a = Math.abs(Ma),
+          b = Math.abs(Mb),
+          c = Math.abs(Mc);
+        if (!(m > 0)) return NaN;
+        const den = 2.5 * m + 3 * a + 4 * b + 3 * c;
+        return den > 0 ? (12.5 * m) / den : NaN;
+      }
+      /* =====================================================================
+       * LIMIT-STATE HELPERS
+       * ===================================================================*/
+      function LS(id, label, eq, Mn, note) {
+        return { id, label, eq, Mn: Mn == null ? null : Mn, applies: Mn != null, note: note || "" };
+      }
+      function NA(id, label, eq, note) {
+        return { id, label, eq, Mn: null, applies: false, note: note || "" };
+      }
+      /* returns null if any required property is missing */
+      function need(p, keys) {
+        const miss = keys.filter((k) => p[k] == null || !isFinite(p[k]));
+        return miss.length ? miss : null;
+      }
+      function missNote(miss) {
+        return "requires " + miss.join(", ") + " — enter under Custom section properties";
+      }
+      /* linear noncompact interpolation */
+      function interp(Mp, Mr, lam, lp, lr) {
+        return Mp - (Mp - Mr) * ((lam - lp) / (lr - lp));
+      }
+
+      /* =====================================================================
+       * F2 — Doubly symmetric COMPACT I-shapes and channels, major axis
+       * ===================================================================*/
+      function F2(p, q) {
+        const { Fy, E, Lb, Cb } = q;
+        const out = {
+          id: "F2",
+          title: "Doubly symmetric compact I-shapes and channels, major axis",
+          states: [],
+          aux: {},
         };
-      }
-      function Lp(Fy, p) {
-        return 1.76 * p.ry * Math.sqrt(E / Fy);
-      } // F2-5
-      function Lr(Fy, p) {
-        const FL = 0.7 * Fy,
-          b = (p.J * p.c) / (p.Sx * p.ho);
-        return 1.95 * p.rts * (E / FL) * Math.sqrt(b + Math.sqrt(b * b + 6.76 * Math.pow(FL / E, 2)));
-      } // F2-6
-      function Fcr(Lb, Cb, p) {
-        const s = Lb / p.rts;
-        return (
-          ((Cb * Math.PI * Math.PI * E) / (s * s)) * Math.sqrt(1 + ((0.078 * (p.J * p.c)) / (p.Sx * p.ho)) * s * s)
-        );
-      } // F2-4
+        const miss = need(p, ["Zx", "Sx", "ry", "rts", "J", "ho"]);
+        if (miss) {
+          out.states.push(NA("Y", "Yielding", "F2-1", missNote(miss)));
+          return out;
+        }
 
-      function Mn(Lb_in, Fy, Cb, name) {
-        // Lb in INCHES; returns kip-in
-        const p = props(name);
+        const Mp = Fy * p.Zx;
+        const Lp = 1.76 * p.ry * Math.sqrt(E / Fy);
+        const bt = (p.J * p.c) / (p.Sx * p.ho);
+        const Lr = 1.95 * p.rts * (E / (0.7 * Fy)) * Math.sqrt(bt + Math.sqrt(sq(bt) + 6.76 * sq((0.7 * Fy) / E)));
+        Object.assign(out.aux, { Mp, Lp, Lr, rts: p.rts, c: p.c });
+
+        out.states.push(LS("Y", "Yielding (plastic moment)", "F2-1", Mp));
+
+        if (Lb <= Lp) {
+          out.states.push(
+            NA("LTB", "Lateral-torsional buckling", "F2-2", "L<sub>b</sub> \u2264 L<sub>p</sub> — LTB does not apply"),
+          );
+        } else if (Lb <= Lr) {
+          const M = Math.min(Cb * (Mp - (Mp - 0.7 * Fy * p.Sx) * ((Lb - Lp) / (Lr - Lp))), Mp);
+          out.states.push(LS("LTB", "Lateral-torsional buckling (inelastic)", "F2-2", M));
+        } else {
+          const s = Lb / p.rts;
+          const Fcr = ((Cb * sq(Math.PI) * E) / sq(s)) * Math.sqrt(1 + 0.078 * ((p.J * p.c) / (p.Sx * p.ho)) * sq(s));
+          out.aux.Fcr = Fcr;
+          out.states.push(LS("LTB", "Lateral-torsional buckling (elastic)", "F2-3 / F2-4", Math.min(Fcr * p.Sx, Mp)));
+        }
+        return out;
+      }
+
+      /* =====================================================================
+       * F3 — Doubly symmetric I-shapes, compact web, noncompact/slender flange
+       * ===================================================================*/
+      function F3(p, q, cls) {
+        const out = F2(p, q);
+        out.id = "F3";
+        out.title = "Doubly symmetric I-shapes with compact webs and noncompact or slender flanges, major axis";
+        const { Fy, E } = q;
+        const f = cls.flange;
+        if (!f || f.lam == null) {
+          out.states.push(
+            NA("FLB", "Compression flange local buckling", "F3-1 / F3-2", missNote(["b<sub>f</sub>/2t<sub>f</sub>"])),
+          );
+          return out;
+        }
+        const Mp = Fy * p.Zx;
+        if (f.cls === "noncompact") {
+          out.states.push(
+            LS(
+              "FLB",
+              "Compression flange local buckling (noncompact)",
+              "F3-1",
+              interp(Mp, 0.7 * Fy * p.Sx, f.lam, f.lp, f.lr),
+            ),
+          );
+        } else if (f.cls === "slender") {
+          const kc = p.kc != null ? p.kc : 0.76;
+          out.aux.kc = kc;
+          out.states.push(
+            LS("FLB", "Compression flange local buckling (slender)", "F3-2", (0.9 * E * kc * p.Sx) / sq(f.lam)),
+          );
+        } else {
+          out.states.push(
+            NA("FLB", "Compression flange local buckling", "F3-1", "compact flange — FLB does not apply"),
+          );
+        }
+        return out;
+      }
+
+      /* =====================================================================
+       * F4 — Other I-shaped members with compact or noncompact webs, major axis
+       * ===================================================================*/
+      function F4(p, q, cls) {
+        const { Fy, E, Lb, Cb } = q;
+        const out = {
+          id: "F4",
+          title: "Other I-shaped members with compact or noncompact webs, major axis",
+          states: [],
+          aux: {},
+        };
+        const miss = need(p, ["Zx", "Sxc", "Sxt", "rt", "ho", "hc", "tw", "Iy", "Iyc"]);
+        if (miss) {
+          out.states.push(NA("CFY", "Compression flange yielding", "F4-1", missNote(miss)));
+          return out;
+        }
+
+        const sE = Math.sqrt(E / Fy);
+        const Myc = Fy * p.Sxc,
+          Myt = Fy * p.Sxt;
+        const Mp = Math.min(Fy * p.Zx, 1.6 * Fy * p.Sxc);
+        const lw = p.h_tw != null ? p.h_tw : p.hc / p.tw;
+        const lpw = cls.web && cls.web.lp ? cls.web.lp : 3.76 * sE;
+        const lrw = cls.web && cls.web.lr ? cls.web.lr : 5.7 * sE;
+
+        // Web plastification factors, Eq. F4-9 / F4-16
+        const ratioC = Mp / Myc,
+          ratioT = Mp / Myt;
+        const stocky = p.Iyc / p.Iy > 0.23;
+        const Rpc = !stocky
+          ? 1.0
+          : lw <= lpw
+            ? ratioC
+            : Math.min(ratioC - (ratioC - 1) * ((lw - lpw) / (lrw - lpw)), ratioC);
+        const Rpt = !stocky
+          ? 1.0
+          : lw <= lpw
+            ? ratioT
+            : Math.min(ratioT - (ratioT - 1) * ((lw - lpw) / (lrw - lpw)), ratioT);
+
+        // FL, Eq. F4-6
+        const FL = p.Sxt / p.Sxc >= 0.7 ? 0.7 * Fy : Math.max((Fy * p.Sxt) / p.Sxc, 0.5 * Fy);
+        const Jeff = stocky ? p.J : 0; // F4 user note: take J = 0 when Iyc/Iy <= 0.23
+        const Lp = 1.1 * p.rt * sE;
+        const bt = Jeff / (p.Sxc * p.ho);
+        const Lr = 1.95 * p.rt * (E / FL) * Math.sqrt(bt + Math.sqrt(sq(bt) + 6.76 * sq(FL / E)));
+        Object.assign(out.aux, { Mp, Myc, Myt, Rpc, Rpt, FL, Lp, Lr, rt: p.rt, Jeff });
+
+        out.states.push(LS("CFY", "Compression flange yielding", "F4-1", Rpc * Myc));
+
+        if (Lb <= Lp) {
+          out.states.push(
+            NA("LTB", "Lateral-torsional buckling", "F4-2", "L<sub>b</sub> \u2264 L<sub>p</sub> — LTB does not apply"),
+          );
+        } else if (Lb <= Lr) {
+          out.states.push(
+            LS(
+              "LTB",
+              "Lateral-torsional buckling (inelastic)",
+              "F4-2",
+              Math.min(Cb * (Rpc * Myc - (Rpc * Myc - FL * p.Sxc) * ((Lb - Lp) / (Lr - Lp))), Rpc * Myc),
+            ),
+          );
+        } else {
+          const s = Lb / p.rt;
+          const Fcr = ((Cb * sq(Math.PI) * E) / sq(s)) * Math.sqrt(1 + 0.078 * (Jeff / (p.Sxc * p.ho)) * sq(s));
+          out.aux.Fcr = Fcr;
+          out.states.push(
+            LS("LTB", "Lateral-torsional buckling (elastic)", "F4-3 / F4-5", Math.min(Fcr * p.Sxc, Rpc * Myc)),
+          );
+        }
+
+        const f = cls.flange;
+        if (!f || f.lam == null) {
+          out.states.push(
+            NA("FLB", "Compression flange local buckling", "F4-13", missNote(["b<sub>f</sub>/2t<sub>f</sub>"])),
+          );
+        } else if (f.cls === "compact") {
+          out.states.push(
+            NA("FLB", "Compression flange local buckling", "F4-13", "compact flange — FLB does not apply"),
+          );
+        } else if (f.cls === "noncompact") {
+          out.states.push(
+            LS(
+              "FLB",
+              "Compression flange local buckling (noncompact)",
+              "F4-13",
+              interp(Rpc * Myc, FL * p.Sxc, f.lam, f.lp, f.lr),
+            ),
+          );
+        } else {
+          const kc = p.kc != null ? p.kc : 0.76;
+          out.states.push(
+            LS("FLB", "Compression flange local buckling (slender)", "F4-14", (0.9 * E * kc * p.Sxc) / sq(f.lam)),
+          );
+        }
+
+        if (p.Sxt >= p.Sxc) {
+          out.states.push(
+            NA("TFY", "Tension flange yielding", "F4-15", "S<sub>xt</sub> \u2265 S<sub>xc</sub> — does not apply"),
+          );
+        } else {
+          out.states.push(LS("TFY", "Tension flange yielding", "F4-15", Rpt * Myt));
+        }
+        return out;
+      }
+
+      /* =====================================================================
+       * F5 — Doubly/singly symmetric I-shapes with SLENDER webs, major axis
+       * ===================================================================*/
+      function F5(p, q, cls) {
+        const { Fy, E, Lb, Cb } = q;
+        const out = {
+          id: "F5",
+          title: "Doubly and singly symmetric I-shaped members with slender webs, major axis",
+          states: [],
+          aux: {},
+        };
+        const miss = need(p, ["Sxc", "Sxt", "rt", "hc", "tw", "bfc", "tfc"]);
+        if (miss) {
+          out.states.push(NA("CFY", "Compression flange yielding", "F5-1", missNote(miss)));
+          return out;
+        }
+
+        const sE = Math.sqrt(E / Fy);
+        const aw = clamp((p.hc * p.tw) / (p.bfc * p.tfc), 0, 10);
+        const Rpg = Math.min(1.0, 1 - (aw / (1200 + 300 * aw)) * (p.hc / p.tw - 5.7 * sE));
+        const Lp = 1.1 * p.rt * sE;
+        const Lr = Math.PI * p.rt * Math.sqrt(E / (0.7 * Fy));
+        Object.assign(out.aux, { Rpg, aw, Lp, Lr, rt: p.rt, Myc: Fy * p.Sxc });
+        if (p.Zx != null) out.aux.Mp = Fy * p.Zx;
+
+        out.states.push(LS("CFY", "Compression flange yielding", "F5-1", Rpg * Fy * p.Sxc));
+
+        if (Lb <= Lp) {
+          out.states.push(
+            NA("LTB", "Lateral-torsional buckling", "F5-2", "L<sub>b</sub> \u2264 L<sub>p</sub> — LTB does not apply"),
+          );
+        } else {
+          let Fcr;
+          if (Lb <= Lr) Fcr = Math.min(Cb * (Fy - 0.3 * Fy * ((Lb - Lp) / (Lr - Lp))), Fy);
+          else Fcr = Math.min((Cb * sq(Math.PI) * E) / sq(Lb / p.rt), Fy);
+          out.states.push(
+            LS(
+              "LTB",
+              Lb <= Lr ? "Lateral-torsional buckling (inelastic)" : "Lateral-torsional buckling (elastic)",
+              Lb <= Lr ? "F5-2 / F5-3" : "F5-2 / F5-4",
+              Rpg * Fcr * p.Sxc,
+            ),
+          );
+        }
+
+        const f = cls.flange;
+        if (!f || f.lam == null) {
+          out.states.push(NA("FLB", "Compression flange local buckling", "F5-7", missNote(["flange b/t"])));
+        } else if (f.cls === "compact") {
+          out.states.push(
+            NA("FLB", "Compression flange local buckling", "F5-7", "compact flange — FLB does not apply"),
+          );
+        } else {
+          let Fcr;
+          if (f.cls === "noncompact") Fcr = Fy - 0.3 * Fy * ((f.lam - f.lp) / (f.lr - f.lp));
+          else Fcr = (0.9 * E * (p.kc != null ? p.kc : 0.76)) / sq(f.lam);
+          out.states.push(
+            LS(
+              "FLB",
+              "Compression flange local buckling (" + f.cls + ")",
+              f.cls === "noncompact" ? "F5-7 / F5-8" : "F5-7 / F5-9",
+              Rpg * Fcr * p.Sxc,
+            ),
+          );
+        }
+
+        if (p.Sxt >= p.Sxc) {
+          out.states.push(
+            NA("TFY", "Tension flange yielding", "F5-10", "S<sub>xt</sub> \u2265 S<sub>xc</sub> — does not apply"),
+          );
+        } else {
+          out.states.push(LS("TFY", "Tension flange yielding", "F5-10", Fy * p.Sxt));
+        }
+        return out;
+      }
+
+      /* =====================================================================
+       * F6 — I-shapes and channels bent about their MINOR axis
+       * ===================================================================*/
+      function F6(p, q, cls) {
+        const { Fy, E } = q;
+        const out = {
+          id: "F6",
+          title: "I-shaped members and channels bent about their minor axis",
+          states: [],
+          aux: {},
+        };
+        const miss = need(p, ["Zy", "Sy"]);
+        if (miss) {
+          out.states.push(NA("Y", "Yielding", "F6-1", missNote(miss)));
+          return out;
+        }
+
+        const Mp = Math.min(Fy * p.Zy, 1.6 * Fy * p.Sy);
+        out.aux.Mp = Mp;
+        out.states.push(LS("Y", "Yielding (plastic moment)", "F6-1", Mp));
+        out.states.push(NA("LTB", "Lateral-torsional buckling", "—", "does not apply for minor-axis bending"));
+
+        const f = cls.flange;
+        if (!f || f.lam == null) {
+          out.states.push(NA("FLB", "Flange local buckling", "F6-2", missNote(["flange b/t"])));
+        } else if (f.cls === "compact") {
+          out.states.push(NA("FLB", "Flange local buckling", "F6-2", "compact flange — FLB does not apply"));
+        } else if (f.cls === "noncompact") {
+          out.states.push(
+            LS("FLB", "Flange local buckling (noncompact)", "F6-2", interp(Mp, 0.7 * Fy * p.Sy, f.lam, f.lp, f.lr)),
+          );
+        } else {
+          const Fcr = (0.69 * E) / sq(f.lam);
+          out.aux.Fcr = Fcr;
+          out.states.push(LS("FLB", "Flange local buckling (slender)", "F6-3 / F6-4", Fcr * p.Sy));
+        }
+        return out;
+      }
+
+      /* =====================================================================
+       * F7 — Square and rectangular HSS and box sections
+       * ===================================================================*/
+      function hssEffectiveS(p, q, major) {
+        // Effective section modulus with the compression flange reduced to be.
+        const { Fy, E } = q;
+        const t = p.tdes,
+          A = p.A,
+          I = major ? p.Ix : p.Iy,
+          depth = major ? p.Ht : p.B;
+        if ([t, A, I, depth].some((v) => v == null)) return null;
+        const lam = major ? p.b_t : p.h_t; // flat width of the compression flange / t
+        if (lam == null) return null;
+        const b = lam * t;
+        const be = Math.min(b, 1.92 * t * Math.sqrt(E / Fy) * (1 - (0.38 / lam) * Math.sqrt(E / Fy)));
+        if (be >= b) return { Se: I / (depth / 2), be, b, full: true };
+        const dA = (b - be) * t;
+        const yTop = depth / 2 - t / 2;
+        const Ap = A - dA;
+        const shift = (-dA * yTop) / Ap; // centroid moves away from the compression flange
+        const Io = I - dA * sq(yTop);
+        const Ieff = Io - Ap * sq(shift);
+        const cTop = depth / 2 - shift;
+        return { Se: Ieff / cTop, be, b, Ieff, shift, full: false };
+      }
+
+      function F7(p, q, cls) {
+        const { Fy, E, Lb, Cb, axis } = q;
+        const major = axis === "major";
+        const out = { id: "F7", title: "Square and rectangular HSS and box sections", states: [], aux: {} };
+        const Z = major ? p.Zx : p.Zy,
+          S = major ? p.Sx : p.Sy;
+        const miss = need(p, [major ? "Zx" : "Zy", major ? "Sx" : "Sy"]);
+        if (miss) {
+          out.states.push(NA("Y", "Yielding", "F7-1", missNote(miss)));
+          return out;
+        }
+
+        const Mp = Fy * Z;
+        out.aux.Mp = Mp;
+        out.states.push(LS("Y", "Yielding (plastic moment)", "F7-1", Mp));
+
+        // --- Flange local buckling (the wall perpendicular to the bending axis)
+        const fl = major ? cls.flange : cls.web;
+        if (!fl || fl.lam == null) {
+          out.states.push(NA("FLB", "Flange local buckling", "F7-2", missNote(["b/t"])));
+        } else if (fl.cls === "compact") {
+          out.states.push(NA("FLB", "Flange local buckling", "F7-2", "compact flange — FLB does not apply"));
+        } else if (fl.cls === "noncompact") {
+          out.states.push(
+            LS(
+              "FLB",
+              "Flange local buckling (noncompact)",
+              "F7-2",
+              Math.min(Mp - (Mp - Fy * S) * (3.57 * fl.lam * Math.sqrt(Fy / E) - 4.0), Mp),
+            ),
+          );
+        } else {
+          const eff = hssEffectiveS(p, q, major);
+          if (!eff)
+            out.states.push(
+              NA("FLB", "Flange local buckling (slender)", "F7-3", missNote(["A", "t<sub>des</sub>", "H", "B"])),
+            );
+          else {
+            out.aux.Se = eff.Se;
+            out.aux.be = eff.be;
+            out.states.push(LS("FLB", "Flange local buckling (slender)", "F7-3", Fy * eff.Se));
+          }
+        }
+
+        // --- Web local buckling (the wall parallel to the bending plane)
+        const wb = major ? cls.web : cls.flange;
+        if (!wb || wb.lam == null) {
+          out.states.push(NA("WLB", "Web local buckling", "F7-6", missNote(["h/t"])));
+        } else if (wb.cls === "compact") {
+          out.states.push(NA("WLB", "Web local buckling", "F7-6", "compact web — WLB does not apply"));
+        } else if (wb.cls === "noncompact") {
+          out.states.push(
+            LS(
+              "WLB",
+              "Web local buckling (noncompact)",
+              "F7-6",
+              Math.min(Mp - (Mp - Fy * S) * (0.305 * wb.lam * Math.sqrt(Fy / E) - 0.738), Mp),
+            ),
+          );
+        } else {
+          const aw = clamp((2 * wb.lam * p.tdes * p.tdes) / (fl && fl.lam ? fl.lam * p.tdes * p.tdes : 1), 0, 10);
+          const Rpg = Math.min(1.0, 1 - (aw / (1200 + 300 * aw)) * (wb.lam - 5.7 * Math.sqrt(E / Fy)));
+          out.aux.Rpg = Rpg;
+          out.states.push(
+            LS(
+              "WLB",
+              "Web local buckling (slender)",
+              "F7-7",
+              Rpg * Fy * S,
+              "R<sub>pg</sub> per Eq. F5-6 with a<sub>w</sub> = 2ht/bt",
+            ),
+          );
+        }
+
+        // --- Lateral-torsional buckling
+        const r = major ? p.ry : p.rx;
+        const lmiss = need(p, ["J", "A", major ? "ry" : "rx"]);
+        if (lmiss) {
+          out.states.push(NA("LTB", "Lateral-torsional buckling", "F7-10", missNote(lmiss)));
+        } else {
+          const rtJA = Math.sqrt(p.J * p.A);
+          const Lp = (0.13 * E * r * rtJA) / Mp;
+          const Lr = (2 * E * r * rtJA) / (0.7 * Fy * S);
+          Object.assign(out.aux, { Lp, Lr });
+          if (Lb <= Lp) {
+            out.states.push(
+              NA(
+                "LTB",
+                "Lateral-torsional buckling",
+                "F7-10",
+                "L<sub>b</sub> \u2264 L<sub>p</sub> — LTB does not apply",
+              ),
+            );
+          } else if (Lb <= Lr) {
+            out.states.push(
+              LS(
+                "LTB",
+                "Lateral-torsional buckling (inelastic)",
+                "F7-10",
+                Math.min(Cb * (Mp - (Mp - 0.7 * Fy * S) * ((Lb - Lp) / (Lr - Lp))), Mp),
+              ),
+            );
+          } else {
+            out.states.push(
+              LS("LTB", "Lateral-torsional buckling (elastic)", "F7-11", Math.min((2 * E * Cb * rtJA) / (Lb / r), Mp)),
+            );
+          }
+        }
+        return out;
+      }
+
+      /* =====================================================================
+       * F8 — Round HSS
+       * ===================================================================*/
+      function F8(p, q, cls) {
+        const { Fy, E } = q;
+        const out = { id: "F8", title: "Round HSS", states: [], aux: {} };
+        const miss = need(p, ["Zx", "Sx", "D_t"]);
+        if (miss) {
+          out.states.push(NA("Y", "Yielding", "F8-1", missNote(miss)));
+          return out;
+        }
+
         const Mp = Fy * p.Zx,
-          lp = Lp(Fy, p),
-          lr = Lr(Fy, p);
-        let region, M;
-        if (Lb_in <= lp) {
-          region = "plastic moment";
-          M = Mp;
-        } // F2-1
-        else if (Lb_in <= lr) {
-          region = "inelastic ltb";
-          const Fp = Mp / p.Sx,
-            Fn = Cb * (Fp - ((Fp - 0.7 * Fy) * (Lb_in - lp)) / (lr - lp));
-          M = Math.min(Fn, Fp) * p.Sx;
-        } // F2-2
-        else {
-          region = "elastic ltb";
-          M = Math.min(Fcr(Lb_in, Cb, p) * p.Sx, Mp);
-        } // F2-3/4
-        return { Mn: M, Mp, Lp: lp, Lr: lr, region };
+          Dt = p.D_t;
+        out.aux.Mp = Mp;
+        out.aux.Dt_limit = (0.45 * E) / Fy;
+        out.states.push(LS("Y", "Yielding (plastic moment)", "F8-1", Mp));
+        out.states.push(NA("LTB", "Lateral-torsional buckling", "—", "does not apply to round HSS"));
+
+        const f = cls.flange;
+        if (f.cls === "compact") {
+          out.states.push(NA("LB", "Local buckling", "F8-2", "compact wall — local buckling does not apply"));
+        } else if (f.cls === "noncompact") {
+          out.states.push(LS("LB", "Local buckling (noncompact)", "F8-2", ((0.021 * E) / Dt + Fy) * p.Sx));
+        } else {
+          const Fcr = (0.33 * E) / Dt;
+          out.aux.Fcr = Fcr;
+          out.states.push(LS("LB", "Local buckling (slender)", "F8-3 / F8-4", Fcr * p.Sx));
+        }
+        return out;
       }
 
-      // --- Canvas text with true subscripts ---
+      /* =====================================================================
+       * F9 — Tees and double angles loaded in the plane of symmetry
+       * ===================================================================*/
+      function F9(p, q, cls) {
+        const { Fy, E, Lb } = q;
+        const isDbl = p.group === "2L";
+        const stemComp = q.opts.teeStem === "compression";
+        const Cb = stemComp ? 1.0 : q.Cb; // F9: Cb = 1.0 when the stem is in compression
+        const out = {
+          id: "F9",
+          title: "Tees and double angles loaded in the plane of symmetry",
+          states: [],
+          aux: { CbUsed: Cb },
+        };
+        const miss = need(p, ["Zx", "Iy", "J", "d", "ry"]);
+        if (miss || (p.Sx == null && p.Sxt == null)) {
+          out.states.push(NA("Y", "Yielding", "F9-1", missNote(miss || ["S_x or I_x + ybar"])));
+          return out;
+        }
+
+        const G = E / 2.6; // 11,154 ksi for E = 29,000 ksi
+        const Sstem = p.Sxt != null ? p.Sxt : p.Sx; // extreme fiber at the stem tip
+        const Sflg = p.Sxc != null ? p.Sxc : p.Sx; // extreme fiber at the flange
+        const My = Fy * Sstem;
+
+        // --- F9.1 Yielding
+        let Mp;
+        if (!stemComp) Mp = Math.min(Fy * p.Zx, 1.6 * My);
+        else if (isDbl) Mp = 1.5 * My;
+        else Mp = My;
+        out.aux.Mp = Mp;
+        out.aux.My = My;
+        out.states.push(
+          LS(
+            "Y",
+            "Yielding" + (stemComp ? " (stem/web leg in compression)" : " (stem/web leg in tension)"),
+            "F9-1",
+            Mp,
+          ),
+        );
+
+        // --- F9.2 Lateral-torsional buckling
+        const Bsign = stemComp ? -1 : 1;
+        const B = Bsign * 2.3 * (p.d / Lb) * Math.sqrt(p.Iy / p.J);
+        const Mcr = ((Math.PI * Cb) / Lb) * Math.sqrt(E * p.Iy * G * p.J) * (B + Math.sqrt(1 + sq(B)));
+        out.aux.B = B;
+        out.aux.Mcr = Mcr;
+
+        if (stemComp) {
+          out.states.push(
+            LS(
+              "LTB",
+              "Lateral-torsional buckling (stem in compression)",
+              "F9-5 / F9-6",
+              Mcr,
+              "B is negative and C<sub>b</sub> = 1.0 per F9.2(b)",
+            ),
+          );
+        } else {
+          const Lp = 1.76 * p.ry * Math.sqrt(E / Fy);
+          const Lr =
+            1.95 * (E / Fy) * (Math.sqrt(p.Iy * p.J) / Sstem) * Math.sqrt(2.36 * (Fy / E) * ((p.d * Sstem) / p.J) + 1);
+          Object.assign(out.aux, { Lp, Lr });
+          if (Lb <= Lp)
+            out.states.push(
+              NA(
+                "LTB",
+                "Lateral-torsional buckling",
+                "F9-3",
+                "L<sub>b</sub> \u2264 L<sub>p</sub> — LTB does not apply",
+              ),
+            );
+          else if (Lb <= Lr)
+            out.states.push(
+              LS(
+                "LTB",
+                "Lateral-torsional buckling (inelastic)",
+                "F9-4",
+                Math.min(Mp - (Mp - My) * ((Lb - Lp) / (Lr - Lp)), Mp),
+              ),
+            );
+          else out.states.push(LS("LTB", "Lateral-torsional buckling (elastic)", "F9-5 / F9-6", Math.min(Mcr, Mp)));
+        }
+
+        // --- F9.3 Flange local buckling
+        const f = cls.flange;
+        if (!f || f.lam == null) {
+          out.states.push(NA("FLB", "Flange local buckling", "F9-7", missNote(["b<sub>f</sub>/2t<sub>f</sub>"])));
+        } else if (f.cls === "compact") {
+          out.states.push(NA("FLB", "Flange local buckling", "F9-7", "compact flange — FLB does not apply"));
+        } else if (f.cls === "noncompact") {
+          out.states.push(
+            LS(
+              "FLB",
+              "Flange local buckling (noncompact)",
+              "F9-7",
+              Math.min(interp(Mp, 0.7 * Fy * Sflg, f.lam, f.lp, f.lr), 1.6 * My),
+            ),
+          );
+        } else {
+          out.states.push(LS("FLB", "Flange local buckling (slender)", "F9-8", (0.7 * E * Sflg) / sq(f.lam)));
+        }
+
+        // --- F9.4 Stem local buckling (tees) — only when the stem is in compression
+        const w = cls.web;
+        if (isDbl) {
+          out.states.push(
+            NA("SLB", "Web-leg local buckling", "F10.3", "double angles — use the F10.3 leg local buckling check"),
+          );
+        } else if (!stemComp) {
+          out.states.push(NA("SLB", "Stem local buckling", "F9-9", "stem in tension — does not apply"));
+        } else if (!w || w.lam == null) {
+          out.states.push(NA("SLB", "Stem local buckling", "F9-9", missNote(["d/t<sub>w</sub>"])));
+        } else {
+          const sE = Math.sqrt(E / Fy);
+          let Fcr;
+          if (w.lam <= 0.84 * sE) Fcr = Fy;
+          else if (w.lam <= 1.52 * sE) Fcr = (1.43 - 0.515 * w.lam * Math.sqrt(Fy / E)) * Fy;
+          else Fcr = (1.52 * E) / sq(w.lam);
+          out.aux.FcrStem = Fcr;
+          out.states.push(LS("SLB", "Stem local buckling in flexural compression", "F9-9 \u2026 F9-12", Fcr * Sstem));
+        }
+        return out;
+      }
+
+      /* =====================================================================
+       * F10 — Single angles
+       * ===================================================================*/
+      function F10(p, q, cls) {
+        const { Fy, E, Lb } = q;
+        const Cb = Math.min(q.Cb, 1.5); // F10: Cb from Eq. F1-1 but not more than 1.5
+        const mode = q.opts.angBend;
+        const toeComp = q.opts.angToe === "compression";
+        const out = { id: "F10", title: "Single angles", states: [], aux: { CbUsed: Cb } };
+        const miss = need(p, ["Sx", "t", "leg_b"]);
+        if (miss) {
+          out.states.push(NA("Y", "Yielding", "F10-1", missNote(miss)));
+          return out;
+        }
+
+        // Section modulus about the axis of bending
+        const geo = mode !== "principal";
+        const Sgeo = geo ? (mode === "geometric_free" ? 0.8 * p.Sx : p.Sx) : p.Sw != null ? p.Sw : p.Sx;
+        const My = Fy * Sgeo;
+        out.aux.My = My;
+        out.aux.S = Sgeo;
+        out.states.push(LS("Y", "Yielding", "F10-1", 1.5 * My));
+
+        // --- F10.2 Lateral-torsional buckling — elastic moment Me
+        let Me = null,
+          eqMe = "F10-4";
+        if (mode === "principal") {
+          const m2 = need(p, ["A", "rz"]);
+          if (!m2) {
+            const bw = p.betaw != null ? p.betaw : 0; // 0 for equal-leg angles
+            const x = (bw * p.rz) / (Lb * p.t);
+            Me = ((9 * E * p.A * p.rz * p.t * Cb) / (8 * Lb)) * (Math.sqrt(1 + 4.4 * sq(x)) + x);
+            eqMe = "F10-4";
+          }
+        } else {
+          const b = p.leg_b,
+            t = p.t;
+          const k = (0.58 * E * Math.pow(b, 4) * t * Cb) / sq(Lb);
+          const root = Math.sqrt(1 + 0.88 * sq((Lb * t) / sq(b)));
+          Me = k * (toeComp ? root - 1 : root + 1);
+          if (mode === "geometric_restrained") Me *= 1.25;
+          eqMe = toeComp ? "F10-6a" : "F10-6b";
+        }
+
+        if (Me == null) {
+          out.states.push(NA("LTB", "Lateral-torsional buckling", eqMe, missNote(["A", "r<sub>z</sub>"])));
+        } else {
+          out.aux.Me = Me;
+          const Mn =
+            Me <= My ? (0.92 - (0.17 * Me) / My) * Me : Math.min((1.92 - 1.17 * Math.sqrt(My / Me)) * My, 1.5 * My);
+          out.states.push(
+            LS("LTB", "Lateral-torsional buckling", Me <= My ? "F10-2" : "F10-3", Mn, "M<sub>e</sub> from Eq. " + eqMe),
+          );
+        }
+
+        // --- F10.3 Leg local buckling — only when the leg tip is in compression
+        const f = cls.flange;
+        if (!toeComp) {
+          out.states.push(NA("LLB", "Leg local buckling", "F10-7", "leg tip in tension — does not apply"));
+        } else if (!f || f.lam == null) {
+          out.states.push(NA("LLB", "Leg local buckling", "F10-7", missNote(["b/t"])));
+        } else if (f.cls === "compact") {
+          out.states.push(NA("LLB", "Leg local buckling", "F10-7", "compact leg — LLB does not apply"));
+        } else {
+          const Sc = p.Sc != null ? p.Sc : Sgeo; // elastic modulus to the compression toe
+          if (f.cls === "noncompact")
+            out.states.push(
+              LS(
+                "LLB",
+                "Leg local buckling (noncompact)",
+                "F10-7",
+                Fy * Sc * (2.43 - 1.72 * f.lam * Math.sqrt(Fy / E)),
+              ),
+            );
+          else out.states.push(LS("LLB", "Leg local buckling (slender)", "F10-8", ((0.71 * E) / sq(f.lam)) * Sc));
+        }
+        return out;
+      }
+
+      /* =====================================================================
+       * F11 — Rectangular bars and rounds
+       * ===================================================================*/
+      function F11(p, q) {
+        const { Fy, E, Lb, Cb, axis } = q;
+        const out = { id: "F11", title: "Rectangular bars and rounds", states: [], aux: {} };
+        const round = p.group === "BAR_ROUND";
+        const major = axis === "major";
+        const Z = major ? p.Zx : p.Zy,
+          S = major ? p.Sx : p.Sy;
+        if (Z == null || S == null) {
+          out.states.push(NA("Y", "Yielding", "F11-1", missNote(["Z", "S"])));
+          return out;
+        }
+
+        const Mp = Math.min(Fy * Z, 1.6 * Fy * S);
+        out.aux.Mp = Mp;
+        out.states.push(LS("Y", "Yielding", "F11-1", Mp));
+
+        if (round || !major) {
+          out.states.push(
+            NA(
+              "LTB",
+              "Lateral-torsional buckling",
+              "—",
+              round ? "rounds — LTB does not apply" : "rectangular bar bent about its minor axis — LTB does not apply",
+            ),
+          );
+          return out;
+        }
+        const miss = need(p, ["d", "t"]);
+        if (miss) {
+          out.states.push(NA("LTB", "Lateral-torsional buckling", "F11-2", missNote(miss)));
+          return out;
+        }
+
+        const par = (Lb * p.d) / sq(p.t);
+        const lim1 = (0.08 * E) / Fy,
+          lim2 = (1.9 * E) / Fy;
+        Object.assign(out.aux, { par, lim1, lim2 });
+        if (par <= lim1) {
+          out.states.push(
+            NA(
+              "LTB",
+              "Lateral-torsional buckling",
+              "F11-2",
+              "L<sub>b</sub>d/t\u00b2 \u2264 0.08E/F<sub>y</sub> — LTB does not apply",
+            ),
+          );
+        } else if (par <= lim2) {
+          out.states.push(
+            LS(
+              "LTB",
+              "Lateral-torsional buckling (inelastic)",
+              "F11-2",
+              Math.min(Cb * (1.52 - 0.274 * par * (Fy / E)) * Fy * S, Mp),
+            ),
+          );
+        } else {
+          const Fcr = (1.9 * E * Cb) / par;
+          out.aux.Fcr = Fcr;
+          out.states.push(LS("LTB", "Lateral-torsional buckling (elastic)", "F11-3 / F11-4", Math.min(Fcr * S, Mp)));
+        }
+        return out;
+      }
+
+      /* =====================================================================
+       * F12 — Unsymmetrical shapes (user-supplied critical stresses)
+       * ===================================================================*/
+      function F12(p, q) {
+        const { Fy, axis } = q;
+        const out = { id: "F12", title: "Unsymmetrical shapes", states: [], aux: {} };
+        const S = axis === "major" ? p.Sx : p.Sy;
+        if (S == null) {
+          out.states.push(NA("Y", "Yielding", "F12-1", missNote(["S"])));
+          return out;
+        }
+        out.states.push(LS("Y", "Yielding", "F12-1", Fy * S));
+        if (p.Fcr_LTB != null)
+          out.states.push(LS("LTB", "Lateral-torsional buckling (user F\u1d04\u0280)", "F12-2", p.Fcr_LTB * S));
+        else
+          out.states.push(
+            NA(
+              "LTB",
+              "Lateral-torsional buckling",
+              "F12-2",
+              "enter F<sub>cr,LTB</sub> under Custom section properties",
+            ),
+          );
+        if (p.Fcr_LB != null) out.states.push(LS("LB", "Local buckling (user F\u1d04\u0280)", "F12-3", p.Fcr_LB * S));
+        else
+          out.states.push(
+            NA("LB", "Local buckling", "F12-3", "enter F<sub>cr,LB</sub> under Custom section properties"),
+          );
+        out.note =
+          "F12 requires a rational elastic-stability analysis for F<sub>cr</sub>; all limit states are checked at the point of maximum elastic stress.";
+        return out;
+      }
+
+      /* =====================================================================
+       * F13.1 — Tension flange rupture (holes in the tension flange)
+       * ===================================================================*/
+      function F13_1(p, q, res) {
+        const { Fy, Fu, axis } = q;
+        const Afg = q.opts.Afg,
+          Afn = q.opts.Afn;
+        if (!(Afg > 0) || !(Afn > 0)) return null;
+        const S = axis === "major" ? (p.Sxt != null ? p.Sxt : p.Sx) : p.Sy;
+        if (S == null) return null;
+        const Yt = Fy / Fu <= 0.8 ? 1.0 : 1.1;
+        if (Fu * Afn >= Yt * Fy * Afg)
+          return NA(
+            "RUP",
+            "Tension flange rupture",
+            "F13-1",
+            "F<sub>u</sub>A<sub>fn</sub> \u2265 Y<sub>t</sub>F<sub>y</sub>A<sub>fg</sub> — no reduction required (Y<sub>t</sub> = " +
+              Yt.toFixed(1) +
+              ")",
+          );
+        return LS("RUP", "Tension flange rupture", "F13-1", ((Fu * Afn) / Afg) * S, "Y<sub>t</sub> = " + Yt.toFixed(1));
+      }
+
+      /* =====================================================================
+       * DISPATCHER — pick the governing Chapter F section, run it, combine
+       * ===================================================================*/
+      function runChapterF(p, q) {
+        const cls = classifySection(p, q.E, q.Fy, q.opts);
+        const g = p.group;
+        let res;
+
+        if (g === "I" || g === "C") {
+          if (q.axis === "minor") {
+            res = F6(p, q, cls);
+          } else {
+            const wcls = cls.web ? cls.web.cls : "compact";
+            const fcls = cls.flange ? cls.flange.cls : "compact";
+            const doubly = g === "I" && !p.singlySym;
+            if (wcls === "slender") res = F5(p, q, cls);
+            else if (wcls === "noncompact" || p.singlySym) res = F4(p, q, cls);
+            else if (fcls === "compact") res = F2(p, q);
+            else if (doubly) res = F3(p, q, cls);
+            else {
+              res = F3(p, q, cls); // channel with a noncompact/slender flange
+              res.id = "F2 + F3";
+              res.title =
+                "Channel with a noncompact or slender flange — F2 LTB with an F3-form flange local buckling check";
+              res.caution =
+                "AISC F2 covers compact channels only. The flange local buckling check applied here follows the F3 form; confirm this treatment is acceptable for your project.";
+            }
+          }
+        } else if (g === "HSS_RECT") res = F7(p, q, cls);
+        else if (g === "HSS_ROUND") res = F8(p, q, cls);
+        else if (g === "WT" || g === "2L") res = F9(p, q, cls);
+        else if (g === "L") res = F10(p, q, cls);
+        else if (g === "BAR_RECT" || g === "BAR_ROUND") res = F11(p, q);
+        else res = F12(p, q);
+
+        // F13.1 applies across the board
+        const rup = F13_1(p, q, res);
+        if (rup) res.states.push(rup);
+
+        res.cls = cls;
+        const active = res.states.filter((s) => s.applies && s.Mn != null && isFinite(s.Mn));
+        if (active.length) {
+          let gov = active[0];
+          active.forEach((s) => {
+            if (s.Mn < gov.Mn) gov = s;
+          });
+          res.Mn = gov.Mn;
+          res.gov = gov;
+          active.forEach((s) => (s.governs = s === gov));
+        } else {
+          res.Mn = null;
+          res.gov = null;
+        }
+        return res;
+      }
+      /* =====================================================================
+       * LIGHTWEIGHT MATH RENDERER
+       *   frac{a}{b}  sqrt{a}  x_a  x^2  \pi \le \ge \cdot \lambda \phi \Omega
+       * ===================================================================*/
+      const SYM = {
+        "\\pi": "\u03c0",
+        "\\le": "\u2264",
+        "\\ge": "\u2265",
+        "\\cdot": "\u00b7",
+        "\\lambda": "\u03bb",
+        "\\phi": "\u03d5",
+        "\\Omega": "\u03a9",
+        "\\times": "\u00d7",
+        "\\alpha": "\u03b1",
+        "\\beta": "\u03b2",
+        "\\pm": "\u00b1",
+        "\\infty": "\u221e",
+      };
+
+      function renderMath(src) {
+        let i = 0;
+        function txt(s) {
+          Object.keys(SYM).forEach((k) => (s = s.split(k).join(SYM[k])));
+          return s.replace(/([A-Za-z]+)/g, "<i>$1</i>");
+        }
+        function group() {
+          if (src[i] === "{") {
+            i++;
+            return parse("}");
+          }
+          const m = /^[A-Za-z0-9.]+/.exec(src.slice(i));
+          if (m) {
+            i += m[0].length;
+            return txt(m[0]);
+          }
+          return "";
+        }
+        function parse(stop) {
+          let html = "",
+            buf = "";
+          const flush = () => {
+            if (buf) {
+              html += txt(buf);
+              buf = "";
+            }
+          };
+          while (i < src.length) {
+            if (stop && src[i] === stop) {
+              i++;
+              flush();
+              return html;
+            }
+            if (src.startsWith("frac{", i)) {
+              flush();
+              i += 5;
+              const a = parse("}");
+              if (src[i] === "{") i++;
+              const b = parse("}");
+              html += `<span class="frac"><span class="fnum">${a}</span><span class="fden">${b}</span></span>`;
+              continue;
+            }
+            if (src.startsWith("sqrt{", i)) {
+              flush();
+              i += 5;
+              const a = parse("}");
+              html += `<span class="rad">\u221a<span class="rand">${a}</span></span>`;
+              continue;
+            }
+            if (src[i] === "_") {
+              flush();
+              i++;
+              html += `<sub>${group()}</sub>`;
+              continue;
+            }
+            if (src[i] === "^") {
+              flush();
+              i++;
+              html += `<sup>${group()}</sup>`;
+              continue;
+            }
+            buf += src[i++];
+          }
+          flush();
+          return html;
+        }
+        return `<span class="math">${parse(null)}</span>`;
+      }
+
+      /* Governing-equation library (AISC 360-22 numbering) */
+      const EQ = {
+        "F2-1": ["M_n = M_p = F_y Z_x"],
+        "F2-2": ["M_n = C_b [ M_p - ( M_p - 0.7 F_y S_x ) frac{L_b - L_p}{L_r - L_p} ] \\le M_p"],
+        "F2-3 / F2-4": [
+          "M_n = F_cr S_x \\le M_p",
+          "F_cr = frac{C_b \\pi^2 E}{(L_b / r_ts)^2} sqrt{1 + 0.078 frac{J c}{S_x h_o} (frac{L_b}{r_ts})^2}",
+        ],
+        "F3-1": ["M_n = M_p - ( M_p - 0.7 F_y S_x ) ( frac{\\lambda - \\lambda_pf}{\\lambda_rf - \\lambda_pf} )"],
+        "F3-2": ["M_n = frac{0.9 E k_c S_x}{\\lambda^2}"],
+        "F4-1": ["M_n = R_pc M_yc = R_pc F_y S_xc"],
+        "F4-2": ["M_n = C_b [ R_pc M_yc - ( R_pc M_yc - F_L S_xc ) frac{L_b - L_p}{L_r - L_p} ] \\le R_pc M_yc"],
+        "F4-3 / F4-5": [
+          "M_n = F_cr S_xc \\le R_pc M_yc",
+          "F_cr = frac{C_b \\pi^2 E}{(L_b / r_t)^2} sqrt{1 + 0.078 frac{J}{S_xc h_o} (frac{L_b}{r_t})^2}",
+        ],
+        "F4-13": [
+          "M_n = R_pc M_yc - ( R_pc M_yc - F_L S_xc ) ( frac{\\lambda - \\lambda_pf}{\\lambda_rf - \\lambda_pf} )",
+        ],
+        "F4-14": ["M_n = frac{0.9 E k_c S_xc}{\\lambda^2}"],
+        "F4-15": ["M_n = R_pt M_yt = R_pt F_y S_xt"],
+        "F5-1": ["M_n = R_pg F_y S_xc"],
+        "F5-2 / F5-3": ["M_n = R_pg F_cr S_xc", "F_cr = C_b [ F_y - 0.3 F_y frac{L_b - L_p}{L_r - L_p} ] \\le F_y"],
+        "F5-2 / F5-4": ["M_n = R_pg F_cr S_xc", "F_cr = frac{C_b \\pi^2 E}{(L_b / r_t)^2} \\le F_y"],
+        "F5-7 / F5-8": [
+          "M_n = R_pg F_cr S_xc",
+          "F_cr = F_y - 0.3 F_y ( frac{\\lambda - \\lambda_pf}{\\lambda_rf - \\lambda_pf} )",
+        ],
+        "F5-7 / F5-9": ["M_n = R_pg F_cr S_xc", "F_cr = frac{0.9 E k_c}{\\lambda^2}"],
+        "F5-10": ["M_n = F_y S_xt"],
+        "F6-1": ["M_n = M_p = min ( F_y Z_y , 1.6 F_y S_y )"],
+        "F6-2": ["M_n = M_p - ( M_p - 0.7 F_y S_y ) ( frac{\\lambda - \\lambda_pf}{\\lambda_rf - \\lambda_pf} )"],
+        "F6-3 / F6-4": ["M_n = F_cr S_y", "F_cr = frac{0.69 E}{\\lambda^2}"],
+        "F7-1": ["M_n = M_p = F_y Z"],
+        "F7-2": ["M_n = M_p - ( M_p - F_y S ) ( 3.57 frac{b}{t} sqrt{frac{F_y}{E}} - 4.0 ) \\le M_p"],
+        "F7-3": [
+          "M_n = F_y S_e",
+          "b_e = 1.92 t sqrt{frac{E}{F_y}} [ 1 - frac{0.38}{b / t} sqrt{frac{E}{F_y}} ] \\le b",
+        ],
+        "F7-6": ["M_n = M_p - ( M_p - F_y S ) ( 0.305 frac{h}{t} sqrt{frac{F_y}{E}} - 0.738 ) \\le M_p"],
+        "F7-7": [
+          "M_n = R_pg F_y S",
+          "R_pg = 1 - frac{a_w}{1200 + 300 a_w} ( frac{h}{t} - 5.7 sqrt{frac{E}{F_y}} ) \\le 1.0",
+        ],
+        "F7-10": [
+          "M_n = C_b [ M_p - ( M_p - 0.7 F_y S ) frac{L_b - L_p}{L_r - L_p} ] \\le M_p",
+          "L_p = 0.13 E r_y frac{sqrt{J A_g}}{M_p}",
+          "L_r = 2 E r_y frac{sqrt{J A_g}}{0.7 F_y S}",
+        ],
+        "F7-11": ["M_n = frac{2 E C_b sqrt{J A_g}}{L_b / r_y} \\le M_p"],
+        "F8-1": ["M_n = M_p = F_y Z"],
+        "F8-2": ["M_n = ( frac{0.021 E}{D / t} + F_y ) S"],
+        "F8-3 / F8-4": ["M_n = F_cr S", "F_cr = frac{0.33 E}{D / t}"],
+        "F9-1": [
+          "M_n = M_p   (F9.1: stem in tension M_p = min(F_y Z_x , 1.6 M_y) ; tee stem in compression M_p = M_y ; double-angle web leg in compression M_p = 1.5 M_y)",
+        ],
+        "F9-4": [
+          "M_n = M_p - ( M_p - M_y ) ( frac{L_b - L_p}{L_r - L_p} )",
+          "L_p = 1.76 r_y sqrt{frac{E}{F_y}}",
+          "L_r = 1.95 frac{E}{F_y} frac{sqrt{I_y J}}{S_x} sqrt{2.36 frac{F_y}{E} frac{d S_x}{J} + 1}",
+        ],
+        "F9-5 / F9-6": [
+          "M_n = M_cr = frac{\\pi C_b sqrt{E I_y G J}}{L_b} [ B + sqrt{1 + B^2} ]",
+          "B = \\pm 2.3 frac{d}{L_b} sqrt{frac{I_y}{J}}   (negative when the stem is in compression)",
+        ],
+        "F9-7": [
+          "M_n = M_p - ( M_p - 0.7 F_y S_xc ) ( frac{\\lambda - \\lambda_pf}{\\lambda_rf - \\lambda_pf} ) \\le 1.6 M_y",
+        ],
+        "F9-8": ["M_n = frac{0.7 E S_xc}{\\lambda^2}"],
+        "F9-9 \u2026 F9-12": [
+          "M_n = F_cr S_x",
+          "F_cr = F_y   for \\lambda \\le 0.84 sqrt{E / F_y}",
+          "F_cr = ( 1.43 - 0.515 \\lambda sqrt{frac{F_y}{E}} ) F_y   for 0.84 sqrt{E / F_y} < \\lambda \\le 1.52 sqrt{E / F_y}",
+          "F_cr = frac{1.52 E}{\\lambda^2}   for \\lambda > 1.52 sqrt{E / F_y}",
+        ],
+        "F10-1": ["M_n = 1.5 M_y"],
+        "F10-2": ["M_n = ( 0.92 - frac{0.17 M_e}{M_y} ) M_e   for M_e \\le M_y"],
+        "F10-3": ["M_n = ( 1.92 - 1.17 sqrt{frac{M_y}{M_e}} ) M_y \\le 1.5 M_y   for M_e > M_y"],
+        "F10-4": [
+          "M_e = frac{9 E A r_z t C_b}{8 L_b} [ sqrt{1 + 4.4 (frac{\\beta_w r_z}{L_b t})^2} + frac{\\beta_w r_z}{L_b t} ]",
+        ],
+        "F10-6a": [
+          "M_e = frac{0.58 E b^4 t C_b}{L_b^2} [ sqrt{1 + 0.88 (frac{L_b t}{b^2})^2} - 1 ]   (max compression at the toe)",
+        ],
+        "F10-6b": [
+          "M_e = frac{0.58 E b^4 t C_b}{L_b^2} [ sqrt{1 + 0.88 (frac{L_b t}{b^2})^2} + 1 ]   (max tension at the toe)",
+        ],
+        "F10-7": ["M_n = F_y S_c ( 2.43 - 1.72 frac{b}{t} sqrt{frac{F_y}{E}} )"],
+        "F10-8": ["M_n = F_cr S_c", "F_cr = frac{0.71 E}{(b / t)^2}"],
+        "F11-1": ["M_n = M_p = min ( F_y Z , 1.6 F_y S )"],
+        "F11-2": ["M_n = C_b [ 1.52 - 0.274 ( frac{L_b d}{t^2} ) frac{F_y}{E} ] M_y \\le M_p"],
+        "F11-3 / F11-4": ["M_n = F_cr S \\le M_p", "F_cr = frac{1.9 E C_b}{L_b d / t^2}"],
+        "F12-1": ["M_n = F_y S_min"],
+        "F12-2": ["M_n = F_cr S_min   (lateral-torsional buckling, from a rational analysis)"],
+        "F12-3": ["M_n = F_cr S_min   (local buckling, from a rational analysis)"],
+        "F13-1": ["M_n = frac{F_u A_fn}{A_fg} S_x   when F_u A_fn < Y_t F_y A_fg"],
+      };
+
+      const SUPPORT_EQ = {
+        F2: [
+          ["Effective radius of gyration (Eq. F2-7)", "r_ts^2 = frac{sqrt{I_y C_w}}{S_x}"],
+          ["Limiting lengths (Eq. F2-5, F2-6)", "L_p = 1.76 r_y sqrt{frac{E}{F_y}}"],
+        ],
+        F3: [["Flange slenderness parameter", "k_c = frac{4}{sqrt{h / t_w}} ,  0.35 \\le k_c \\le 0.76"]],
+        F4: [
+          [
+            "Effective radius of gyration (Eq. F4-11)",
+            "r_t = frac{b_fc}{sqrt{12 ( 1 + frac{1}{6} a_w )}} ,  a_w = frac{h_c t_w}{b_fc t_fc}",
+          ],
+          [
+            "Web plastification factor (Eq. F4-9)",
+            "R_pc = frac{M_p}{M_yc} - ( frac{M_p}{M_yc} - 1 ) ( frac{\\lambda_w - \\lambda_pw}{\\lambda_rw - \\lambda_pw} ) \\le frac{M_p}{M_yc}",
+          ],
+          ["Stress at the onset of yielding (Eq. F4-6)", "F_L = 0.7 F_y   for frac{S_xt}{S_xc} \\ge 0.7"],
+        ],
+        F5: [
+          [
+            "Bending strength reduction factor (Eq. F5-6)",
+            "R_pg = 1 - frac{a_w}{1200 + 300 a_w} ( frac{h_c}{t_w} - 5.7 sqrt{frac{E}{F_y}} ) \\le 1.0",
+          ],
+        ],
+        F9: [["Shear modulus", "G = 11200 ksi"]],
+      };
+
+      function eqBlock(res) {
+        if (!res.gov) return "";
+        let html = `<h3>Governing limit state — ${res.gov.label} (Eq. ${res.gov.eq})</h3>`;
+        // coefficient c for F2/F3 channels vs I-shapes
+        if (res.id === "F2" || res.id === "F3") {
+          html += `<div class="eqrow"><span class="cap">Cross-section coefficient c (Eq. F2-8${
+            CUR.p.group === "C" ? "b — channel" : "a — doubly symmetric I-shape"
+          })</span>${renderMath(CUR.p.group === "C" ? "c = frac{h_o}{2} sqrt{frac{I_y}{C_w}}" : "c = 1.0")}</div>`;
+        }
+        const lines = EQ[res.gov.eq];
+        if (lines) lines.forEach((l) => (html += `<div class="eqrow">${renderMath(l)}</div>`));
+        else html += `<div class="eqrow"><span class="cap">See AISC 360-22 Eq. ${res.gov.eq}</span></div>`;
+        const sup = SUPPORT_EQ[res.id];
+        if (sup)
+          sup.forEach(
+            ([cap, m]) => (html += `<div class="eqrow"><span class="cap">${cap}</span>${renderMath(m)}</div>`),
+          );
+        return html;
+      }
+
+      /* =====================================================================
+       * CUSTOM PROPERTY FIELDS
+       * ===================================================================*/
+      const F = (k, l) => ({ k, l });
+      const FIELD_SETS = {
+        I: [
+          F("A", "A (in²)"),
+          F("d", "d (in)"),
+          F("bf", "b<sub>f</sub> (in)"),
+          F("tf", "t<sub>f</sub> (in)"),
+          F("tw", "t<sub>w</sub> (in)"),
+          F("bf_2tf", "b<sub>f</sub>/2t<sub>f</sub>"),
+          F("h_tw", "h/t<sub>w</sub>"),
+          F("Ix", "I<sub>x</sub> (in⁴)"),
+          F("Zx", "Z<sub>x</sub> (in³)"),
+          F("Sx", "S<sub>x</sub> (in³)"),
+          F("Iy", "I<sub>y</sub> (in⁴)"),
+          F("Zy", "Z<sub>y</sub> (in³)"),
+          F("Sy", "S<sub>y</sub> (in³)"),
+          F("ry", "r<sub>y</sub> (in)"),
+          F("J", "J (in⁴)"),
+          F("Cw", "C<sub>w</sub> (in⁶)"),
+          F("ho", "h<sub>o</sub> (in)"),
+          F("Sxc", "S<sub>xc</sub> (in³)"),
+          F("Sxt", "S<sub>xt</sub> (in³)"),
+          F("Iyc", "I<sub>yc</sub> (in⁴)"),
+          F("hc", "h<sub>c</sub> (in)"),
+        ],
+        C: [
+          F("A", "A (in²)"),
+          F("d", "d (in)"),
+          F("bf", "b<sub>f</sub> (in)"),
+          F("tf", "t<sub>f</sub> (in)"),
+          F("tw", "t<sub>w</sub> (in)"),
+          F("b_t", "b/t"),
+          F("h_tw", "h/t<sub>w</sub>"),
+          F("Zx", "Z<sub>x</sub> (in³)"),
+          F("Sx", "S<sub>x</sub> (in³)"),
+          F("Iy", "I<sub>y</sub> (in⁴)"),
+          F("Zy", "Z<sub>y</sub> (in³)"),
+          F("Sy", "S<sub>y</sub> (in³)"),
+          F("ry", "r<sub>y</sub> (in)"),
+          F("J", "J (in⁴)"),
+          F("Cw", "C<sub>w</sub> (in⁶)"),
+          F("ho", "h<sub>o</sub> (in)"),
+        ],
+        HSS_RECT: [
+          F("A", "A (in²)"),
+          F("Ht", "H (in)"),
+          F("B", "B (in)"),
+          F("tdes", "t<sub>des</sub> (in)"),
+          F("b_t", "b/t"),
+          F("h_t", "h/t"),
+          F("Ix", "I<sub>x</sub> (in⁴)"),
+          F("Zx", "Z<sub>x</sub> (in³)"),
+          F("Sx", "S<sub>x</sub> (in³)"),
+          F("rx", "r<sub>x</sub> (in)"),
+          F("Iy", "I<sub>y</sub> (in⁴)"),
+          F("Zy", "Z<sub>y</sub> (in³)"),
+          F("Sy", "S<sub>y</sub> (in³)"),
+          F("ry", "r<sub>y</sub> (in)"),
+          F("J", "J (in⁴)"),
+        ],
+        HSS_ROUND: [
+          F("A", "A (in²)"),
+          F("OD", "D (in)"),
+          F("tdes", "t<sub>des</sub> (in)"),
+          F("D_t", "D/t"),
+          F("Zx", "Z (in³)"),
+          F("Sx", "S (in³)"),
+          F("J", "J (in⁴)"),
+        ],
+        WT: [
+          F("A", "A (in²)"),
+          F("d", "d (in)"),
+          F("bf", "b<sub>f</sub> (in)"),
+          F("tf", "t<sub>f</sub> (in)"),
+          F("tw", "t<sub>w</sub> (in)"),
+          F("bf_2tf", "b<sub>f</sub>/2t<sub>f</sub>"),
+          F("d_t", "d/t<sub>w</sub>"),
+          F("Ix", "I<sub>x</sub> (in⁴)"),
+          F("Zx", "Z<sub>x</sub> (in³)"),
+          F("ybar", "ȳ (in)"),
+          F("Iy", "I<sub>y</sub> (in⁴)"),
+          F("Zy", "Z<sub>y</sub> (in³)"),
+          F("Sy", "S<sub>y</sub> (in³)"),
+          F("ry", "r<sub>y</sub> (in)"),
+          F("J", "J (in⁴)"),
+        ],
+        "2L": [
+          F("A", "A (in²)"),
+          F("d", "d (in)"),
+          F("t", "t (in)"),
+          F("b_t", "b/t"),
+          F("d_t", "d/t"),
+          F("Ix", "I<sub>x</sub> (in⁴)"),
+          F("Zx", "Z<sub>x</sub> (in³)"),
+          F("Sxc", "S<sub>xc</sub> (in³)"),
+          F("Sxt", "S<sub>xt</sub> (in³)"),
+          F("Iy", "I<sub>y</sub> (in⁴)"),
+          F("ry", "r<sub>y</sub> (in)"),
+          F("J", "J (in⁴)"),
+        ],
+        L: [
+          F("A", "A (in²)"),
+          F("leg_b", "b — leg in compression (in)"),
+          F("leg_d", "d — other leg (in)"),
+          F("t", "t (in)"),
+          F("b_t", "b/t"),
+          F("Zx", "Z (in³)"),
+          F("Sx", "S — geometric axis (in³)"),
+          F("Sw", "S<sub>w</sub> — principal axis (in³)"),
+          F("Sc", "S<sub>c</sub> — to comp. toe (in³)"),
+          F("rz", "r<sub>z</sub> (in)"),
+          F("betaw", "β<sub>w</sub> (in) — 0 for equal legs"),
+        ],
+        BAR_RECT: [F("d", "d — depth in the plane of bending (in)"), F("t", "t — width (in)")],
+        BAR_ROUND: [F("d", "d — diameter (in)")],
+        GENERAL: [
+          F("Sx", "S<sub>x</sub> (in³)"),
+          F("Sy", "S<sub>y</sub> (in³)"),
+          F("Fcr_LTB", "F<sub>cr</sub> — LTB (ksi)"),
+          F("Fcr_LB", "F<sub>cr</sub> — local buckling (ksi)"),
+        ],
+      };
+      function fieldsFor(group) {
+        return FIELD_SETS[group] || FIELD_SETS.GENERAL;
+      }
+
+      /* =====================================================================
+       * DOM REFERENCES
+       * ===================================================================*/
+      const $ = (id) => document.getElementById(id);
+      const familySel = $("family"),
+        shapeSel = $("shape"),
+        axisSel = $("axis"),
+        Fy_ = $("Fy"),
+        Fu_ = $("Fu"),
+        Cb_ = $("Cb"),
+        Lb_ = $("Lb"),
+        Emod_ = $("Emod"),
+        lenUnit_ = $("lenUnit"),
+        Mmax_ = $("Mmax"),
+        Ma_ = $("Ma"),
+        Mb_ = $("Mb"),
+        Mc_ = $("Mc"),
+        cbMomentInputs_ = $("cbMomentInputs"),
+        customGrid = $("customGrid"),
+        teeStem_ = $("teeStem"),
+        angBend_ = $("angBend"),
+        angToe_ = $("angToe"),
+        builtUp_ = $("builtUp"),
+        Afg_ = $("Afg"),
+        Afn_ = $("Afn");
+
+      const CUR = { p: {}, res: null }; // current normalized section + result
+      let customOverrides = {};
+
+      /* =====================================================================
+       * INPUT ASSEMBLY
+       * ===================================================================*/
+      function currentFamily() {
+        return familySel.value;
+      }
+
+      function buildShapeList() {
+        const fam = currentFamily();
+        const names = CUSTOM_ONLY.includes(fam) ? [] : shapesInFamily(fam);
+        shapeSel.innerHTML = "";
+        if (!names.length) {
+          const o = document.createElement("option");
+          o.value = "__custom__";
+          o.textContent = "— custom properties —";
+          shapeSel.appendChild(o);
+          shapeSel.disabled = true;
+          document.getElementById("advCustom").open = true; // nothing to pick — show the inputs
+        } else {
+          shapeSel.disabled = false;
+          names.forEach((n) => {
+            const o = document.createElement("option");
+            o.value = o.textContent = n;
+            shapeSel.appendChild(o);
+          });
+          if (names.includes("W18X50")) shapeSel.value = "W18X50";
+        }
+      }
+
+      function buildCustomGrid(base) {
+        const group = base.group;
+        customGrid.innerHTML = "";
+        fieldsFor(group).forEach((f) => {
+          const wrap = document.createElement("div");
+          const lab = document.createElement("label");
+          lab.htmlFor = "cst_" + f.k;
+          lab.innerHTML = f.l;
+          const inp = document.createElement("input");
+          inp.type = "number";
+          inp.step = "any";
+          inp.id = "cst_" + f.k;
+          inp.dataset.key = f.k;
+          inp.value = base[f.k] != null ? base[f.k] : "";
+          inp.addEventListener("input", () => {
+            const v = inp.value === "" ? null : +inp.value;
+            if (v == null) delete customOverrides[f.k];
+            else customOverrides[f.k] = v;
+            refresh(true);
+          });
+          wrap.appendChild(lab);
+          wrap.appendChild(inp);
+          customGrid.appendChild(wrap);
+        });
+      }
+
+      function baseSection() {
+        const fam = currentFamily();
+        let base;
+        if (CUSTOM_ONLY.includes(fam) || shapeSel.value === "__custom__" || !DB[shapeSel.value]) {
+          base = { name: "Custom " + fam, family: fam, group: groupOf(fam) };
+        } else {
+          base = Object.assign({}, DB[shapeSel.value]);
+        }
+        base.group = groupOf(base.family);
+        return base;
+      }
+
+      function getCbInput() {
+        const mode = document.querySelector('input[name="cbMode"]:checked').value;
+        if (mode === "manual") return { Cb: +Cb_.value, mode, moments: null };
+        const moments = { Mmax: +Mmax_.value, Ma: +Ma_.value, Mb: +Mb_.value, Mc: +Mc_.value };
+        return { Cb: cbFromMoments(moments.Mmax, moments.Ma, moments.Mb, moments.Mc), mode, moments };
+      }
+
+      function syncCbModeUi() {
+        const isAuto = document.querySelector('input[name="cbMode"]:checked').value === "auto";
+        cbMomentInputs_.style.display = isAuto ? "block" : "none";
+        Cb_.readOnly = isAuto;
+        Cb_.classList.toggle("is-readonly", isAuto);
+        if (isAuto) {
+          const c = getCbInput();
+          Cb_.value = Number.isFinite(c.Cb) ? c.Cb.toFixed(3) : "";
+        }
+      }
+
+      /* =====================================================================
+       * CHART
+       * ===================================================================*/
+      const COLORS = {
+        Y: "#1a8a3f",
+        CFY: "#1a8a3f",
+        LTB: "#0b5cad",
+        FLB: "#d68910",
+        WLB: "#8e44ad",
+        SLB: "#16a085",
+        LLB: "#d68910",
+        LB: "#d68910",
+        TFY: "#7f6000",
+        RUP: "#c0392b",
+      };
+
       function drawRuns(g, runs, x, y, align, baseSize) {
         baseSize = baseSize || 12;
         const bFont = baseSize + "px system-ui",
@@ -823,36 +2535,44 @@
         g.textBaseline = pb;
       }
 
-      // --- Canvas plot of Mn vs Lb ---
-      function draw(name, Fy, Cb, Lb_in, phi, lenDiv, lenUnit) {
-        const cv = document.getElementById("chart"),
+      function draw(q, res, phi, lenDiv, lenUnit) {
+        const cv = $("chart"),
           g = cv.getContext("2d");
         const W = cv.width,
           H = cv.height,
-          mL = 62,
-          mR = 70,
+          mL = 64,
+          mR = 72,
           mT = 20,
-          mB = 45;
+          mB = 46;
         g.clearRect(0, 0, W, H);
-        const base = Mn(1e-4, Fy, Cb, name);
-        // (1) x-limit expands if Lb runs past the default 1.6*Lr window
-        const xMax = Math.max(1.6 * base.Lr, Lb_in * 1.1); // inches
-        const N = 400,
-          xs = [],
-          ys = [];
-        for (let i = 0; i <= N; i++) {
-          const x = (xMax * i) / N;
-          xs.push(x);
-          ys.push(Mn(x, Fy, Cb, name).Mn / 12);
-        }
-        const yMax = (1.08 * base.Mp) / 12;
-        const X = (x) => mL + ((W - mL - mR) * x) / xMax,
-          Y = (y) => H - mB - ((H - mT - mB) * y) / yMax;
+        if (!res || res.Mn == null) return;
 
+        const aux = res.aux || {};
+        const Lr = aux.Lr || aux.Lp || q.Lb;
+        const xMax = Math.max(1.6 * (Lr || q.Lb), q.Lb * 1.15, 12);
+        const N = 240;
+        const xs = [],
+          env = [],
+          series = {};
+        for (let i = 0; i <= N; i++) {
+          const x = Math.max((xMax * i) / N, 1e-3);
+          xs.push(x);
+          const r = runChapterF(CUR.p, Object.assign({}, q, { Lb: x }));
+          env.push(r.Mn != null ? r.Mn / 12 : null);
+          r.states.forEach((s) => {
+            if (!series[s.id]) series[s.id] = { label: s.label.replace(/ \(.*\)$/, ""), pts: [] };
+            series[s.id].pts.push(s.applies && s.Mn != null && isFinite(s.Mn) ? s.Mn / 12 : null);
+          });
+        }
+        const peak = Math.max(...env.filter((v) => v != null), aux.Mp ? aux.Mp / 12 : 0);
+        const yMax = 1.1 * peak;
+        const X = (x) => mL + ((W - mL - mR) * x) / xMax;
+        const Y = (y) => H - mB - ((H - mT - mB) * y) / yMax;
+
+        // grid + axes
         g.strokeStyle = "#eee";
-        g.fillStyle = "#555";
-        g.font = "11px system-ui";
         g.lineWidth = 1;
+        g.font = "11px system-ui";
         for (let i = 0; i <= 5; i++) {
           const y = (yMax * i) / 5;
           g.beginPath();
@@ -862,14 +2582,15 @@
           g.fillStyle = "#555";
           g.textBaseline = "alphabetic";
           g.textAlign = "right";
-          g.fillText(y.toFixed(0), mL - 6, Y(y) + 3); // left: kip-ft
+          g.fillText(y.toFixed(0), mL - 6, Y(y) + 3);
           g.textAlign = "left";
-          g.fillText((y * 12).toFixed(0), W - mR + 6, Y(y) + 3); // right: kip-in
+          g.fillText((y * 12).toFixed(0), W - mR + 6, Y(y) + 3);
         }
+        g.fillStyle = "#555";
         for (let i = 0; i <= 6; i++) {
           const x = (xMax * i) / 6;
           g.textAlign = "center";
-          g.fillText((x / lenDiv).toFixed(0), X(x), H - mB + 15);
+          g.fillText((x / lenDiv).toFixed(x / lenDiv < 10 ? 1 : 0), X(x), H - mB + 15);
         }
         g.strokeStyle = "#333";
         g.beginPath();
@@ -880,10 +2601,11 @@
         g.beginPath();
         g.moveTo(W - mR, mT);
         g.lineTo(W - mR, H - mB);
-        g.stroke(); // secondary (right) axis
+        g.stroke();
+
         g.save();
         g.translate(W - 14, (mT + H - mB) / 2);
-        g.rotate(Math.PI / 2); // note +90° so text faces inward
+        g.rotate(Math.PI / 2);
         drawRuns(
           g,
           [{ t: "Moment capacity, " }, { t: "M" }, { t: "n", sub: true }, { t: " (kip-in)" }],
@@ -893,8 +2615,6 @@
           14,
         );
         g.restore();
-
-        // (5) x-axis title with proper L_b subscript
         g.fillStyle = "#333";
         drawRuns(
           g,
@@ -904,7 +2624,6 @@
           "center",
           14,
         );
-        // (4) y-axis title with proper M_n subscript
         g.save();
         g.translate(16, (mT + H - mB) / 2);
         g.rotate(-Math.PI / 2);
@@ -918,21 +2637,24 @@
         );
         g.restore();
 
-        // Mp line
-        g.strokeStyle = "#999";
-        g.setLineDash([4, 3]);
-        g.beginPath();
-        g.moveTo(mL, Y(base.Mp / 12));
-        g.lineTo(W - mR, Y(base.Mp / 12));
-        g.stroke();
-        g.setLineDash([]);
+        // Mp reference line
+        if (aux.Mp) {
+          g.strokeStyle = "#bbb";
+          g.setLineDash([4, 3]);
+          g.lineWidth = 1;
+          g.beginPath();
+          g.moveTo(mL, Y(aux.Mp / 12));
+          g.lineTo(W - mR, Y(aux.Mp / 12));
+          g.stroke();
+          g.setLineDash([]);
+        }
 
-        // Lp / Lr markers (typeset subscripts)
+        // Lp / Lr markers
         [
-          ["#1a8a3f", base.Lp, "p"],
-          ["#c0392b", base.Lr, "r"],
+          ["#1a8a3f", aux.Lp, "p"],
+          ["#c0392b", aux.Lr, "r"],
         ].forEach(([col, xin, sub]) => {
-          if (xin > xMax) return;
+          if (!xin || xin > xMax) return;
           g.strokeStyle = col;
           g.setLineDash([2, 3]);
           g.beginPath();
@@ -944,59 +2666,82 @@
           drawRuns(g, [{ t: "L" }, { t: sub, sub: true }], X(xin) + 3, mT + 11, "left", 11);
         });
 
-        // Mn nominal — now DASHED
-        g.strokeStyle = "#0b5cad";
-        g.setLineDash([6, 4]);
-        g.lineWidth = 1.8;
-        g.beginPath();
-        xs.forEach((x, i) => {
-          const py = Y(ys[i]);
-          i ? g.lineTo(X(x), py) : g.moveTo(X(x), py);
-        });
-        g.stroke();
-        g.setLineDash([]);
+        // individual limit-state curves
+        const showAll = document.querySelector('input[name="curveMode"]:checked').value === "all";
+        const legend = [];
+        if (showAll) {
+          Object.keys(series).forEach((id) => {
+            const pts = series[id].pts;
+            if (!pts.some((v) => v != null)) return;
+            g.strokeStyle = COLORS[id] || "#888";
+            g.lineWidth = 1.1;
+            g.setLineDash([2, 2]);
+            g.beginPath();
+            let started = false;
+            pts.forEach((v, i) => {
+              if (v == null || v > yMax * 1.5) {
+                started = false;
+                return;
+              }
+              const px = X(xs[i]),
+                py = Y(v);
+              started ? g.lineTo(px, py) : g.moveTo(px, py);
+              started = true;
+            });
+            g.stroke();
+            g.setLineDash([]);
+            legend.push([COLORS[id] || "#888", series[id].label, true]);
+          });
+        }
 
-        // phi*Mn (design) — now SOLID
-        g.strokeStyle = "#0b5cad";
-        g.lineWidth = 2.4;
-        g.beginPath();
-        xs.forEach((x, i) => {
-          const py = Y(ys[i] * phi);
-          i ? g.lineTo(X(x), py) : g.moveTo(X(x), py);
-        });
-        g.stroke();
+        // nominal envelope (dashed) + design envelope (solid)
+        const plot = (mult, dash, width) => {
+          g.strokeStyle = "#0b5cad";
+          g.lineWidth = width;
+          g.setLineDash(dash);
+          g.beginPath();
+          let started = false;
+          env.forEach((v, i) => {
+            if (v == null) {
+              started = false;
+              return;
+            }
+            const px = X(xs[i]),
+              py = Y(v * mult);
+            started ? g.lineTo(px, py) : g.moveTo(px, py);
+            started = true;
+          });
+          g.stroke();
+          g.setLineDash([]);
+        };
+        plot(1, [6, 4], 1.8);
+        plot(phi, [], 2.4);
 
-        // design point crosshairs + dots on BOTH lines
-        if (Lb_in > 0 && Lb_in <= xMax) {
-          const r = Mn(Lb_in, Fy, Cb, name);
-          const px = X(Lb_in),
-            pyN = Y(r.Mn / 12),
-            pyD = Y((r.Mn / 12) * phi);
-
-          // crosshair lines: vertical down to L_b axis, horizontal to both moment axes
+        // design point
+        if (q.Lb > 0 && q.Lb <= xMax && res.Mn != null) {
+          const px = X(q.Lb),
+            pyN = Y(res.Mn / 12),
+            pyD = Y((res.Mn / 12) * phi);
           g.strokeStyle = "#111";
           g.lineWidth = 1;
           g.setLineDash([3, 3]);
           g.beginPath();
           g.moveTo(px, pyD);
           g.lineTo(px, H - mB);
-          g.stroke(); // vertical → L_b
+          g.stroke();
           g.beginPath();
           g.moveTo(px, pyD);
           g.lineTo(mL, pyD);
-          g.stroke(); // horizontal → left (kip-ft) axis
+          g.stroke();
           g.beginPath();
           g.moveTo(px, pyD);
           g.lineTo(W - mR, pyD);
-          g.stroke(); // horizontal → right (kip-in) axis
+          g.stroke();
           g.setLineDash([]);
-
-          // dot on the design (solid) line — filled
           g.fillStyle = "#111";
           g.beginPath();
           g.arc(px, pyD, 5, 0, 2 * Math.PI);
           g.fill();
-          // dot on the nominal (dashed) line — hollow, to distinguish
           g.fillStyle = "#fff";
           g.strokeStyle = "#111";
           g.lineWidth = 1.6;
@@ -1006,218 +2751,272 @@
           g.stroke();
         }
 
-        // --- Legend ---
-        const legendX = W - mR - 170;
-        const legendY = mT + 10;
-        const legendW = 155;
-        const legendH = 50;
+        // legend
         const designLabel =
-          document.querySelector('input[name="method"]:checked').value === "LRFD" ? "φMn (Design)" : "Mn/Ω (Design)";
-
-        // background
-        g.fillStyle = "rgba(255,255,255,0.95)";
+          document.querySelector('input[name="method"]:checked').value === "LRFD"
+            ? "\u03d5M\u2099 (design)"
+            : "M\u2099/\u03a9 (design)";
+        const items = [
+          ["#0b5cad", designLabel, false],
+          ["#0b5cad", "M\u2099 envelope (nominal)", "dash"],
+        ].concat(legend);
+        const lw = 178,
+          lh = 14 + items.length * 15;
+        const lx = W - mR - lw - 8,
+          ly = mT + 6;
+        g.fillStyle = "rgba(255,255,255,0.94)";
         g.strokeStyle = "#ccc";
         g.lineWidth = 1;
-        g.fillRect(legendX, legendY, legendW, legendH);
-        g.strokeRect(legendX, legendY, legendW, legendH);
-
-        // Nominal strength (dashed)
-        g.strokeStyle = "#0b5cad";
-        g.lineWidth = 1.8;
-        g.setLineDash([6, 4]);
-        g.beginPath();
-        g.moveTo(legendX + 10, legendY + 36);
-        g.lineTo(legendX + 45, legendY + 36);
-        g.stroke();
-        g.setLineDash([]);
-
-        // Design strength (solid)
-        g.strokeStyle = "#0b5cad";
-        g.lineWidth = 2.4;
-        g.setLineDash([]);
-        g.beginPath();
-        g.moveTo(legendX + 10, legendY + 18);
-        g.lineTo(legendX + 45, legendY + 18);
-        g.stroke();
-
-        g.fillStyle = "#222";
-        g.font = "12px system-ui";
+        g.fillRect(lx, ly, lw, lh);
+        g.strokeRect(lx, ly, lw, lh);
+        g.font = "11px system-ui";
         g.textAlign = "left";
-        // g.fillText("Design strength", legendX + 55, legendY + 22);
-        // g.fillText("Nominal strength", legendX + 55, legendY + 40);
-        g.fillText("Mn (Nominal)", legendX + 55, legendY + 40);
-        g.fillText(designLabel, legendX + 55, legendY + 22);
+        g.textBaseline = "middle";
+        items.forEach(([col, label, style], i) => {
+          const y = ly + 14 + i * 15;
+          g.strokeStyle = col;
+          g.lineWidth = style === true ? 1.1 : style === "dash" ? 1.8 : 2.4;
+          g.setLineDash(style === true ? [2, 2] : style === "dash" ? [6, 4] : []);
+          g.beginPath();
+          g.moveTo(lx + 8, y);
+          g.lineTo(lx + 38, y);
+          g.stroke();
+          g.setLineDash([]);
+          g.fillStyle = "#222";
+          g.fillText(label, lx + 44, y);
+        });
+        g.textBaseline = "alphabetic";
       }
 
-      // --- (7) Governing equation, typeset with MathML ---
-      function sectionCBlock(type) {
-        if (type === "channel") {
-          return `<div class="eqrow"><span class="cap">Cross-section: channel — coefficient c (Eq. F2-8b)</span>
-      <math display="inline"><mi>c</mi><mo>=</mo>
-        <mfrac><msub><mi>h</mi><mi>o</mi></msub><mn>2</mn></mfrac>
-        <msqrt><mfrac><msub><mi>I</mi><mi>y</mi></msub><msub><mi>C</mi><mi>w</mi></msub></mfrac></msqrt>
-      </math></div>`;
-        }
-        return `<div class="eqrow"><span class="cap">Cross-section: doubly symmetric I-shape — coefficient c (Eq. F2-8a)</span>
-    <math display="inline"><mi>c</mi><mo>=</mo><mn>1.0</mn></math></div>`;
+      /* =====================================================================
+       * TABLES
+       * ===================================================================*/
+      function classRow(name, c) {
+        if (!c || c.lam == null)
+          return `<tr class="na"><td class="lbl">${name}</td><td class="desc">not available for this section</td>
+                  <td>—</td><td>—</td><td>—</td><td>—</td></tr>`;
+        return `<tr><td class="lbl">${name}</td><td class="desc">${c.sym} &nbsp;<span style="color:#888">(${c.ref})</span></td>
+          <td>${c.lam.toFixed(2)}</td><td>${c.lp.toFixed(2)}</td><td>${c.lr.toFixed(2)}</td>
+          <td><span class="region ${c.cls}">${c.cls.toUpperCase()}</span></td></tr>`;
       }
 
-      function governingEquation(region) {
-        if (region === "plastic") {
-          return {
-            num: "F2-1",
-            name: "yielding (plastic)",
-            math: `
-      <math display="block">
-        <msub><mi>M</mi><mi>n</mi></msub><mo>=</mo><msub><mi>M</mi><mi>p</mi></msub><mo>=</mo>
-        <msub><mi>F</mi><mi>y</mi></msub><msub><mi>Z</mi><mi>x</mi></msub>
-      </math>`,
-          };
-        }
-        if (region === "inelastic") {
-          return {
-            num: "F2-2",
-            name: "inelastic LTB",
-            math: `
-      <math display="block">
-        <msub><mi>M</mi><mi>n</mi></msub><mo>=</mo><msub><mi>C</mi><mi>b</mi></msub>
-        <mrow>
-          <mo fence="true" stretchy="true">[</mo>
-          <mrow>
-            <msub><mi>M</mi><mi>p</mi></msub><mo>&#8722;</mo>
-            <mrow>
-              <mo fence="true" stretchy="true">(</mo>
-              <mrow><msub><mi>M</mi><mi>p</mi></msub><mo>&#8722;</mo><mn>0.7</mn><msub><mi>F</mi><mi>y</mi></msub><msub><mi>S</mi><mi>x</mi></msub></mrow>
-              <mo fence="true" stretchy="true">)</mo>
-            </mrow>
-            <mfrac>
-              <mrow><msub><mi>L</mi><mi>b</mi></msub><mo>&#8722;</mo><msub><mi>L</mi><mi>p</mi></msub></mrow>
-              <mrow><msub><mi>L</mi><mi>r</mi></msub><mo>&#8722;</mo><msub><mi>L</mi><mi>p</mi></msub></mrow>
-            </mfrac>
-          </mrow>
-          <mo fence="true" stretchy="true">]</mo>
-        </mrow>
-        <mo>&#8804;</mo><msub><mi>M</mi><mi>p</mi></msub>
-      </math>`,
-          };
-        }
-        return {
-          num: "F2-3 / F2-4",
-          name: "elastic LTB",
-          math: `
-    <math display="block">
-      <msub><mi>M</mi><mi>n</mi></msub><mo>=</mo><msub><mi>F</mi><mi>cr</mi></msub><msub><mi>S</mi><mi>x</mi></msub>
-      <mo>&#8804;</mo><msub><mi>M</mi><mi>p</mi></msub>
-    </math>
-    <math display="block">
-      <msub><mi>F</mi><mi>cr</mi></msub><mo>=</mo>
-      <mfrac>
-        <mrow><msub><mi>C</mi><mi>b</mi></msub><msup><mi>&#960;</mi><mn>2</mn></msup><mi>E</mi></mrow>
-        <msup>
-          <mrow>
-            <mo fence="true" stretchy="true">(</mo>
-            <mfrac><msub><mi>L</mi><mi>b</mi></msub><msub><mi>r</mi><mi>ts</mi></msub></mfrac>
-            <mo fence="true" stretchy="true">)</mo>
-          </mrow>
-          <mn>2</mn>
-        </msup>
-      </mfrac>
-      <msqrt><mn>1</mn><mo>+</mo><mn>0.078</mn>
-        <mfrac><mrow><mi>J</mi><mi>c</mi></mrow><mrow><msub><mi>S</mi><mi>x</mi></msub><msub><mi>h</mi><mi>o</mi></msub></mrow></mfrac>
-        <msup>
-          <mrow>
-            <mo fence="true" stretchy="true">(</mo>
-            <mfrac><msub><mi>L</mi><mi>b</mi></msub><msub><mi>r</mi><mi>ts</mi></msub></mfrac>
-            <mo fence="true" stretchy="true">)</mo>
-          </mrow>
-          <mn>2</mn>
-        </msup>
-      </msqrt>
-    </math>`,
-        };
-      }
+      function renderTables(res, q, phi, method, lenDiv, lenUnit) {
+        // --- classification
+        const cls = res.cls || {};
+        $("classTable").innerHTML =
+          `<table><tr><th>Element</th><th style="text-align:left">Slenderness (Table B4.1b)</th>
+            <th>&lambda;</th><th>&lambda;<sub>p</sub></th><th>&lambda;<sub>r</sub></th><th>Class</th></tr>
+           ${classRow("Flange", cls.flange)}${classRow("Web", cls.web)}</table>`;
 
-      // --- UI wiring ---
-      function refresh() {
-        const name = shape.value,
-          Fy = +Fy_.value,
-          Cb = +Cb_.value,
-          Emod = +Emod_.value,
-          LbRaw = +Lb_.value;
-        const lenUnit = lenUnit_.value,
-          lenDiv = lenUnit === "ft" ? 12 : 1;
+        // --- limit states
+        let rows = "";
+        res.states.forEach((s) => {
+          if (s.applies && s.Mn != null) {
+            rows += `<tr class="${s.governs ? "governs" : ""}"><td class="lbl">${s.eq}</td>
+              <td class="desc">${s.label}${s.note ? ` <span style="color:#888">— ${s.note}</span>` : ""}</td>
+              <td>${(s.Mn / 12).toFixed(1)}</td><td>${s.Mn.toFixed(0)}</td>
+              <td>${s.governs ? "<b>GOVERNS</b>" : ""}</td></tr>`;
+          } else {
+            rows += `<tr class="na"><td class="lbl">${s.eq}</td>
+              <td class="desc">${s.label} — ${s.note || "does not apply"}</td>
+              <td>—</td><td>—</td><td>N/A</td></tr>`;
+          }
+        });
+        $("lsTable").innerHTML = `<table><tr><th>Eq.</th><th style="text-align:left">Limit state</th>
+            <th>M<sub>n</sub><br>(kip-ft)</th><th>M<sub>n</sub><br>(kip-in)</th><th></th></tr>${rows}</table>`;
 
-        // --- validation: all must be strictly positive ---
-        const errs = [];
-        if (!(LbRaw > 0)) errs.push("L_b must be > 0");
-        if (!(Fy > 0)) errs.push("F_y must be > 0");
-        if (!(Emod > 0)) errs.push("E must be > 0");
-        if (!(Cb > 0)) errs.push("C_b must be > 0");
-        if (errs.length) {
-          document.getElementById("results").innerHTML = `<tr><td style="color:#c0392b;text-align:left;padding:.6rem">
-         <b>Invalid input:</b><br>${errs.join("<br>")}</td></tr>`;
-          document.getElementById("equation").innerHTML = "";
-          const g = document.getElementById("chart").getContext("2d");
-          g.clearRect(0, 0, 720, 440);
+        // --- summary
+        if (res.Mn == null) {
+          $("results").innerHTML = "";
           return;
         }
+        const aux = res.aux || {};
+        const cap = (res.Mn / 12) * phi;
+        const row = (sym, desc, val, unit) =>
+          `<tr><td class="lbl">${sym}</td><td class="desc">${desc}</td><td>${val}</td><td>${unit}</td></tr>`;
+        let extra = "";
+        if (aux.Lp != null)
+          extra += row("L<sub>p</sub>", "Limiting unbraced length for yielding", (aux.Lp / lenDiv).toFixed(2), lenUnit);
+        if (aux.Lr != null)
+          extra += row(
+            "L<sub>r</sub>",
+            "Limiting unbraced length for inelastic LTB",
+            (aux.Lr / lenDiv).toFixed(2),
+            lenUnit,
+          );
+        if (aux.Mp != null) extra += row("M<sub>p</sub>", "Plastic moment", (aux.Mp / 12).toFixed(1), "kip-ft");
+        if (aux.My != null) extra += row("M<sub>y</sub>", "Yield moment", (aux.My / 12).toFixed(1), "kip-ft");
+        if (aux.Rpc != null) extra += row("R<sub>pc</sub>", "Web plastification factor", aux.Rpc.toFixed(3), "—");
+        if (aux.Rpt != null)
+          extra += row("R<sub>pt</sub>", "Web plastification factor (tension flange)", aux.Rpt.toFixed(3), "—");
+        if (aux.Rpg != null)
+          extra += row("R<sub>pg</sub>", "Bending strength reduction factor", aux.Rpg.toFixed(3), "—");
+        if (aux.FL != null) extra += row("F<sub>L</sub>", "Stress at the onset of yielding", aux.FL.toFixed(2), "ksi");
+        if (aux.Se != null) extra += row("S<sub>e</sub>", "Effective section modulus", aux.Se.toFixed(2), "in³");
+        if (aux.Me != null) extra += row("M<sub>e</sub>", "Elastic LTB moment", (aux.Me / 12).toFixed(1), "kip-ft");
+        if (aux.Mcr != null) extra += row("M<sub>cr</sub>", "Elastic LTB moment", (aux.Mcr / 12).toFixed(1), "kip-ft");
+        if (aux.CbUsed != null && Math.abs(aux.CbUsed - q.Cb) > 1e-9)
+          extra += row("C<sub>b</sub>", "Modification factor used by this section", aux.CbUsed.toFixed(3), "—");
 
-        E = Emod;
-        const Lb_in = LbRaw * lenDiv;
-        const method = document.querySelector('input[name="method"]:checked').value;
-        const phi = method === "LRFD" ? 0.9 : 1 / 1.67;
-        const r = Mn(Lb_in, Fy, Cb, name);
-        const cap = (r.Mn / 12) * phi;
-        const st = SHAPES[name].type;
-
-        draw(name, Fy, Cb, Lb_in, phi, lenDiv, lenUnit);
-
-        // (2) table: Symbol | Description | Value | Unit
-        document.getElementById("results").innerHTML = `
-    <tr><th>Symbol</th><th style="text-align:left">Description</th><th>Value</th><th>Unit</th></tr>
-
-    <tr><td class="lbl" rowspan="2">M<sub>p</sub></td><td class="desc" rowspan="2">Plastic moment</td>
-        <td>${(r.Mp / 12).toFixed(1)}</td><td>kip-ft</td></tr>
-    <tr><td>${r.Mp.toFixed(0)}</td><td>kip-in</td></tr>
-
-    <tr><td class="lbl">L<sub>p</sub></td><td class="desc">Yielding (plastic) limit length</td><td>${(r.Lp / lenDiv).toFixed(2)}</td><td>${lenUnit}</td></tr>
-    <tr><td class="lbl">L<sub>r</sub></td><td class="desc">Inelastic LTB limit length</td><td>${(r.Lr / lenDiv).toFixed(2)}</td><td>${lenUnit}</td></tr>
-
-    <tr><td class="lbl" rowspan="2">M<sub>n</sub></td><td class="desc" rowspan="2">Nominal flexural strength at L<sub>b</sub> = ${+Lb_.value} ${lenUnit}</td>
-        <td>${(r.Mn / 12).toFixed(1)}</td><td>kip-ft</td></tr>
-    <tr><td>${r.Mn.toFixed(0)}</td><td>kip-in</td></tr>
-
-    <tr><td class="lbl" rowspan="2">${method === "LRFD" ? "φM<sub>n</sub>" : "M<sub>n</sub>/Ω"}</td><td class="desc" rowspan="2">Design flexural strength (${method})</td>
-        <td><b>${cap.toFixed(1)}</b></td><td>kip-ft</td></tr>
-    <tr><td><b>${(cap * 12).toFixed(0)}</b></td><td>kip-in</td></tr>
-
-    <tr><td class="lbl">—</td><td class="desc">Governing limit state</td>
-        <td colspan="2" style="text-align:center"><span class="region ${r.region}">${r.region.toUpperCase()}</span></td></tr>
-    `;
-
-        // (7) equation panel: section coefficient + governing equation, typeset
-        const eq = governingEquation(r.region);
-        document.getElementById("equation").innerHTML =
-          `<h3>Governing equation — Eq. ${eq.num} (${eq.name})</h3>` +
-          sectionCBlock(st) +
-          `<div class="eqrow">${eq.math}</div>`;
+        $("results").innerHTML = `<table>
+          <tr><th>Symbol</th><th style="text-align:left">Description</th><th>Value</th><th>Unit</th></tr>
+          ${extra}
+          ${row("C<sub>b</sub>", "LTB modification factor (Eq. F1-1)", q.Cb.toFixed(3), "—")}
+          <tr><td class="lbl" rowspan="2">M<sub>n</sub></td>
+              <td class="desc" rowspan="2">Nominal flexural strength at L<sub>b</sub> = ${(+Lb_.value).toFixed(2)} ${lenUnit}
+              — governed by ${res.gov.label} (Eq. ${res.gov.eq})</td>
+              <td>${(res.Mn / 12).toFixed(1)}</td><td>kip-ft</td></tr>
+          <tr><td>${res.Mn.toFixed(0)}</td><td>kip-in</td></tr>
+          <tr><td class="lbl" rowspan="2">${method === "LRFD" ? "&phi;<sub>b</sub>M<sub>n</sub>" : "M<sub>n</sub>/&Omega;<sub>b</sub>"}</td>
+              <td class="desc" rowspan="2">Available flexural strength (${method})</td>
+              <td><b>${cap.toFixed(1)}</b></td><td>kip-ft</td></tr>
+          <tr><td><b>${(cap * 12).toFixed(0)}</b></td><td>kip-in</td></tr>
+        </table>`;
       }
 
-      const shape = document.getElementById("shape"),
-        Fy_ = document.getElementById("Fy"),
-        Cb_ = document.getElementById("Cb"),
-        Lb_ = document.getElementById("Lb"),
-        Emod_ = document.getElementById("Emod"),
-        lenUnit_ = document.getElementById("lenUnit");
+      /* =====================================================================
+       * WARNINGS
+       * ===================================================================*/
+      function renderWarnings(res, p, q) {
+        const w = [];
+        if (USING_DEMO)
+          w.push(
+            "<b>Demo property set loaded.</b> shapes.js was not found, so only a small verified subset of shapes is available. " +
+              "Run <code>scripts/generate_shapes_chapterF.py</code> to emit the full AISC v16.0 database, or use Custom section properties.",
+          );
+        if (res.caution) w.push(res.caution);
+        if (res.note) w.push(res.note);
+        if (p.group === "HSS_ROUND" && res.aux.Dt_limit && p.D_t > res.aux.Dt_limit)
+          w.push(
+            `D/t = ${p.D_t.toFixed(1)} exceeds the Section F8 limit of 0.45E/F<sub>y</sub> = ${res.aux.Dt_limit.toFixed(1)}. ` +
+              "AISC 360-22 does not cover round HSS beyond this limit.",
+          );
+        if (p.group === "L")
+          w.push(
+            "Single-angle results follow F10 for the selected bending axis and leg-tip stress. " +
+              "\u03b2<sub>w</sub> = 0 is assumed for equal-leg angles; enter \u03b2<sub>w</sub> for unequal legs. " +
+              "Geometric-axis bending with no lateral-torsional restraint uses 0.80S<sub>x</sub> per F10.2(b).",
+          );
+        if (p.group === "WT" || p.group === "2L")
+          w.push(
+            "F9 was revised in AISC 360-22 (L<sub>p</sub>/L<sub>r</sub> branch for stems in tension). " +
+              "C<sub>b</sub> is forced to 1.0 and B is taken negative when the stem/web leg is in compression.",
+          );
+        if (p.singlySym)
+          w.push(
+            "Singly symmetric section: verify S<sub>xc</sub>, S<sub>xt</sub>, I<sub>yc</sub>, h<sub>c</sub> and h<sub>p</sub> " +
+              "under Custom section properties — the defaults assume double symmetry.",
+          );
+        if (res.id === "F12")
+          w.push(
+            "Section F12 requires F<sub>cr</sub> from a rational elastic-stability analysis; the tool cannot derive it.",
+          );
+        w.push(
+          "Chapter F covers flexure only. Shear (Chapter G), deflection, web crippling/yielding (J10), combined forces (Chapter H), " +
+            "and the F13.2 proportioning limits are not checked here. Verify equation numbers against your printed copy of AISC 360-22.",
+        );
 
-      Object.keys(SHAPES).forEach((n) => {
-        const o = document.createElement("option");
-        o.value = o.textContent = n;
-        shape.appendChild(o);
+        $("warnings").innerHTML = `<div class="warnbox"><b>Assumptions &amp; scope</b><ul>${w
+          .map((x) => `<li>${x}</li>`)
+          .join("")}</ul></div>`;
+      }
+
+      /* =====================================================================
+       * MAIN REFRESH
+       * ===================================================================*/
+      function refresh(keepCustom) {
+        syncCbModeUi();
+
+        const base = baseSection();
+        if (!keepCustom) customOverrides = {};
+        const merged = Object.assign({}, base, customOverrides);
+
+        const Fy = +Fy_.value,
+          Fu = +Fu_.value,
+          E = +Emod_.value;
+        const cbIn = getCbInput(),
+          Cb = cbIn.Cb;
+        const lenUnit = lenUnit_.value,
+          lenDiv = lenUnit === "ft" ? 12 : 1;
+        const Lb = +Lb_.value * lenDiv;
+
+        // validation
+        const errs = [];
+        if (!(+Lb_.value > 0)) errs.push("L<sub>b</sub> must be &gt; 0");
+        if (!(Fy > 0)) errs.push("F<sub>y</sub> must be &gt; 0");
+        if (!(Fu > 0)) errs.push("F<sub>u</sub> must be &gt; 0");
+        if (!(E > 0)) errs.push("E must be &gt; 0");
+        if (!(Cb > 0))
+          errs.push(
+            cbIn.mode === "auto"
+              ? "C<sub>b</sub> could not be calculated — M<sub>max</sub> must be &gt; 0"
+              : "C<sub>b</sub> must be &gt; 0",
+          );
+        if (cbIn.mode === "auto") {
+          const { Mmax, Ma, Mb, Mc } = cbIn.moments;
+          if (Math.abs(Mmax) < Math.max(Math.abs(Ma), Math.abs(Mb), Math.abs(Mc)))
+            errs.push(
+              "M<sub>max</sub> must be \u2265 M<sub>A</sub>, M<sub>B</sub> and M<sub>C</sub> in absolute value",
+            );
+        }
+        if (errs.length) {
+          $("errors").innerHTML = `<div class="errbox"><b>Invalid input</b><br>${errs.join("<br>")}</div>`;
+          $("chart").getContext("2d").clearRect(0, 0, 760, 450);
+          ["classTable", "lsTable", "results", "equation", "warnings", "applies"].forEach(
+            (id) => ($(id).innerHTML = ""),
+          );
+          return;
+        }
+        $("errors").innerHTML = "";
+
+        const p = derive(merged, E, Fy);
+        CUR.p = p;
+        if (!keepCustom) buildCustomGrid(p);
+
+        const q = {
+          Fy,
+          Fu,
+          E,
+          Lb,
+          Cb,
+          axis: axisSel.value,
+          opts: {
+            teeStem: teeStem_.value,
+            angBend: angBend_.value,
+            angToe: angToe_.value,
+            builtUp: builtUp_.value,
+            Afg: +Afg_.value,
+            Afn: +Afn_.value,
+          },
+        };
+
+        const res = runChapterF(p, q);
+        CUR.res = res;
+
+        const method = document.querySelector('input[name="method"]:checked').value;
+        const phi = method === "LRFD" ? 0.9 : 1 / 1.67;
+
+        $("applies").innerHTML =
+          `<div style="margin-bottom:.6rem"><span class="badge">AISC 360-22 &sect;${res.id}</span>
+           <span style="font-size:.82rem;color:#555;margin-left:.5rem">${res.title}</span></div>`;
+
+        draw(q, res, phi, lenDiv, lenUnit);
+        renderTables(res, q, phi, method, lenDiv, lenUnit);
+        $("equation").innerHTML = eqBlock(res);
+        renderWarnings(res, p, q);
+      }
+
+      /* =====================================================================
+       * WIRING
+       * ===================================================================*/
+      buildShapeList();
+
+      familySel.addEventListener("change", () => {
+        buildShapeList();
+        refresh(false);
       });
-      shape.value = SHAPES["W18X50"] ? "W18X50" : Object.keys(SHAPES)[0];
+      shapeSel.addEventListener("change", () => refresh(false));
 
-      // (6) converting units keeps the physical length constant
       let prevLenUnit = "ft";
       lenUnit_.addEventListener("change", () => {
         const from = prevLenUnit === "ft" ? 12 : 1,
@@ -1225,14 +3024,28 @@
         Lb_.value = (+Lb_.value * from) / to;
         Lb_.step = lenUnit_.value === "ft" ? "0.5" : "1";
         prevLenUnit = lenUnit_.value;
-        refresh();
+        refresh(true);
       });
 
-      [shape, Fy_, Cb_, Lb_, Emod_].forEach((el) => el.addEventListener("input", refresh));
-      document.querySelectorAll('input[name="method"]').forEach((el) => el.addEventListener("change", refresh));
-      // (3) export to PDF via the browser's print dialog
-      document.getElementById("pdfBtn").addEventListener("click", () => window.print());
-      refresh();
+      [Fy_, Fu_, Cb_, Lb_, Emod_, Mmax_, Ma_, Mb_, Mc_, Afg_, Afn_].forEach((el) =>
+        el.addEventListener("input", () => refresh(true)),
+      );
+      [axisSel, teeStem_, angBend_, angToe_, builtUp_].forEach((el) =>
+        el.addEventListener("change", () => refresh(true)),
+      );
+      document
+        .querySelectorAll('input[name="method"], input[name="curveMode"]')
+        .forEach((el) => el.addEventListener("change", () => refresh(true)));
+      document.querySelectorAll('input[name="cbMode"]').forEach((el) =>
+        el.addEventListener("change", () => {
+          syncCbModeUi();
+          refresh(true);
+        }),
+      );
+
+      $("pdfBtn").addEventListener("click", () => window.print());
+
+      refresh(false);
     </script>
   </body>
 </html>
