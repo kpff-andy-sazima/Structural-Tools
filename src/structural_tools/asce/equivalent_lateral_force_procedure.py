@@ -3,7 +3,7 @@ from dataclasses import dataclass
 import pandas as pd
 import numpy as np
 
-from structural_tools.seismic.asce.parameters import SeismicParameters
+from .seismic_parameters import SeismicParameters
 from structural_tools.structure import Structure
 
 LOWER_BOUND_C_S_CHECK_S_1 = 0.6
@@ -15,8 +15,10 @@ class SeismicLoads:
     seismic_parameters: SeismicParameters
 
     def __post_init__(self):
-        self.base_shear_x = self._calculate_base_shear(self.C_s_x)
-        self.base_shear_y = self._calculate_base_shear(self.C_s_y)
+        self.base_shear_x = self._calculate_base_shear(self.c_s_x)
+        self.base_shear_y = self._calculate_base_shear(self.c_s_y)
+        self.v_x = self.base_shear_x
+        self.v_y = self.base_shear_y
         self.seismic_loads_x = self._calculate_seismic_loads(self.base_shear_x, self._k_x)
         self.seismic_loads_y = self._calculate_seismic_loads(self.base_shear_y, self._k_y)
 
@@ -29,11 +31,11 @@ class SeismicLoads:
         return self._calculate_structural_period_exponent(self.structure.period_y)
 
     @property
-    def C_s_x(self) -> float:
+    def c_s_x(self) -> float:
         return self._calculate_seismic_response_coefficient(self.structure.period_x, self.structure.lateral_system_x.r)
 
     @property
-    def C_s_y(self) -> float:
+    def c_s_y(self) -> float:
         return self._calculate_seismic_response_coefficient(self.structure.period_y, self.structure.lateral_system_y.r)
 
     @property
@@ -70,8 +72,8 @@ class SeismicLoads:
 
         return max(C_s_min, min(C_s, C_s_max))
 
-    def _calculate_base_shear(self, C_s) -> float:
-        return C_s * self.structure.effective_seismic_weight
+    def _calculate_base_shear(self, c_s) -> float:
+        return c_s * self.structure.effective_seismic_weight
 
     def _calculate_structural_period_exponent(self, T: float) -> float:
         """Given the building period, calculate the structural period exponent from ASCE 7-16 Section 12.8.
