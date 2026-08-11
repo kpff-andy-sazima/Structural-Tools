@@ -25,5 +25,6 @@
         "statusBar.debuggingBackground": "#0b2016",
         "statusBar.debuggingForeground": "#e7e7e7"
     },
-    "peacock.color": "#0b2016"
+    "peacock.color": "#0b2016",
+    "python-envs.defaultEnvManager": "ms-python.python:venv"
 }
