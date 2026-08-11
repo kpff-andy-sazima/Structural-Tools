@@ -3,23 +3,13 @@
 from __future__ import annotations
 
 from collections import defaultdict
-from collections.abc import Sequence
 from dataclasses import dataclass
 from enum import Enum
-from typing import TYPE_CHECKING, Literal
 
-import numpy as np
-import pandas as pd
 from Pynite import FEModel3D
-from Pynite.LoadCombo import LoadCombo
 
-from .general import DesignMethod
-from .steel.constants import YOUNGS_MODULUS_KSI
-from .steel.flexure import Bracing, evaluate_beam_flexure
-from .typing import FloatLike
-
-if TYPE_CHECKING:
-    from .section import WSection
+from .. import DesignMethod
+from ..steel.section import Section
 
 
 @dataclass
@@ -34,30 +24,61 @@ class ModelMaterial:
         self.G: float = self.E / (2 * (1 + self.nu))  # Shear modulus of elasticity
 
 
+MATERIAL_RIGID: ModelMaterial = ModelMaterial(
+    name="mat_rigid",
+    E=1e9,
+    nu=0.0,
+    rho=1e-18,
+    fy=1e9,
+)
+
 MATERIAL_STEEL_36_KSI_KIP_INCH: ModelMaterial = ModelMaterial(
-    name="steel 36ksi",
+    name="mat_steel_36ksi",
     E=29000,
     nu=0.3,
-    rho=489 / (12**3) / 1000,
+    rho=490 / (12**3) / 1000,
     fy=36,
 )
 
 MATERIAL_STEEL_46_KSI_KIP_INCH: ModelMaterial = ModelMaterial(
-    name="steel 46ksi",
+    name="mat_steel_46ksi",
     E=29000,
     nu=0.3,
-    rho=489 / (12**3) / 1000,
+    rho=490 / (12**3) / 1000,
     fy=46,
 )
 
 MATERIAL_STEEL_50_KSI_KIP_INCH: ModelMaterial = ModelMaterial(
-    name="steel 50ksi",
+    name="mat_steel_50ksi",
     E=29000,
     nu=0.3,
-    rho=489 / (12**3) / 1000,
+    rho=490 / (12**3) / 1000,
     fy=50,
 )
 
+MATERIAL_STEEL_36_KSI_0_8_E_KIP_INCH: ModelMaterial = ModelMaterial(
+    name="mat_steel_36ksi",
+    E=29000 * 0.8,
+    nu=0.3,
+    rho=490 / (12**3) / 1000,
+    fy=36,
+)
+
+MATERIAL_STEEL_46_KSI_0_8_E_KIP_INCH: ModelMaterial = ModelMaterial(
+    name="mat_steel_46ksi",
+    E=29000 * 0.8,
+    nu=0.3,
+    rho=490 / (12**3) / 1000,
+    fy=46,
+)
+
+MATERIAL_STEEL_50_KSI_0_8_E_KIP_INCH: ModelMaterial = ModelMaterial(
+    name="mat_steel_50ksi",
+    E=29000 * 0.8,
+    nu=0.3,
+    rho=490 / (12**3) / 1000,
+    fy=50,
+)
 
 MATERIAL_WOOD_KIP_INCH: ModelMaterial = ModelMaterial(
     name="wood",
@@ -118,16 +139,19 @@ LOAD_COMBINATIONS: tuple[ComboSpec, ...] = (
             "W": 1.0,
             "R": 1.0,
             "E_v": 1.0,
-            "E_h": 1.0,
+            # "E_h": 1.0,
+            "E_hx": 1.0,
+            "E_hy": 1.0,
         },
         ("all nominal", "debug"),
         always_include=True,
     ),
     # LRFD strength
     ComboSpec("1a", {"D": 1.4}, ("strength", "principal D"), DesignMethod.LRFD),
-    ComboSpec("2a-1", {"D": 1.2, "L": 1.6, "L_r": 0.5}, ("strength", "principal L"), DesignMethod.LRFD),
-    ComboSpec("2a-2", {"D": 1.2, "L": 1.6, "S": 0.3}, ("strength", "principal L"), DesignMethod.LRFD),
-    ComboSpec("2a-3", {"D": 1.2, "L": 1.6, "R": 0.5}, ("strength", "principal L"), DesignMethod.LRFD),
+    ComboSpec("2a-1", {"D": 1.2, "L": 1.6}, ("strength", "principal L"), DesignMethod.LRFD),
+    ComboSpec("2a-2", {"D": 1.2, "L": 1.6, "L_r": 0.5}, ("strength", "principal L"), DesignMethod.LRFD),
+    ComboSpec("2a-3", {"D": 1.2, "L": 1.6, "S": 0.3}, ("strength", "principal L"), DesignMethod.LRFD),
+    ComboSpec("2a-4", {"D": 1.2, "L": 1.6, "R": 0.5}, ("strength", "principal L"), DesignMethod.LRFD),
     ComboSpec("3a-1", {"D": 1.2, "L_r": 1.6, "L": 1.0}, ("strength", "principal L_r"), DesignMethod.LRFD),
     ComboSpec("3a-2", {"D": 1.2, "S": 1.0, "L": 1.0}, ("strength", "principal S"), DesignMethod.LRFD),
     ComboSpec("3a-3", {"D": 1.2, "R": 1.6, "L": 1.0}, ("strength", "principal R"), DesignMethod.LRFD),
@@ -137,11 +161,22 @@ LOAD_COMBINATIONS: tuple[ComboSpec, ...] = (
     ComboSpec("4a-1", {"D": 1.2, "W": 1.0, "L": 1.0, "L_r": 0.5}, ("strength", "principal W"), DesignMethod.LRFD),
     ComboSpec("4a-2", {"D": 1.2, "W": 1.0, "L": 1.0, "S": 0.3}, ("strength", "principal W"), DesignMethod.LRFD),
     ComboSpec("4a-3", {"D": 1.2, "W": 1.0, "L": 1.0, "R": 0.5}, ("strength", "principal W"), DesignMethod.LRFD),
-    ComboSpec("5a", {"D": 0.9, "W": -1.0}, ("strength", "principal W"), DesignMethod.LRFD),
+    ComboSpec("5a", {"D": 0.9, "W": -1.0}, ("strength", "principal W", "uplift"), DesignMethod.LRFD),
+    # ComboSpec("6-1", {"D": 1.2, "E_v": 1.0, "E_h": 1.0, "L": 1.0}, ("strength", "principal E"), DesignMethod.LRFD),
+    ComboSpec("6-1x", {"D": 1.2, "E_v": 1.0, "E_hx": 1.0, "L": 1.0}, ("strength", "principal E"), DesignMethod.LRFD),
+    ComboSpec("6-1y", {"D": 1.2, "E_v": 1.0, "E_hy": 1.0, "L": 1.0}, ("strength", "principal E"), DesignMethod.LRFD),
+    # ComboSpec(
+    #     "6-2", {"D": 1.2, "E_v": 1.0, "E_h": 1.0, "L": 1.0, "S": 0.15}, ("strength", "principal E"), DesignMethod.LRFD
+    # ),
     ComboSpec(
-        "6", {"D": 1.2, "E_v": 1.0, "E_h": 1.0, "L": 1.0, "S": 0.15}, ("strength", "principal E"), DesignMethod.LRFD
+        "6-2x", {"D": 1.2, "E_v": 1.0, "E_hx": 1.0, "L": 1.0, "S": 0.15}, ("strength", "principal E"), DesignMethod.LRFD
     ),
-    ComboSpec("7", {"D": 0.9, "E_v": -1.0, "E_h": 1.0}, ("strength", "principal E"), DesignMethod.LRFD),
+    ComboSpec(
+        "6-2y", {"D": 1.2, "E_v": 1.0, "E_hy": 1.0, "L": 1.0, "S": 0.15}, ("strength", "principal E"), DesignMethod.LRFD
+    ),
+    # ComboSpec("7", {"D": 0.9, "E_v": -1.0, "E_h": 1.0}, ("strength", "principal E", "uplift"), DesignMethod.LRFD),
+    ComboSpec("7x", {"D": 0.9, "E_v": -1.0, "E_hx": 1.0}, ("strength", "principal E", "uplift"), DesignMethod.LRFD),
+    ComboSpec("7y", {"D": 0.9, "E_v": -1.0, "E_hy": 1.0}, ("strength", "principal E", "uplift"), DesignMethod.LRFD),
     # ASD strength
     ComboSpec("1a", {"D": 1.0}, ("strength", "principal D"), DesignMethod.ASD),
     ComboSpec("2a", {"D": 1.0, "L": 1.0}, ("strength", "principal L"), DesignMethod.ASD),
@@ -155,12 +190,38 @@ LOAD_COMBINATIONS: tuple[ComboSpec, ...] = (
     ComboSpec("6a-1", {"D": 1.0, "L": 0.75, "W": 0.45, "L_r": 0.75}, ("strength", "principal W"), DesignMethod.ASD),
     ComboSpec("6a-2", {"D": 1.0, "L": 0.75, "W": 0.45, "S": 0.525}, ("strength", "principal W"), DesignMethod.ASD),
     ComboSpec("6a-3", {"D": 1.0, "L": 0.75, "W": 0.45, "R": 0.75}, ("strength", "principal W"), DesignMethod.ASD),
-    ComboSpec("7a", {"D": 0.6, "W": -0.6}, ("strength", "principal W"), DesignMethod.ASD),
-    ComboSpec("8", {"D": 1.0, "E_v": 0.7, "E_h": 0.7}, ("strength", "principal E"), DesignMethod.ASD),
+    ComboSpec("7a", {"D": 0.6, "W": -0.6}, ("strength", "principal W", "uplift"), DesignMethod.ASD),
+    # ComboSpec("8", {"D": 1.0, "E_v": 0.7, "E_h": 0.7}, ("strength", "principal E"), DesignMethod.ASD),
+    ComboSpec("8x", {"D": 1.0, "E_v": 0.7, "E_hx": 0.7}, ("strength", "principal E"), DesignMethod.ASD),
+    ComboSpec("8y", {"D": 1.0, "E_v": 0.7, "E_hy": 0.7}, ("strength", "principal E"), DesignMethod.ASD),
+    # ComboSpec("9-1", {"D": 1.0, "E_v": 0.525, "E_h": 0.525, "L": 0.75}, ("strength", "principal E"), DesignMethod.ASD),
     ComboSpec(
-        "9", {"D": 1.0, "E_v": 0.525, "E_h": 0.525, "L": 0.75, "S": 0.1}, ("strength", "principal E"), DesignMethod.ASD
+        "9-1x", {"D": 1.0, "E_v": 0.525, "E_hx": 0.525, "L": 0.75}, ("strength", "principal E"), DesignMethod.ASD
     ),
-    ComboSpec("10", {"D": 0.6, "E_v": -0.7, "E_h": 0.7}, ("strength", "principal E"), DesignMethod.ASD),
+    ComboSpec(
+        "9-1y", {"D": 1.0, "E_v": 0.525, "E_hy": 0.525, "L": 0.75}, ("strength", "principal E"), DesignMethod.ASD
+    ),
+    # ComboSpec(
+    #     "9-2",
+    #     {"D": 1.0, "E_v": 0.525, "E_h": 0.525, "L": 0.75, "S": 0.1},
+    #     ("strength", "principal E"),
+    #     DesignMethod.ASD,
+    # ),
+    ComboSpec(
+        "9-2x",
+        {"D": 1.0, "E_v": 0.525, "E_hx": 0.525, "L": 0.75, "S": 0.1},
+        ("strength", "principal E"),
+        DesignMethod.ASD,
+    ),
+    ComboSpec(
+        "9-2y",
+        {"D": 1.0, "E_v": 0.525, "E_hy": 0.525, "L": 0.75, "S": 0.1},
+        ("strength", "principal E"),
+        DesignMethod.ASD,
+    ),
+    # ComboSpec("10", {"D": 0.6, "E_v": -0.7, "E_h": 0.7}, ("strength", "principal E", "uplift"), DesignMethod.ASD),
+    ComboSpec("10x", {"D": 0.6, "E_v": -0.7, "E_hx": 0.7}, ("strength", "principal E", "uplift"), DesignMethod.ASD),
+    ComboSpec("10y", {"D": 0.6, "E_v": -0.7, "E_hy": 0.7}, ("strength", "principal E", "uplift"), DesignMethod.ASD),
     # OSSC service / creep
     ComboSpec("L OSSC25", {"L": 1.0}, ("service", "OSSC25"), service_flag="ossc_service"),
     ComboSpec("L_r OSSC25", {"L_r": 1.0}, ("service", "OSSC25"), service_flag="ossc_service"),
@@ -185,13 +246,16 @@ _LABEL_TO_CASE: dict[str, LoadCase] = {
     "R": LoadCase.RAIN,
     "W": LoadCase.WIND,
     "E_v": LoadCase.SEISMIC,
-    "E_h": LoadCase.SEISMIC,
+    # "E_h": LoadCase.SEISMIC,
+    "E_hx": LoadCase.SEISMIC,
+    "E_hy": LoadCase.SEISMIC,
 }
 
 
 def create_base_model(
     design_method: DesignMethod = DesignMethod.LRFD,
     load_cases: LoadCase | list[LoadCase] | None = None,
+    tags: str | None = None,
     materials: ModelMaterial | list[ModelMaterial] = MATERIAL_STEEL_50_KSI_KIP_INCH,
     include_ossc_service_combos: bool = True,
     include_ossc_creep_combos: bool = True,
@@ -237,6 +301,14 @@ def create_base_model(
             fy=material.fy,
         )
 
+    base_model.add_section(
+        "s_rigid",
+        A=1e9,
+        Iy=1e9,
+        Iz=1e9,
+        J=1e9,
+    )
+
     flags = {
         "ossc_service": include_ossc_service_combos,
         "ossc_creep": include_ossc_creep_combos,
@@ -247,7 +319,7 @@ def create_base_model(
     for spec in LOAD_COMBINATIONS:
         if spec.always_include:
             # Debug combos (dead-only, all-nominal) are always added verbatim.
-            base_model.add_load_combo(spec.name, dict(spec.factors), list(spec.tags))
+            base_model.add_load_combo(spec.name, dict(spec.factors), combo_tags=list(spec.tags))
             continue
         if spec.design_method is not None and spec.design_method != design_method:
             continue
@@ -256,7 +328,7 @@ def create_base_model(
         # Include only if every referenced load is available. Combo unchanged.
         if not all(_LABEL_TO_CASE[label] in available_cases for label in spec.factors):
             continue
-        base_model.add_load_combo(spec.name, dict(spec.factors), list(spec.tags))
+        base_model.add_load_combo(spec.name, dict(spec.factors), combo_tags=list(spec.tags))
 
     return base_model
 
@@ -435,210 +507,116 @@ def add_named_self_weight(
         )
 
 
-def get_load_combos_from_tags(model: FEModel3D, tags=str | list[str]) -> dict[str, LoadCombo]:
-    if isinstance(tags, str):
-        tags = [tags]
-
-    filtered_combos = {}
-    for tag in tags:
-        for name, combo in model.load_combos.items():
-            if tag in combo.combo_tags:
-                filtered_combos[name] = combo
-
-    return filtered_combos
-
-
-def get_moments_from_tags(
+def add_section_from_shape(
     model: FEModel3D,
-    member_name: str = "m_1",
-    tags: str | list[str] = "strength",
-    direction: Literal["My", "Mz"] = "Mz",
-    n_points: int = 500,
-) -> tuple[list, list[list], list, dict]:
-    if isinstance(tags, str):
-        tags = [tags]
+    shape: str,
+    name: str | None = None,
+    prefix: str = "s_",
+    minor_axis_bending: bool = False,
+) -> Section:
+    """Create a section from a shape and add it to a PyNite model.
 
-    filtered_combos = {}
-    for tag in tags:
-        filtered_combos.update(get_load_combos_from_tags(model, tag))
-
-    moments_dict = {}
-    member = model.members[member_name]
-    for combo in filtered_combos.values():
-        x, M = member.moment_array(direction, n_points, combo_name=combo.name)
-        combo_str = (
-            combo.name + ": " + "$" + " + ".join(f"{factor}{load}" for load, factor in combo.factors.items()) + "$"
-        )
-        combo_str = combo_str.replace("+ -", "-")
-        moments_dict[combo.name] = {"moments_list": M, "label": combo_str}
-
-    moments = [item["moments_list"] for item in moments_dict.values()]
-    labels = [item["label"] for item in moments_dict.values()]
-
-    return x, moments, labels, moments_dict
-
-
-def get_deflections_from_tags(
-    model: FEModel3D,
-    member_name: str = "m_1",
-    tags: str | list[str] = "service",
-    direction: Literal["dx", "dy", "dz"] = "dy",
-    n_points: int = 500,
-) -> tuple[list, list[list], list, dict]:
-    if isinstance(tags, str):
-        tags = [tags]
-
-    filtered_combos = {}
-    for tag in tags:
-        filtered_combos.update(get_load_combos_from_tags(model, tag))
-
-    deflections_dict = {}
-    member = model.members[member_name]
-    for combo in filtered_combos.values():
-        x, M = member.deflection_array(direction, n_points, combo_name=combo.name)
-        combo_str = (
-            combo.name + ": " + "$" + " + ".join(f"{factor}{load}" for load, factor in combo.factors.items()) + "$"
-        )
-        combo_str = combo_str.replace("+ -", "-")
-        deflections_dict[combo.name] = {"deflections_list": M, "label": combo_str}
-
-    deflections = [item["deflections_list"] for item in deflections_dict.values()]
-    labels = [item["label"] for item in deflections_dict.values()]
-
-    return x, deflections, labels, deflections_dict
-
-
-def get_shears_from_tags(
-    model: FEModel3D,
-    member_name: str = "m_1",
-    tags: str | list[str] = "strength",
-    direction: Literal["Fy", "Fz"] = "Fy",
-    n_points: int = 500,
-) -> tuple[list, list[list], list, dict]:
-    if isinstance(tags, str):
-        tags = [tags]
-
-    filtered_combos = {}
-    for tag in tags:
-        filtered_combos.update(get_load_combos_from_tags(model, tag))
-
-    shears_dict = {}
-    member = model.members[member_name]
-    for combo in filtered_combos.values():
-        x, M = member.shear_array(direction, n_points, combo_name=combo.name)
-        combo_str = (
-            combo.name + ": " + "$" + " + ".join(f"{factor}{load}" for load, factor in combo.factors.items()) + "$"
-        )
-        combo_str = combo_str.replace("+ -", "-")
-        shears_dict[combo.name] = {"shears_list": M, "label": combo_str}
-
-    shears = [item["shears_list"] for item in shears_dict.values()]
-    labels = [item["label"] for item in shears_dict.values()]
-
-    return x, shears, labels, shears_dict
-
-
-def get_axial_from_tags(
-    model: FEModel3D,
-    member_name: str = "m_1",
-    tags: str | list[str] = "strength",
-    n_points: int = 500,
-) -> tuple[list, list[list], list, dict]:
-    if isinstance(tags, str):
-        tags = [tags]
-
-    filtered_combos = {}
-    for tag in tags:
-        filtered_combos.update(get_load_combos_from_tags(model, tag))
-
-    axial_dict = {}
-    member = model.members[member_name]
-    for combo in filtered_combos.values():
-        x, M = member.shear_array(n_points, combo_name=combo.name)
-        combo_str = (
-            combo.name + ": " + "$" + " + ".join(f"{factor}{load}" for load, factor in combo.factors.items()) + "$"
-        )
-        combo_str = combo_str.replace("+ -", "-")
-        axial_dict[combo.name] = {"axial_list": M, "label": combo_str}
-
-    axial = [item["axial_list"] for item in axial_dict.values()]
-    labels = [item["label"] for item in axial_dict.values()]
-
-    return x, axial, labels, axial_dict
-
-
-def analyze_member_flexure(
-    model: FEModel3D,
-    section: WSection,
-    member_name: str = "m_1",
-    tags: str | list[str] = "strength",
-    top_flange_brace_points: Sequence[FloatLike] = Bracing.CONTINUOUS,
-    bottom_flange_brace_points: Sequence[FloatLike] = Bracing.UNBRACED,
-    youngs_modulus: FloatLike = YOUNGS_MODULUS_KSI,
-    positive_moment_compresses: str = "bottom",
-    n_points: int = 500,
-    moment_scale: float = 1 / 12,
-    phi_b: float = 0.9,
-    zero_atol=1e-6,
-) -> pd.DataFrame:
-    """Tidy one-row-per-segment DataFrame indexed by load combination.
-
-    For each combo and each unbraced segment, record geometry, L_b, C_b,
-    limit state, phi*M_n, M_u, and the demand/capacity ratio. Moments are
-    scaled by `moment_scale` (default kip-in -> kip-ft).
-    Numeric values within `zero_atol` of zero are snapped to exactly 0.0.
     Args:
-        results_dict: mapping combo label -> list of FlexuralSegmentResult
-            (exactly what your zip(labels, moments) loop builds).
-        phi_b: flexural resistance factor applied to M_n (e.g. 0.90).
-        moment_scale: multiplier applied to every moment column; default
-            1/12 converts kip-in to kip-ft. Use 1.0 to keep kip-in.
-        zero_atol: absolute tolerance below which numeric cells are set to 0.
+        model: PyNite model.
+        shape: Shape designation.
+        name: Desired section name.
+        prefix: Required section prefix.
+        minor_axis_bending: If True, swap Iy and Iz so the section
+            bends about its minor axis in the model.
+
     Returns:
-        pandas.DataFrame indexed by "Load Combo", sorted by Load Combo then x_start.
+        Created section object.
     """
-    x, moments, labels, moments_dict = get_moments_from_tags(
-        model=model, member_name=member_name, tags=tags, n_points=n_points
+    section = Section.from_shape(shape)
+
+    if name:
+        name = name.lower()
+    else:
+        name = section.designation.lower()
+
+    if not name.startswith(prefix):
+        name = f"{prefix}{name}"
+
+    section.name = name
+    iy = section.second_moment_of_area_y_axis
+    iz = section.second_moment_of_area_x_axis
+
+    if minor_axis_bending:
+        iy, iz = iz, iy
+
+    model.add_section(
+        name,
+        A=section.area,
+        Iy=iy,
+        Iz=iz,
+        J=section.torsional_constant,
     )
 
-    results_dict = {}
-    for combo_name, moment_list in zip(labels, moments):
-        results_dict[combo_name] = evaluate_beam_flexure(
-            section=section,
-            yield_stress=model.members[member_name].material.fy,
-            positions=x,
-            moments=moment_list,
-            top_flange_brace_points=top_flange_brace_points,
-            bottom_flange_brace_points=bottom_flange_brace_points,
-            youngs_modulus=youngs_modulus,
-            positive_moment_compresses=positive_moment_compresses,
+    return section
+
+
+def add_sections_from_shapes(
+    model: FEModel3D,
+    sections: dict[str, str],
+) -> dict[str, Section]:
+    """Add multiple sections from shapes.
+
+    Args:
+        model: PyNite model.
+        sections: Mapping of section_name -> shape_name.
+
+    Returns:
+        Mapping of section_name -> Section.
+    """
+    output = {}
+
+    for name, shape in sections.items():
+        output[name] = add_section_from_shape(
+            model=model,
+            shape=shape,
+            name=name,
         )
 
-    rows = []
-    for combo, results in results_dict.items():
-        for r in results:
-            ltb = r.lateral_torsional_buckling
-            phi_Mn = phi_b * ltb.nominal_moment
-            rows.append({
-                "Load Combo": combo,
-                "flange": r.flange,
-                "segment start": r.x_start,
-                "segment end": r.x_end,
-                "unbraced length": ltb.unbraced_length,
-                "ltb modification factor": r.ltb_modification_factor,
-                "limit region": ltb.region,
-                "moment demand": r.moment_demand * moment_scale,
-                "factored moment capacity": phi_Mn * moment_scale,
-                "DCR": r.moment_demand / phi_Mn,
-            })
-    df = pd.DataFrame(rows)
-    if df.empty:
-        return df
+    return output
 
-    df = df.sort_values(["Load Combo", "segment start"])
 
-    # snap near-zero floats to exactly 0.0 (avoids -0.0 and 1e-16 noise)
-    num = df.select_dtypes("number").columns
-    df[num] = df[num].mask(np.isclose(df[num], 0.0, atol=zero_atol), 0.0)
+def add_mpc(
+    model: FEModel3D,
+    independent_node: str,
+    dependent_nodes: list[str],
+    material: str = "mat_rigid",
+    section: str = "s_rigid",
+) -> list[str]:
+    """Create rigid MPC members.
 
-    return df.set_index("Load Combo")
+    Args:
+        model: PyNite model.
+        primary_node: Primary MPC node.
+        secondary_nodes: Secondary nodes connected to the MPC.
+        material: Material name.
+        section: Section name.
+
+    Returns:
+        List of ber names.
+    """
+    if not independent_node.startswith("n_mpc_"):
+        raise ValueError(f"Primary node '{independent_node}' must start with 'n_mpc_'")
+
+    suffix = independent_node.removeprefix("n_mpc_")
+
+    member_names = []
+
+    for i, node in enumerate(dependent_nodes, start=1):
+        member_name = f"mpc_{suffix}_{i}"
+
+        model.add_member(
+            member_name,
+            independent_node,
+            node,
+            material,
+            section,
+        )
+
+        member_names.append(member_name)
+
+    return member_names
