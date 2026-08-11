@@ -17,6 +17,7 @@ dependencies = [
     "nbformat",
     "numpy",
     "pandas",
+    "PyniteFEA[all]",
     "pyyaml",
     "ruff",
     "steelpy"
