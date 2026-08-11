@@ -8,12 +8,31 @@ from forallpeople import Physical
 from .asce import RiskCategory, SiteClass
 from .typing import FloatLike
 
-DESIGN_COEFFICIENTS_TABLE_12_2_1 = pd.read_csv(
-    filepath_or_buffer=resources
-    .files("structural_tools.data")
-    .joinpath("asce_7_22_table_12_2_1.csv")
-    .open("r", encoding="utf-8"),
-).set_index("Index")
+_TABLE_12_2_1_FILES: dict[CodeVersion, str] = {
+    CodeVersion.ASCE_7_16: "asce_7_16_table_12_2_1.csv",
+    CodeVersion.ASCE_7_22: "asce_7_22_table_12_2_1.csv",
+}
+
+
+@lru_cache(maxsize=None)
+def design_coefficients_table(code_version: CodeVersion) -> pd.DataFrame:
+    """Load ASCE 7 Table 12.2-1 for a given code version.
+
+    Args:
+        code_version: ASCE 7 edition to load.
+    Returns:
+        Table 12.2-1 indexed by system index.
+    Raises:
+        ValueError: If no table is registered for `code_version`.
+    """
+    try:
+        filename = _TABLE_12_2_1_FILES[code_version]
+    except KeyError:
+        valid = ", ".join(version.name for version in _TABLE_12_2_1_FILES)
+        raise ValueError(f"No Table 12.2-1 data for {code_version}. Available: {valid}.") from None
+    source = resources.files("structural_tools.data").joinpath(filename)
+    with source.open("r", encoding="utf-8") as file:
+        return pd.read_csv(file).set_index("Index")
 
 
 @dataclass
@@ -28,18 +47,60 @@ class LateralSystem:
     building_period_exponent: float = 0.75
 
     def __post_init__(self):
-        if self.system_index not in DESIGN_COEFFICIENTS_TABLE_12_2_1.index:
-            raise ValueError(
-                f"'{self.system_index}' is not a valid Table 12.2-1 index. "
-                f"Valid indices: {list(DESIGN_COEFFICIENTS_TABLE_12_2_1.index)}"
-            )
+        self.system_index = self._normalize_index(self.system_index)
 
-        row = DESIGN_COEFFICIENTS_TABLE_12_2_1.loc[self.system_index]
+    @staticmethod
+    def _normalize_index(system_index: str) -> str:
+        """Normalize a Table 12.2-1 index to stripped uppercase.
+
+        Args:
+            system_index: Raw index as supplied by the caller.
+        Returns:
+            The index with surrounding whitespace removed and uppercased.
+        """
+        return str(system_index).strip().upper()
+
+    def bind_code_version(self, code_version: CodeVersion) -> None:
+        """Resolve Table 12.2-1 coefficients against a code version.
+
+        Args:
+            code_version: ASCE 7 edition supplied by the owning Structure.
+        Raises:
+            ValueError: If `system_index` is not in the table.
+        """
+        # Re-normalize in case system_index was reassigned after construction
+        self.system_index = self._normalize_index(self.system_index)
+        table = design_coefficients_table(code_version)
+        if self.system_index not in table.index:
+            raise ValueError(
+                f"'{self.system_index}' is not a valid {code_version.name} Table 12.2-1 index. "
+                f"Valid indices: {list(table.index)}"
+            )
+        row = table.loc[self.system_index]
+        self.asce_code_version = code_version
         self.category = row["Category"]
         self.system = row["Seismic Force-Resisting System"]
         self.response_modification_coefficient = row["R"]
         self.overstrength_factor = row["Omega_0"]
         self.deflection_amplification_factor = row["C_d"]
+
+    def _require(self, name: str):
+        """Return a table-derived attribute, erroring if unbound.
+
+        Args:
+            name: Attribute populated by `bind_code_version`.
+        Returns:
+            The attribute value.
+        Raises:
+            RuntimeError: If the system has not been bound to a code version.
+        """
+        try:
+            return getattr(self, name)
+        except AttributeError:
+            raise RuntimeError(
+                f"{type(self).__name__}('{self.system_index}') has no code version yet. "
+                "Assign it to a Structure or call bind_code_version() first."
+            ) from None
 
     @property
     def c_t(self):
@@ -51,15 +112,15 @@ class LateralSystem:
 
     @property
     def r(self):
-        return self.response_modification_coefficient
+        return self._require("response_modification_coefficient")
 
     @property
     def omega_0(self):
-        return self.overstrength_factor
+        return self._require("overstrength_factor")
 
     @property
     def c_d(self):
-        return self.deflection_amplification_factor
+        return self._require("deflection_amplification_factor")
 
 
 @dataclass
