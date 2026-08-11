@@ -3,17 +3,22 @@
 from __future__ import annotations
 
 from collections import defaultdict
+from collections.abc import Callable
+from enum import Enum
 from math import isclose
 
-import matplotlib
 import matplotlib.patheffects as pe
 import matplotlib.pyplot as plt
 import numpy as np
 
-matplotlib.use("Agg")
+# matplotlib.use("Agg")
 from matplotlib.axes import Axes
 from matplotlib.figure import Figure
-from Pynite import PhysMember
+from mpl_toolkits.mplot3d import Axes3D  # noqa: F401
+from mpl_toolkits.mplot3d.art3d import Line3DCollection
+from Pynite import FEModel3D, PhysMember, Node3D
+
+from typing import Any
 
 RCPARAMS_DICT: dict = {
     "figure.figsize": (12, 3),
@@ -39,6 +44,12 @@ LOAD_COLORS = {
     "R": "#ff7f0e",
     "W": "#2ca02c",
 }
+
+
+class UpAxis(Enum):
+    X = "X"
+    Y = "Y"
+    Z = "Z"
 
 
 def set_plot_style(rcParams_dict: dict | None = None, append_to_structural_tools_defaults: bool = True) -> None:
@@ -621,3 +632,1980 @@ def plot_member_loads(
     if show_plt:
         plt.show()
     return fig, ax
+
+
+def plot_model_3d(
+    model: FEModel3D,
+    *,
+    elevation: float = 30,
+    azimuth: float = -60,
+    roll: float = 0,
+    up_axis: UpAxis | str = UpAxis.Y,
+    show_node_labels: bool = True,
+    show_member_labels: bool = False,
+    show_releases: bool = True,
+    show_mpcs: bool = True,
+    show_plot: bool = True,
+    save_png: str | None = None,
+    figsize: tuple[float, float] = (10, 8),
+    member_color: str = "black",
+    mpc_color: str = "magenta",
+    node_color: str = "red",
+    release_color: str = "dodgerblue",
+    node_size: float = 30.0,
+    member_lw: float = 1.5,
+    mpc_lw: float = 3.0,
+    release_marker_size: float = 30.0,
+    release_offset_ratio: float = 0.03,
+    release_label_offset_ratio: float = 0.03,
+    rigid_member_predicate: Callable[[Any], bool] | None = None,
+    use_stiffness_rigid_check: bool = False,
+    rigid_e_threshold: float = 1.0e9,
+    rigid_a_threshold: float = 1.0e6,
+) -> tuple[plt.Figure, plt.Axes]:
+    """Plot an undeformed PyNite 3D model.
+
+    Args:
+        model: PyNite FEModel3D object.
+        up_axis: Global axis to display vertically.
+        show_node_labels: Display node names.
+        show_member_labels: Display member names.
+        show_releases: Display member end releases.
+        show_mpcs: Display rigid/MPC members.
+        show_plot: Display the plot.
+        save_png: Optional output PNG path.
+        figsize: Matplotlib figure size.
+        member_color: Normal member color.
+        mpc_color: Rigid/MPC member color.
+        node_color: Node marker color.
+        release_color: Release marker and label color.
+        node_size: Node marker size.
+        member_lw: Normal member line width.
+        mpc_lw: Rigid/MPC member line width.
+        release_marker_size: Release marker size.
+        release_offset_ratio: Release marker offset into member as a ratio of model size.
+        release_label_offset_ratio: Release label offset as a ratio of model size.
+        rigid_member_predicate: Optional custom rigid member detector.
+        use_stiffness_rigid_check: Infer rigid members from stiffness values.
+        rigid_e_threshold: E threshold for stiffness-based rigid detection.
+        rigid_a_threshold: A threshold for stiffness-based rigid detection.
+
+    Returns:
+        Matplotlib figure and axes.
+    """
+
+    up_axis = _normalize_up_axis(up_axis)
+
+    fig = plt.figure(figsize=figsize)
+    ax = fig.add_subplot(111, projection="3d")
+    ax.view_init(elev=elevation, azim=azimuth, roll=roll)
+
+    normal_segments: list[np.ndarray] = []
+    mpc_segments: list[np.ndarray] = []
+    all_points: list[np.ndarray] = []
+    release_endpoint_points: list[tuple[Any, np.ndarray, np.ndarray]] = []
+
+    for member in model.members.values():
+        is_rigid = _is_rigid_member(
+            member=member,
+            rigid_member_predicate=rigid_member_predicate,
+            use_stiffness_rigid_check=use_stiffness_rigid_check,
+            rigid_e_threshold=rigid_e_threshold,
+            rigid_a_threshold=rigid_a_threshold,
+        )
+
+        if is_rigid and not show_mpcs:
+            continue
+
+        i_plot = _to_plot_xyz(_node_xyz(member.i_node), up_axis)
+        j_plot = _to_plot_xyz(_node_xyz(member.j_node), up_axis)
+
+        segment = np.array([i_plot, j_plot], dtype=float)
+
+        if is_rigid:
+            mpc_segments.append(segment)
+        else:
+            normal_segments.append(segment)
+
+        all_points.extend([i_plot, j_plot])
+        release_endpoint_points.append((member, i_plot, j_plot))
+
+        if show_member_labels:
+            midpoint = 0.5 * (i_plot + j_plot)
+            label_color = mpc_color if is_rigid else "blue"
+            label_text = f"{member.name} [MPC]" if is_rigid else member.name
+
+            ax.text(
+                midpoint[0],
+                midpoint[1],
+                midpoint[2],
+                label_text,
+                color=label_color,
+                fontsize=8,
+            )
+
+    _add_line_collection_3d(
+        ax=ax,
+        segments=normal_segments,
+        color=member_color,
+        linewidth=member_lw,
+        linestyle="solid",
+        alpha=1.0,
+    )
+
+    _add_line_collection_3d(
+        ax=ax,
+        segments=mpc_segments,
+        color=mpc_color,
+        linewidth=mpc_lw,
+        linestyle="dashdot",
+        alpha=1.0,
+    )
+
+    node_points = np.array(
+        [_to_plot_xyz(_node_xyz(node), up_axis) for node in model.nodes.values()],
+        dtype=float,
+    )
+
+    if len(node_points) > 0:
+        ax.scatter(
+            node_points[:, 0],
+            node_points[:, 1],
+            node_points[:, 2],
+            color=node_color,
+            s=node_size,
+            depthshade=True,
+        )
+        all_points.extend(node_points)
+
+    if show_node_labels:
+        for node in model.nodes.values():
+            point = _to_plot_xyz(_node_xyz(node), up_axis)
+
+            ax.text(
+                point[0],
+                point[1],
+                point[2],
+                node.name,
+                fontsize=8,
+            )
+
+    model_size = _points_model_size(np.array(all_points, dtype=float))
+
+    if show_releases:
+        for member, i_plot, j_plot in release_endpoint_points:
+            _plot_member_releases(
+                ax=ax,
+                member=member,
+                i_point=i_plot,
+                j_point=j_plot,
+                model_size=model_size,
+                release_color=release_color,
+                release_marker_size=release_marker_size,
+                release_offset_ratio=release_offset_ratio,
+                release_label_offset_ratio=release_label_offset_ratio,
+            )
+
+    _set_axes_equal_3d(ax, np.array(all_points, dtype=float))
+
+    xlabel, ylabel, zlabel = _axis_labels_for_up_axis(up_axis)
+    ax.set_xlabel(xlabel)
+    ax.set_ylabel(ylabel)
+    ax.set_zlabel(zlabel)
+    ax.set_title("PyNite 3D Model")
+
+    _add_model_legend_handles(
+        ax=ax,
+        member_color=member_color,
+        mpc_color=mpc_color,
+        release_color=release_color,
+        has_mpcs=bool(mpc_segments),
+        show_releases=show_releases,
+    )
+
+    fig.tight_layout()
+
+    if save_png is not None:
+        fig.savefig(
+            save_png,
+            dpi=300,
+            bbox_inches="tight",
+        )
+
+    if show_plot:
+        plt.show()
+
+    return fig, ax
+
+
+def plot_deformed_shape_3d(
+    model: FEModel3D,
+    combo_name: str,
+    *,
+    elevation: float = 30,
+    azimuth: float = -60,
+    roll: float = 0,
+    up_axis: UpAxis | str = UpAxis.Y,
+    scale_factor: float = 20.0,
+    n_points: int = 25,
+    show_undeformed: bool = True,
+    show_nodes: bool = True,
+    show_node_labels: bool = False,
+    show_member_labels: bool = False,
+    show_releases: bool = True,
+    show_mpcs: bool = True,
+    show_inactive_tension_only: bool = True,
+    show_plot: bool = True,
+    save_png: str | None = None,
+    figsize: tuple[float, float] = (10, 8),
+    member_color: str = "black",
+    mpc_color: str = "magenta",
+    undeformed_color: str = "0.75",
+    undeformed_mpc_color: str = "violet",
+    release_color: str = "dodgerblue",
+    node_color: str = "black",
+    member_lw: float = 2.0,
+    mpc_lw: float = 3.0,
+    inactive_tension_lw: float = 1.5,
+    undeformed_lw: float = 1.0,
+    inactive_tension_color: str = "0.25",
+    inactive_tension_alpha: float = 0.5,
+    inactive_tension_linestyle: str = "solid",
+    node_size: float = 20.0,
+    release_marker_size: float = 30.0,
+    release_offset_ratio: float = 0.03,
+    release_label_offset_ratio: float = 0.03,
+    curve_released_members: bool = False,
+    curve_mpcs: bool = False,
+    rigid_member_predicate: Callable[[Any], bool] | None = None,
+    use_stiffness_rigid_check: bool = False,
+    rigid_e_threshold: float = 1.0e9,
+    rigid_a_threshold: float = 1.0e6,
+) -> tuple[plt.Figure, plt.Axes]:
+    """Plot the deformed shape of a PyNite 3D model.
+
+    Args:
+        model: PyNite FEModel3D object.
+        combo_name: Load combination name to plot.
+        up_axis: Global axis to display vertically.
+        scale_factor: Displacement scale factor.
+        n_points: Number of stations sampled along each member.
+        show_undeformed: Plot undeformed geometry.
+        show_nodes: Plot deformed node locations.
+        show_node_labels: Plot node names at deformed locations.
+        show_member_labels: Plot member names near deformed midpoints.
+        show_releases: Display member end releases.
+        show_mpcs: Display rigid/MPC members.
+        show_inactive_tension_only: Display inactive tension-only members.
+        show_plot: Display the plot.
+        save_png: Optional output PNG path.
+        figsize: Matplotlib figure size.
+        member_color: Normal deformed member color.
+        mpc_color: Rigid/MPC deformed member color.
+        inactive_tension_color: Inactive tension-only member color.
+        undeformed_color: Normal undeformed member color.
+        undeformed_mpc_color: Rigid/MPC undeformed member color.
+        release_color: Release marker and label color.
+        node_color: Deformed node marker color.
+        member_lw: Normal deformed member line width.
+        mpc_lw: Rigid/MPC deformed member line width.
+        inactive_tension_lw: Inactive tension-only member line width.
+        undeformed_lw: Undeformed member line width.
+        inactive_tension_alpha: Inactive tension-only transparency.
+        inactive_tension_linestyle: Inactive tension-only line style.
+        node_size: Deformed node marker size.
+        release_marker_size: Release marker size.
+        release_offset_ratio: Release marker offset into member as a ratio of model size.
+        release_label_offset_ratio: Release label offset as a ratio of model size.
+        curve_released_members: Plot released members with member curvature.
+        curve_mpcs: Plot MPC members with member curvature.
+        rigid_member_predicate: Optional custom rigid member detector.
+        use_stiffness_rigid_check: Infer rigid members from stiffness values.
+        rigid_e_threshold: E threshold for stiffness-based rigid detection.
+        rigid_a_threshold: A threshold for stiffness-based rigid detection.
+
+    Returns:
+        Matplotlib figure and axes.
+    """
+
+    up_axis = _normalize_up_axis(up_axis)
+
+    fig = plt.figure(figsize=figsize)
+    ax = fig.add_subplot(111, projection="3d")
+    ax.view_init(elev=elevation, azim=azimuth, roll=roll)
+
+    undeformed_segments: list[np.ndarray] = []
+    undeformed_mpc_segments: list[np.ndarray] = []
+    deformed_segments: list[np.ndarray] = []
+    deformed_mpc_segments: list[np.ndarray] = []
+    deformed_inactive_tension_segments: list[np.ndarray] = []
+    all_points: list[np.ndarray] = []
+    release_endpoint_points: list[tuple[Any, np.ndarray, np.ndarray]] = []
+
+    for member in model.members.values():
+        is_rigid = _is_rigid_member(
+            member=member,
+            rigid_member_predicate=rigid_member_predicate,
+            use_stiffness_rigid_check=use_stiffness_rigid_check,
+            rigid_e_threshold=rigid_e_threshold,
+            rigid_a_threshold=rigid_a_threshold,
+        )
+
+        is_inactive_tension_only = _is_inactive_tension_only_member(
+            member=member,
+            combo_name=combo_name,
+        )
+
+        if is_rigid and not show_mpcs:
+            continue
+
+        if is_inactive_tension_only and not show_inactive_tension_only:
+            continue
+
+        local_to_global = _member_local_to_global_matrix(
+            member=member,
+            up_axis=up_axis,
+        )
+
+        i_global = _node_xyz(member.i_node)
+        length = float(member.L())
+        x_stations = np.linspace(0.0, length, n_points)
+
+        undeformed_points_global = np.array(
+            [i_global + local_to_global @ np.array([x, 0.0, 0.0]) for x in x_stations],
+            dtype=float,
+        )
+
+        should_curve_member = not is_inactive_tension_only and _should_plot_member_curvature(
+            member=member,
+            is_rigid=is_rigid,
+            curve_released_members=curve_released_members,
+            curve_mpcs=curve_mpcs,
+        )
+
+        if should_curve_member:
+            deformed_points_global = np.array(
+                [
+                    _deformed_member_point(
+                        member=member,
+                        x=x,
+                        combo_name=combo_name,
+                        scale_factor=scale_factor,
+                        local_to_global=local_to_global,
+                    )
+                    for x in x_stations
+                ],
+                dtype=float,
+            )
+
+            deformed_points_global[0] = _deformed_node_xyz(
+                node=member.i_node,
+                combo_name=combo_name,
+                scale_factor=scale_factor,
+            )
+
+            deformed_points_global[-1] = _deformed_node_xyz(
+                node=member.j_node,
+                combo_name=combo_name,
+                scale_factor=scale_factor,
+            )
+
+        else:
+            i_deformed_global = _deformed_node_xyz(
+                node=member.i_node,
+                combo_name=combo_name,
+                scale_factor=scale_factor,
+            )
+
+            j_deformed_global = _deformed_node_xyz(
+                node=member.j_node,
+                combo_name=combo_name,
+                scale_factor=scale_factor,
+            )
+
+            deformed_points_global = np.array(
+                [
+                    i_deformed_global + t * (j_deformed_global - i_deformed_global)
+                    for t in np.linspace(0.0, 1.0, n_points)
+                ],
+                dtype=float,
+            )
+
+        undeformed_points = _points_to_plot_xyz(
+            points=undeformed_points_global,
+            up_axis=up_axis,
+        )
+
+        deformed_points = _points_to_plot_xyz(
+            points=deformed_points_global,
+            up_axis=up_axis,
+        )
+
+        if show_undeformed:
+            if is_rigid:
+                undeformed_mpc_segments.append(undeformed_points)
+            else:
+                undeformed_segments.append(undeformed_points)
+
+            all_points.extend(undeformed_points)
+
+        if is_inactive_tension_only:
+            deformed_inactive_tension_segments.append(deformed_points)
+        elif is_rigid:
+            deformed_mpc_segments.append(deformed_points)
+        else:
+            deformed_segments.append(deformed_points)
+
+        all_points.extend(deformed_points)
+
+        release_endpoint_points.append((
+            member,
+            deformed_points[0],
+            deformed_points[-1],
+        ))
+
+        if show_member_labels:
+            midpoint = deformed_points[len(deformed_points) // 2]
+
+            if is_inactive_tension_only:
+                label_color = inactive_tension_color
+                label_text = f"{member.name} [Inactive T/O]"
+                label_alpha = inactive_tension_alpha
+            elif is_rigid:
+                label_color = mpc_color
+                label_text = f"{member.name} [MPC]"
+                label_alpha = 1.0
+            else:
+                label_color = member_color
+                label_text = member.name
+                label_alpha = 1.0
+
+            ax.text(
+                midpoint[0],
+                midpoint[1],
+                midpoint[2],
+                label_text,
+                color=label_color,
+                fontsize=8,
+                alpha=label_alpha,
+            )
+
+    _add_line_collection_3d(
+        ax=ax,
+        segments=undeformed_segments,
+        color=undeformed_color,
+        linewidth=undeformed_lw,
+        linestyle="dashed",
+        alpha=0.8,
+    )
+
+    _add_line_collection_3d(
+        ax=ax,
+        segments=undeformed_mpc_segments,
+        color=undeformed_mpc_color,
+        linewidth=undeformed_lw,
+        linestyle="dashed",
+        alpha=0.9,
+    )
+
+    _add_line_collection_3d(
+        ax=ax,
+        segments=deformed_segments,
+        color=member_color,
+        linewidth=member_lw,
+        linestyle="solid",
+        alpha=1.0,
+    )
+
+    _add_line_collection_3d(
+        ax=ax,
+        segments=deformed_mpc_segments,
+        color=mpc_color,
+        linewidth=mpc_lw,
+        linestyle="dashdot",
+        alpha=1.0,
+    )
+
+    _add_line_collection_3d(
+        ax=ax,
+        segments=deformed_inactive_tension_segments,
+        color=inactive_tension_color,
+        linewidth=inactive_tension_lw,
+        linestyle=inactive_tension_linestyle,
+        alpha=inactive_tension_alpha,
+    )
+
+    if show_nodes:
+        deformed_node_points = []
+
+        for node in model.nodes.values():
+            point = _to_plot_xyz(
+                point=_deformed_node_xyz(
+                    node=node,
+                    combo_name=combo_name,
+                    scale_factor=scale_factor,
+                ),
+                up_axis=up_axis,
+            )
+
+            deformed_node_points.append(point)
+            all_points.append(point)
+
+            if show_node_labels:
+                ax.text(
+                    point[0],
+                    point[1],
+                    point[2],
+                    node.name,
+                    fontsize=8,
+                )
+
+        if deformed_node_points:
+            deformed_node_points_array = np.array(deformed_node_points, dtype=float)
+
+            ax.scatter(
+                deformed_node_points_array[:, 0],
+                deformed_node_points_array[:, 1],
+                deformed_node_points_array[:, 2],
+                color=node_color,
+                s=node_size,
+                depthshade=True,
+            )
+
+    model_size = _points_model_size(np.array(all_points, dtype=float))
+
+    if show_releases:
+        for member, i_plot, j_plot in release_endpoint_points:
+            _plot_member_releases(
+                ax=ax,
+                member=member,
+                i_point=i_plot,
+                j_point=j_plot,
+                model_size=model_size,
+                release_color=release_color,
+                release_marker_size=release_marker_size,
+                release_offset_ratio=release_offset_ratio,
+                release_label_offset_ratio=release_label_offset_ratio,
+            )
+
+    _set_axes_equal_3d(ax, np.array(all_points, dtype=float))
+
+    xlabel, ylabel, zlabel = _axis_labels_for_up_axis(up_axis)
+    ax.set_xlabel(xlabel)
+    ax.set_ylabel(ylabel)
+    ax.set_zlabel(zlabel)
+
+    ax.set_title(f"Deformed Shape\n{combo_name} | Scale = {scale_factor:g}")
+
+    _add_deformed_legend_handles(
+        ax=ax,
+        member_color=member_color,
+        mpc_color=mpc_color,
+        undeformed_color=undeformed_color,
+        release_color=release_color,
+        inactive_tension_color=inactive_tension_color,
+        inactive_tension_alpha=inactive_tension_alpha,
+        inactive_tension_linestyle=inactive_tension_linestyle,
+        show_undeformed=show_undeformed,
+        has_mpcs=bool(deformed_mpc_segments),
+        has_inactive_tension_only=bool(deformed_inactive_tension_segments),
+        show_releases=show_releases,
+    )
+
+    fig.tight_layout()
+
+    if save_png is not None:
+        fig.savefig(
+            save_png,
+            dpi=300,
+            bbox_inches="tight",
+        )
+
+    if show_plot:
+        plt.show()
+
+    return fig, ax
+
+
+def _normalize_up_axis(up_axis: UpAxis | str) -> UpAxis:
+    """Normalize an up-axis input to an UpAxis enum.
+
+    Args:
+        up_axis: Up axis as an enum or string.
+
+    Returns:
+        Normalized UpAxis enum.
+    """
+
+    if isinstance(up_axis, UpAxis):
+        return up_axis
+
+    if isinstance(up_axis, str):
+        try:
+            return UpAxis(up_axis.upper())
+        except ValueError as exc:
+            msg = f"Invalid up_axis {up_axis!r}. Expected X, Y, or Z."
+            raise ValueError(msg) from exc
+
+    if hasattr(up_axis, "value"):
+        try:
+            return UpAxis(str(up_axis.value).upper())
+        except ValueError as exc:
+            msg = f"Invalid up_axis enum value {up_axis.value!r}."
+            raise ValueError(msg) from exc
+
+    msg = f"Invalid up_axis {up_axis!r}. Expected UpAxis or str."
+    raise TypeError(msg)
+
+
+def _to_plot_xyz(
+    point: np.ndarray,
+    up_axis: UpAxis | str,
+) -> np.ndarray:
+    """Map global XYZ coordinates to Matplotlib display XYZ coordinates.
+
+    Args:
+        point: Global XYZ point.
+        up_axis: Global axis to plot vertically.
+
+    Returns:
+        Display XYZ point for Matplotlib.
+    """
+
+    axis = _normalize_up_axis(up_axis)
+    x, y, z = point
+
+    if axis is UpAxis.Z:
+        return np.array([x, y, z], dtype=float)
+
+    if axis is UpAxis.Y:
+        return np.array([x, z, y], dtype=float)
+
+    return np.array([y, z, x], dtype=float)
+
+
+def _points_to_plot_xyz(
+    points: np.ndarray,
+    up_axis: UpAxis | str,
+) -> np.ndarray:
+    """Map multiple global XYZ points to Matplotlib display XYZ coordinates.
+
+    Args:
+        points: Global XYZ points.
+        up_axis: Global axis to plot vertically.
+
+    Returns:
+        Display XYZ points for Matplotlib.
+    """
+
+    return np.array(
+        [_to_plot_xyz(point, up_axis) for point in points],
+        dtype=float,
+    )
+
+
+def _axis_labels_for_up_axis(
+    up_axis: UpAxis | str,
+) -> tuple[str, str, str]:
+    """Return display axis labels.
+
+    Args:
+        up_axis: Global axis to plot vertically.
+
+    Returns:
+        Labels for Matplotlib X, Y, and Z axes.
+    """
+
+    axis = _normalize_up_axis(up_axis)
+
+    if axis is UpAxis.Z:
+        return "X", "Y", "Z"
+
+    if axis is UpAxis.Y:
+        return "X", "Z", "Y"
+
+    return "Y", "Z", "X"
+
+
+def _global_axis_vector(
+    axis: UpAxis | str,
+) -> np.ndarray:
+    """Return a global axis unit vector.
+
+    Args:
+        axis: Axis name.
+
+    Returns:
+        Axis unit vector.
+    """
+
+    normalized_axis = _normalize_up_axis(axis)
+
+    if normalized_axis is UpAxis.X:
+        return np.array([1.0, 0.0, 0.0])
+
+    if normalized_axis is UpAxis.Y:
+        return np.array([0.0, 1.0, 0.0])
+
+    return np.array([0.0, 0.0, 1.0])
+
+
+def _candidate_global_axes() -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """Return candidate global axes.
+
+    Returns:
+        Global unit axes.
+    """
+
+    return (
+        np.array([1.0, 0.0, 0.0]),
+        np.array([0.0, 1.0, 0.0]),
+        np.array([0.0, 0.0, 1.0]),
+    )
+
+
+def _node_xyz(node: Node3D) -> np.ndarray:
+    """Return a PyNite node's undeformed global coordinates.
+
+    Args:
+        node: PyNite node object.
+
+    Returns:
+        Node coordinates.
+    """
+
+    return np.array(
+        [
+            float(node.X),
+            float(node.Y),
+            float(node.Z),
+        ],
+        dtype=float,
+    )
+
+
+def _deformed_node_xyz(
+    node: Node3D,
+    combo_name: str,
+    scale_factor: float,
+) -> np.ndarray:
+    """Return a PyNite node's deformed global coordinates.
+
+    Args:
+        node: PyNite node object.
+        combo_name: Load combination name.
+        scale_factor: Displacement scale factor.
+
+    Returns:
+        Deformed node coordinates.
+    """
+
+    return _node_xyz(node) + scale_factor * np.array(
+        [
+            _node_displacement(node, "DX", combo_name),
+            _node_displacement(node, "DY", combo_name),
+            _node_displacement(node, "DZ", combo_name),
+        ],
+        dtype=float,
+    )
+
+
+def _node_displacement(
+    node: Node3D,
+    direction: str,
+    combo_name: str,
+) -> float:
+    """Return a nodal displacement.
+
+    Args:
+        node: PyNite node object.
+        direction: Displacement dictionary name.
+        combo_name: Load combination name.
+
+    Returns:
+        Nodal displacement value.
+    """
+
+    values = getattr(node, direction)
+
+    try:
+        return float(values[combo_name])
+    except KeyError as exc:
+        msg = (
+            f"Node {node.name!r} does not have displacement {direction!r} "
+            f"for combo {combo_name!r}. Did you analyze the model?"
+        )
+        raise KeyError(msg) from exc
+
+
+def _deformed_member_point(
+    member: PhysMember,
+    x: float,
+    combo_name: str,
+    scale_factor: float,
+    local_to_global: np.ndarray,
+) -> np.ndarray:
+    """Return the deformed global point on a member at station x.
+
+    Args:
+        member: PyNite member object.
+        x: Distance from the i-node along the member.
+        combo_name: Load combination name.
+        scale_factor: Displacement scale factor.
+        local_to_global: Local-to-global transformation matrix.
+
+    Returns:
+        Deformed global point.
+    """
+
+    i_point = _node_xyz(member.i_node)
+
+    local_position = np.array([x, 0.0, 0.0], dtype=float)
+    local_deflection = np.array(
+        [
+            _member_deflection(member, "dx", x, combo_name),
+            _member_deflection(member, "dy", x, combo_name),
+            _member_deflection(member, "dz", x, combo_name),
+        ],
+        dtype=float,
+    )
+
+    return i_point + local_to_global @ local_position + scale_factor * (local_to_global @ local_deflection)
+
+
+def _member_deflection(
+    member: PhysMember,
+    direction: str,
+    x: float,
+    combo_name: str,
+) -> float:
+    """Return member deflection at a station.
+
+    Args:
+        member: PyNite member object.
+        direction: Local deflection direction.
+        x: Distance from the i-node along the member.
+        combo_name: Load combination name.
+
+    Returns:
+        Member deflection.
+    """
+
+    try:
+        return float(member.deflection(direction, x, combo_name))
+    except Exception as exc:
+        msg = f"Could not get {direction!r} deflection for member {member.name!r} at x={x:g} for combo {combo_name!r}."
+        raise RuntimeError(msg) from exc
+
+
+def _member_local_to_global_matrix(
+    member: PhysMember,
+    up_axis: UpAxis | str = UpAxis.Z,
+) -> np.ndarray:
+    """Return a member local-to-global transformation matrix.
+
+    Args:
+        member: PyNite member object.
+        up_axis: Global up axis for fallback local axis construction.
+
+    Returns:
+        3x3 transformation matrix.
+    """
+
+    i_point = _node_xyz(member.i_node)
+    j_point = _node_xyz(member.j_node)
+
+    chord = j_point - i_point
+    length = np.linalg.norm(chord)
+
+    if length == 0:
+        msg = f"Member {member.name!r} has zero length."
+        raise ValueError(msg)
+
+    expected_local_x = chord / length
+
+    pynite_transform = _try_get_pynite_transform(member, expected_local_x)
+
+    if pynite_transform is not None:
+        return pynite_transform
+
+    return _fallback_local_to_global_matrix(
+        member=member,
+        up_axis=up_axis,
+    )
+
+
+def _try_get_pynite_transform(
+    member: PhysMember,
+    expected_local_x: np.ndarray,
+) -> np.ndarray | None:
+    """Try to get PyNite's local-to-global matrix.
+
+    Args:
+        member: PyNite member object.
+        expected_local_x: Expected local x-axis in global coordinates.
+
+    Returns:
+        3x3 matrix if available, otherwise None.
+    """
+
+    for transform_name in ("T", "transformation_matrix"):
+        if not hasattr(member, transform_name):
+            continue
+
+        transform_item = getattr(member, transform_name)
+
+        try:
+            transform = transform_item() if callable(transform_item) else transform_item
+            transform = np.array(transform, dtype=float)
+        except Exception:
+            continue
+
+        if transform.shape[0] < 3 or transform.shape[1] < 3:
+            continue
+
+        candidate = transform[:3, :3]
+
+        if _axis_matches(candidate[:, 0], expected_local_x):
+            return candidate
+
+        if _axis_matches(candidate[0, :], expected_local_x):
+            return candidate.T
+
+    return None
+
+
+def _fallback_local_to_global_matrix(
+    member: PhysMember,
+    up_axis: UpAxis | str = UpAxis.Z,
+) -> np.ndarray:
+    """Build a local-to-global matrix using a configurable up axis.
+
+    Args:
+        member: PyNite member object.
+        up_axis: Global axis to treat as up.
+
+    Returns:
+        3x3 local-to-global transformation matrix.
+    """
+
+    i_point = _node_xyz(member.i_node)
+    j_point = _node_xyz(member.j_node)
+
+    local_x = _unit_vector(j_point - i_point)
+    global_up = _global_axis_vector(up_axis)
+
+    local_z = np.cross(global_up, local_x)
+
+    if np.linalg.norm(local_z) < 1.0e-12:
+        for candidate_axis in _candidate_global_axes():
+            local_z = np.cross(candidate_axis, local_x)
+
+            if np.linalg.norm(local_z) >= 1.0e-12:
+                break
+
+    local_z = _unit_vector(local_z)
+    local_y = _unit_vector(np.cross(local_z, local_x))
+
+    rotation_degrees = float(getattr(member, "rotation", 0.0))
+    rotation_radians = np.deg2rad(rotation_degrees)
+
+    if abs(rotation_radians) > 0.0:
+        local_y = _rotate_vector_about_axis(
+            vector=local_y,
+            axis=local_x,
+            angle=rotation_radians,
+        )
+        local_z = _rotate_vector_about_axis(
+            vector=local_z,
+            axis=local_x,
+            angle=rotation_radians,
+        )
+
+    return np.column_stack((local_x, local_y, local_z))
+
+
+def _plot_member_releases(
+    ax: plt.Axes,
+    member: PhysMember,
+    i_point: np.ndarray,
+    j_point: np.ndarray,
+    model_size: float,
+    release_color: str,
+    release_marker_size: float,
+    release_offset_ratio: float,
+    release_label_offset_ratio: float,
+) -> None:
+    """Plot release markers and labels for a member.
+
+    Args:
+        ax: Matplotlib 3D axis.
+        member: PyNite member object.
+        i_point: Plot point for member i-end.
+        j_point: Plot point for member j-end.
+        model_size: Characteristic model size.
+        release_color: Release marker color.
+        release_marker_size: Release marker size.
+        release_offset_ratio: Release marker offset ratio.
+        release_label_offset_ratio: Label offset ratio.
+    """
+
+    releases = _member_release_flags(member)
+
+    if not releases.i_releases and not releases.j_releases:
+        return
+
+    member_axis = _unit_vector(j_point - i_point)
+
+    release_offset = model_size * release_offset_ratio
+    label_offset = model_size * release_label_offset_ratio
+
+    i_release_point = i_point + member_axis * release_offset
+    j_release_point = j_point - member_axis * release_offset
+
+    i_label_point = i_release_point - member_axis * label_offset
+    j_label_point = j_release_point + member_axis * label_offset
+
+    if releases.i_releases:
+        ax.scatter(
+            [i_release_point[0]],
+            [i_release_point[1]],
+            [i_release_point[2]],
+            s=release_marker_size,
+            marker="o",
+            facecolors="none",
+            edgecolors=release_color,
+            linewidths=1.5,
+            depthshade=False,
+        )
+
+        ax.text(
+            i_label_point[0],
+            i_label_point[1],
+            i_label_point[2],
+            _release_label(releases.i_releases),
+            color=release_color,
+            fontsize=7,
+            ha="center",
+            va="center",
+        )
+
+    if releases.j_releases:
+        ax.scatter(
+            [j_release_point[0]],
+            [j_release_point[1]],
+            [j_release_point[2]],
+            s=release_marker_size,
+            marker="o",
+            facecolors="none",
+            edgecolors=release_color,
+            linewidths=1.5,
+            depthshade=False,
+        )
+
+        ax.text(
+            j_label_point[0],
+            j_label_point[1],
+            j_label_point[2],
+            _release_label(releases.j_releases),
+            color=release_color,
+            fontsize=7,
+            ha="center",
+            va="center",
+        )
+
+
+class _MemberReleaseFlags:
+    """Container for member end release labels."""
+
+    def __init__(
+        self,
+        i_releases: tuple[str, ...],
+        j_releases: tuple[str, ...],
+    ) -> None:
+        """Initialize member release flags.
+
+        Args:
+            i_releases: Release labels at member i-end.
+            j_releases: Release labels at member j-end.
+        """
+
+        self.i_releases = i_releases
+        self.j_releases = j_releases
+
+
+def _member_release_flags(member: PhysMember) -> _MemberReleaseFlags:
+    """Return member release flags as readable labels.
+
+    Args:
+        member: PyNite member object.
+
+    Returns:
+        Release flags for the i-end and j-end.
+    """
+
+    release_map = _raw_member_release_map(member)
+
+    i_labels = []
+    j_labels = []
+
+    for internal_name, label in (
+        ("Dxi", "Dx"),
+        ("Dyi", "Dy"),
+        ("Dzi", "Dz"),
+        ("Rxi", "Rx"),
+        ("Ryi", "Ry"),
+        ("Rzi", "Rz"),
+    ):
+        if bool(release_map.get(internal_name, False)):
+            i_labels.append(label)
+
+    for internal_name, label in (
+        ("Dxj", "Dx"),
+        ("Dyj", "Dy"),
+        ("Dzj", "Dz"),
+        ("Rxj", "Rx"),
+        ("Ryj", "Ry"),
+        ("Rzj", "Rz"),
+    ):
+        if bool(release_map.get(internal_name, False)):
+            j_labels.append(label)
+
+    return _MemberReleaseFlags(
+        i_releases=tuple(i_labels),
+        j_releases=tuple(j_labels),
+    )
+
+
+def _raw_member_release_map(member: PhysMember) -> dict[str, bool]:
+    """Return raw release flags from common PyNite or wrapper patterns.
+
+    Args:
+        member: PyNite member object.
+
+    Returns:
+        Dictionary keyed by PyNite-style release names.
+    """
+
+    release_names = (
+        "Dxi",
+        "Dyi",
+        "Dzi",
+        "Rxi",
+        "Ryi",
+        "Rzi",
+        "Dxj",
+        "Dyj",
+        "Dzj",
+        "Rxj",
+        "Ryj",
+        "Rzj",
+    )
+
+    release_obj = _find_release_object(member)
+
+    if release_obj is None:
+        return {name: False for name in release_names}
+
+    if isinstance(release_obj, dict):
+        return {
+            name: bool(
+                release_obj.get(
+                    name,
+                    release_obj.get(
+                        name.lower(),
+                        release_obj.get(name.upper(), False),
+                    ),
+                )
+            )
+            for name in release_names
+        }
+
+    if isinstance(release_obj, (list, tuple, np.ndarray)) and len(release_obj) >= 12:
+        return {name: bool(release_obj[index]) for index, name in enumerate(release_names)}
+
+    release_map: dict[str, bool] = {}
+
+    for name in release_names:
+        if hasattr(release_obj, name):
+            release_map[name] = bool(getattr(release_obj, name))
+        elif hasattr(release_obj, name.lower()):
+            release_map[name] = bool(getattr(release_obj, name.lower()))
+        elif hasattr(member, name):
+            release_map[name] = bool(getattr(member, name))
+        elif hasattr(member, name.lower()):
+            release_map[name] = bool(getattr(member, name.lower()))
+        else:
+            release_map[name] = False
+
+    return release_map
+
+
+def _find_release_object(member: PhysMember) -> Any | None:
+    """Find a likely release object on a member.
+
+    Args:
+        member: PyNite member object.
+
+    Returns:
+        Release object if found.
+    """
+
+    for attr in (
+        "Releases",
+        "releases",
+        "release",
+        "end_releases",
+        "EndReleases",
+    ):
+        if hasattr(member, attr):
+            return getattr(member, attr)
+
+    release_names = (
+        "Dxi",
+        "Dyi",
+        "Dzi",
+        "Rxi",
+        "Ryi",
+        "Rzi",
+        "Dxj",
+        "Dyj",
+        "Dzj",
+        "Rxj",
+        "Ryj",
+        "Rzj",
+    )
+
+    if any(hasattr(member, name) or hasattr(member, name.lower()) for name in release_names):
+        return member
+
+    return None
+
+
+def _release_label(releases: tuple[str, ...]) -> str:
+    """Return a compact release label.
+
+    Args:
+        releases: Release labels.
+
+    Returns:
+        Compact release label.
+    """
+
+    if not releases:
+        return ""
+
+    rotational = tuple(release for release in releases if release.startswith("R"))
+    translational = tuple(release for release in releases if release.startswith("D"))
+
+    if rotational == ("Rx", "Ry", "Rz") and not translational:
+        return "M"
+
+    if set(rotational) == {"Ry", "Rz"} and not translational:
+        return "Pin"
+
+    return ",".join(releases)
+
+
+def _should_plot_member_curvature(
+    member: PhysMember,
+    is_rigid: bool,
+    curve_released_members: bool,
+    curve_mpcs: bool,
+) -> bool:
+    """Return whether a member should be plotted with curved deflection.
+
+    Args:
+        member: PyNite member object.
+        is_rigid: Whether member is a rigid/MPC member.
+        curve_released_members: Plot released members with curved deflection.
+        curve_mpcs: Plot MPC members with curved deflection.
+
+    Returns:
+        True if member curvature should be plotted.
+    """
+
+    if is_rigid:
+        return curve_mpcs
+
+    if curve_released_members:
+        return True
+
+    releases = _member_release_flags(member)
+
+    if _is_pin_pin_member(releases):
+        return False
+
+    if _has_many_rotational_releases(releases):
+        return False
+
+    return True
+
+
+def _is_pin_pin_member(
+    releases: _MemberReleaseFlags,
+) -> bool:
+    """Return whether a member is released like a pin-pin brace.
+
+    Args:
+        releases: Member release flags.
+
+    Returns:
+        True if both ends are released for local bending.
+    """
+
+    i_releases = set(releases.i_releases)
+    j_releases = set(releases.j_releases)
+
+    i_is_pin = {"Ry", "Rz"}.issubset(i_releases)
+    j_is_pin = {"Ry", "Rz"}.issubset(j_releases)
+
+    return i_is_pin and j_is_pin
+
+
+def _has_many_rotational_releases(
+    releases: _MemberReleaseFlags,
+) -> bool:
+    """Return whether a member has enough releases to avoid curvature plotting.
+
+    Args:
+        releases: Member release flags.
+
+    Returns:
+        True if member curvature plotting should be avoided.
+    """
+
+    rotational_releases = {"Rx", "Ry", "Rz"}
+
+    i_count = len(set(releases.i_releases) & rotational_releases)
+    j_count = len(set(releases.j_releases) & rotational_releases)
+
+    return i_count + j_count >= 4
+
+
+def _is_inactive_tension_only_member(
+    member: PhysMember,
+    combo_name: str,
+) -> bool:
+    """Return whether a tension-only member is inactive for a load combo.
+
+    Args:
+        member: PyNite member object.
+        combo_name: Load combination name.
+
+    Returns:
+        True if the member appears to be tension-only and inactive.
+    """
+
+    if not _is_tension_only_member(member):
+        return False
+
+    active_value = _get_combo_value_from_possible_attrs(
+        obj=member,
+        attr_names=(
+            "active",
+            "Active",
+            "is_active",
+            "IsActive",
+        ),
+        combo_name=combo_name,
+    )
+
+    if active_value is not None:
+        return not bool(active_value)
+
+    inactive_value = _get_combo_value_from_possible_attrs(
+        obj=member,
+        attr_names=(
+            "inactive",
+            "Inactive",
+            "is_inactive",
+            "IsInactive",
+        ),
+        combo_name=combo_name,
+    )
+
+    if inactive_value is not None:
+        return bool(inactive_value)
+
+    axial_value = _try_member_axial_at_midspan(
+        member=member,
+        combo_name=combo_name,
+    )
+
+    if axial_value is None:
+        return False
+
+    return axial_value < 0.0
+
+
+def _is_tension_only_member(member: PhysMember) -> bool:
+    """Return whether a member is tension-only.
+
+    Args:
+        member: PyNite member object.
+
+    Returns:
+        True if member appears to be tension-only.
+    """
+
+    for attr in (
+        "tension_only",
+        "tensionOnly",
+        "TensionOnly",
+        "tension_only_member",
+        "is_tension_only",
+    ):
+        if not hasattr(member, attr):
+            continue
+
+        value = getattr(member, attr)
+
+        if isinstance(value, bool):
+            return value
+
+        if callable(value):
+            try:
+                return bool(value())
+            except TypeError:
+                pass
+
+    for attr in (
+        "member_type",
+        "type",
+        "kind",
+        "classification",
+    ):
+        if hasattr(member, attr):
+            value_name = _normalized_type_name(getattr(member, attr))
+
+            if value_name in {
+                "TENSION_ONLY",
+                "TENSIONONLY",
+                "TENSION_ONLY_MEMBER",
+            }:
+                return True
+
+    return False
+
+
+def _get_combo_value_from_possible_attrs(
+    obj: Any,
+    attr_names: tuple[str, ...],
+    combo_name: str,
+) -> Any | None:
+    """Return a combo-specific value from possible object attributes.
+
+    Args:
+        obj: Object to inspect.
+        attr_names: Attribute names to try.
+        combo_name: Load combination name.
+
+    Returns:
+        Combo-specific value if found, otherwise None.
+    """
+
+    for attr_name in attr_names:
+        if not hasattr(obj, attr_name):
+            continue
+
+        value = getattr(obj, attr_name)
+
+        if callable(value):
+            try:
+                value = value()
+            except TypeError:
+                try:
+                    value = value(combo_name)
+                except TypeError:
+                    continue
+
+        if isinstance(value, dict):
+            if combo_name in value:
+                return value[combo_name]
+
+            for key, keyed_value in value.items():
+                if str(key) == combo_name:
+                    return keyed_value
+
+            continue
+
+        if isinstance(value, bool):
+            return value
+
+    return None
+
+
+def _try_member_axial_at_midspan(
+    member: PhysMember,
+    combo_name: str,
+) -> float | None:
+    """Try to get member axial force at midspan.
+
+    Args:
+        member: PyNite member object.
+        combo_name: Load combination name.
+
+    Returns:
+        Axial value if available, otherwise None.
+    """
+
+    try:
+        length = float(member.L())
+        return float(
+            member.axial(
+                x=0.5 * length,
+                combo_name=combo_name,
+            )
+        )
+    except Exception:
+        pass
+
+    try:
+        length = float(member.L())
+        return float(member.axial(0.5 * length, combo_name))
+    except Exception:
+        return None
+
+
+def _is_rigid_member(
+    member: PhysMember,
+    rigid_member_predicate: Callable[[Any], bool] | None,
+    use_stiffness_rigid_check: bool,
+    rigid_e_threshold: float,
+    rigid_a_threshold: float,
+) -> bool:
+    """Return whether a member should be treated as rigid/MPC.
+
+    Args:
+        member: PyNite member object.
+        rigid_member_predicate: Optional user-provided rigid-member checker.
+        use_stiffness_rigid_check: Check stiffness values to infer rigidity.
+        rigid_e_threshold: E threshold for stiffness-based rigid detection.
+        rigid_a_threshold: A threshold for stiffness-based rigid detection.
+
+    Returns:
+        True if the member should be plotted as a rigid/MPC member.
+    """
+
+    if rigid_member_predicate is not None:
+        return bool(rigid_member_predicate(member))
+
+    for attr in ("is_rigid", "is_mpc", "is_mpc_member", "rigid", "mpc"):
+        if hasattr(member, attr):
+            value = getattr(member, attr)
+
+            if isinstance(value, bool):
+                return value
+
+            if callable(value):
+                try:
+                    return bool(value())
+                except TypeError:
+                    pass
+
+    for attr in ("member_type", "type", "kind", "classification"):
+        if hasattr(member, attr):
+            value_name = _normalized_type_name(getattr(member, attr))
+
+            if value_name in {"MPC", "RIGID", "RIGID_LINK", "RIGID_MEMBER"}:
+                return True
+
+    for attr in ("name", "material_name", "section_name"):
+        if hasattr(member, attr):
+            value_name = str(getattr(member, attr)).upper()
+
+            if any(token in value_name for token in ("MPC", "RIGID", "LINK")):
+                return True
+
+    if use_stiffness_rigid_check:
+        return _is_rigid_by_stiffness(
+            member=member,
+            rigid_e_threshold=rigid_e_threshold,
+            rigid_a_threshold=rigid_a_threshold,
+        )
+
+    return False
+
+
+def _normalized_type_name(value: Any) -> str:
+    """Return a normalized type string.
+
+    Args:
+        value: Type-like value.
+
+    Returns:
+        Normalized uppercase type string.
+    """
+
+    if hasattr(value, "name"):
+        return str(value.name).upper()
+
+    return str(value).upper().replace(" ", "_").replace("-", "_")
+
+
+def _is_rigid_by_stiffness(
+    member: PhysMember,
+    rigid_e_threshold: float,
+    rigid_a_threshold: float,
+) -> bool:
+    """Infer rigid behavior from member stiffness values.
+
+    Args:
+        member: PyNite member object.
+        rigid_e_threshold: E threshold for rigid detection.
+        rigid_a_threshold: A threshold for rigid detection.
+
+    Returns:
+        True if member stiffness appears intentionally rigid.
+    """
+
+    e_value = _get_nested_numeric_attr(
+        member,
+        attr_paths=(
+            ("material", "E"),
+            ("Material", "E"),
+            ("E",),
+        ),
+    )
+
+    a_value = _get_nested_numeric_attr(
+        member,
+        attr_paths=(
+            ("section", "A"),
+            ("Section", "A"),
+            ("A",),
+        ),
+    )
+
+    if e_value is None or a_value is None:
+        return False
+
+    return e_value >= rigid_e_threshold and a_value >= rigid_a_threshold
+
+
+def _get_nested_numeric_attr(
+    obj: Any,
+    attr_paths: tuple[tuple[str, ...], ...],
+) -> float | None:
+    """Get a nested numeric attribute.
+
+    Args:
+        obj: Object to inspect.
+        attr_paths: Attribute paths to try.
+
+    Returns:
+        Numeric value if resolved successfully, otherwise None.
+    """
+
+    for attr_path in attr_paths:
+        current = obj
+
+        try:
+            for attr in attr_path:
+                current = getattr(current, attr)
+
+            return float(current)
+        except Exception:
+            continue
+
+    return None
+
+
+def _add_line_collection_3d(
+    ax: plt.Axes,
+    segments: list[np.ndarray],
+    color: str,
+    linewidth: float,
+    linestyle: str,
+    alpha: float,
+) -> None:
+    """Add 3D line segments to an axis.
+
+    Args:
+        ax: Matplotlib 3D axis.
+        segments: Line segments.
+        color: Line color.
+        linewidth: Line width.
+        linestyle: Line style.
+        alpha: Line transparency.
+    """
+
+    if not segments:
+        return
+
+    collection = Line3DCollection(
+        segments,
+        colors=color,
+        linewidths=linewidth,
+        linestyles=linestyle,
+        alpha=alpha,
+    )
+
+    ax.add_collection3d(collection)
+
+
+def _axis_matches(
+    candidate_axis: np.ndarray,
+    expected_axis: np.ndarray,
+    tolerance: float = 1.0e-6,
+) -> bool:
+    """Check whether two axes point in the same direction.
+
+    Args:
+        candidate_axis: Candidate axis.
+        expected_axis: Expected axis.
+        tolerance: Numerical tolerance.
+
+    Returns:
+        True if axes match.
+    """
+
+    candidate_axis = _unit_vector(candidate_axis)
+    expected_axis = _unit_vector(expected_axis)
+
+    return bool(np.linalg.norm(candidate_axis - expected_axis) <= tolerance)
+
+
+def _unit_vector(vector: np.ndarray) -> np.ndarray:
+    """Return a unit vector.
+
+    Args:
+        vector: Input vector.
+
+    Returns:
+        Unit vector.
+    """
+
+    norm = np.linalg.norm(vector)
+
+    if norm == 0:
+        msg = "Cannot normalize a zero-length vector."
+        raise ValueError(msg)
+
+    return vector / norm
+
+
+def _rotate_vector_about_axis(
+    vector: np.ndarray,
+    axis: np.ndarray,
+    angle: float,
+) -> np.ndarray:
+    """Rotate a vector about an axis.
+
+    Args:
+        vector: Vector to rotate.
+        axis: Rotation axis.
+        angle: Rotation angle in radians.
+
+    Returns:
+        Rotated vector.
+    """
+
+    axis = _unit_vector(axis)
+
+    return (
+        vector * np.cos(angle)
+        + np.cross(axis, vector) * np.sin(angle)
+        + axis * np.dot(axis, vector) * (1.0 - np.cos(angle))
+    )
+
+
+def _set_axes_equal_3d(
+    ax: plt.Axes,
+    points: np.ndarray,
+) -> None:
+    """Set equal scale for a 3D Matplotlib axis.
+
+    Args:
+        ax: Matplotlib 3D axis.
+        points: Points to include in axis bounds.
+    """
+
+    if points.size == 0:
+        return
+
+    mins = points.min(axis=0)
+    maxs = points.max(axis=0)
+
+    ranges = maxs - mins
+    max_range = float(np.max(ranges))
+
+    if max_range == 0:
+        max_range = 1.0
+
+    centers = (mins + maxs) / 2.0
+    half_range = max_range / 2.0
+
+    ax.set_xlim(centers[0] - half_range, centers[0] + half_range)
+    ax.set_ylim(centers[1] - half_range, centers[1] + half_range)
+    ax.set_zlim(centers[2] - half_range, centers[2] + half_range)
+
+
+def _points_model_size(points: np.ndarray) -> float:
+    """Return characteristic model size from points.
+
+    Args:
+        points: XYZ points.
+
+    Returns:
+        Characteristic model size.
+    """
+
+    if points.size == 0:
+        return 1.0
+
+    mins = points.min(axis=0)
+    maxs = points.max(axis=0)
+    ranges = maxs - mins
+    model_size = float(np.max(ranges))
+
+    if model_size == 0:
+        return 1.0
+
+    return model_size
+
+
+def _add_model_legend_handles(
+    ax: plt.Axes,
+    member_color: str,
+    mpc_color: str,
+    release_color: str,
+    has_mpcs: bool,
+    show_releases: bool,
+) -> None:
+    """Add legend handles for model plot.
+
+    Args:
+        ax: Matplotlib axis.
+        member_color: Normal member color.
+        mpc_color: MPC member color.
+        release_color: Release marker color.
+        has_mpcs: Whether MPC members were plotted.
+        show_releases: Whether releases are shown.
+    """
+
+    ax.plot(
+        [],
+        [],
+        [],
+        color=member_color,
+        lw=1.5,
+        label="Members",
+    )
+
+    if has_mpcs:
+        ax.plot(
+            [],
+            [],
+            [],
+            color=mpc_color,
+            lw=3.0,
+            linestyle="dashdot",
+            label="Rigid / MPC members",
+        )
+
+    if show_releases:
+        ax.scatter(
+            [],
+            [],
+            [],
+            s=65.0,
+            marker="o",
+            facecolors="white",
+            edgecolors=release_color,
+            linewidths=1.5,
+            label="Member release",
+        )
+
+    ax.legend()
+
+
+def _add_deformed_legend_handles(
+    ax: plt.Axes,
+    member_color: str,
+    mpc_color: str,
+    undeformed_color: str,
+    release_color: str,
+    inactive_tension_color: str,
+    inactive_tension_alpha: float,
+    inactive_tension_linestyle: str,
+    show_undeformed: bool,
+    has_mpcs: bool,
+    has_inactive_tension_only: bool,
+    show_releases: bool,
+) -> None:
+    """Add simple legend handles for the deformed shape plot.
+
+    Args:
+        ax: Matplotlib axis.
+        member_color: Normal member color.
+        mpc_color: MPC member color.
+        undeformed_color: Undeformed member color.
+        release_color: Release marker color.
+        inactive_tension_color: Inactive tension-only member color.
+        inactive_tension_alpha: Inactive tension-only alpha.
+        inactive_tension_linestyle: Inactive tension-only line style.
+        show_undeformed: Whether undeformed geometry is shown.
+        has_mpcs: Whether MPC members were plotted.
+        has_inactive_tension_only: Whether inactive tension-only members were plotted.
+        show_releases: Whether releases are shown.
+    """
+
+    ax.plot(
+        [],
+        [],
+        [],
+        color=member_color,
+        lw=2.0,
+        label="Deformed members",
+    )
+
+    if has_mpcs:
+        ax.plot(
+            [],
+            [],
+            [],
+            color=mpc_color,
+            lw=3.0,
+            linestyle="dashdot",
+            label="Rigid / MPC members",
+        )
+
+    if has_inactive_tension_only:
+        ax.plot(
+            [],
+            [],
+            [],
+            color=inactive_tension_color,
+            lw=1.5,
+            linestyle=inactive_tension_linestyle,
+            alpha=inactive_tension_alpha,
+            label="Inactive tension-only members",
+        )
+
+    if show_undeformed:
+        ax.plot(
+            [],
+            [],
+            [],
+            color=undeformed_color,
+            lw=1.0,
+            linestyle="dashed",
+            label="Undeformed geometry",
+        )
+
+    if show_releases:
+        ax.scatter(
+            [],
+            [],
+            [],
+            s=65.0,
+            marker="o",
+            facecolors="white",
+            edgecolors=release_color,
+            linewidths=1.5,
+            label="Member release",
+        )
+
+    ax.legend()
