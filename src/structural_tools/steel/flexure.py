@@ -14,7 +14,6 @@ from math import sqrt
 from typing import TYPE_CHECKING, Union
 
 import numpy as np
-import pandas as pd
 
 from ..typing import FloatLike
 from .constants import YOUNGS_MODULUS_KSI
