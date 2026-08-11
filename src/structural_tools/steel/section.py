@@ -50,6 +50,7 @@ class Section:
     """
 
     designation: str
+    name: str
     area: float
     second_moment_of_area_x_axis: float
     second_moment_of_area_y_axis: float
@@ -62,11 +63,6 @@ class Section:
     raw: Any = field(default=None, repr=False)
     aisc_flexure_section: ClassVar[str] = ""
 
-    @property
-    def name(self) -> str:
-        """Alias for designation (e.g. for display / plotting labels)."""
-        return self.designation
-
     @staticmethod
     def _base_kwargs(s: Any, designation: str) -> dict:
         """Universal properties common to every steelpy shape.
@@ -76,6 +72,7 @@ class Section:
         """
         return dict(
             designation=designation,
+            name=designation,
             area=_get(s, "area"),
             second_moment_of_area_x_axis=_get(s, "Ix"),
             second_moment_of_area_y_axis=_get(s, "Iy", "Ix"),  # round: Iy=Ix
