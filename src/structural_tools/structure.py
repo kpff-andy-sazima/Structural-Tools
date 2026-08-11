@@ -1,11 +1,11 @@
 import warnings
 from dataclasses import dataclass, field
+from functools import lru_cache
 from importlib import resources
 
 import pandas as pd
-from forallpeople import Physical
 
-from .asce import RiskCategory, SiteClass
+from .asce import CodeVersion, RiskCategory, SiteClass
 from .typing import FloatLike
 
 _TABLE_12_2_1_FILES: dict[CodeVersion, str] = {
@@ -223,9 +223,18 @@ class Structure:
     def lateral_systems_data(self) -> pd.DataFrame:
         return pd.DataFrame(
             {
-                "response modification coefficient": [self.lateral_system_x.r, self.lateral_system_y.r],
-                "overstrength factor": [self.lateral_system_x.omega_0, self.lateral_system_y.omega_0],
-                "deflection amplitude factor": [self.lateral_system_x.c_d, self.lateral_system_y.c_d],
+                "response modification coefficient": [
+                    self.lateral_system_x.r,
+                    self.lateral_system_y.r,
+                ],
+                "overstrength factor": [
+                    self.lateral_system_x.omega_0,
+                    self.lateral_system_y.omega_0,
+                ],
+                "deflection amplitude factor": [
+                    self.lateral_system_x.c_d,
+                    self.lateral_system_y.c_d,
+                ],
             },
             index=pd.Index(["lateral system x", "lateral system y"], name="Lateral System"),
         )
