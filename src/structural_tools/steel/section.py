@@ -234,6 +234,7 @@ class LSection(Section):
     thickness: float
     minor_principal_radius_of_gyration: float
     minor_principal_second_moment_of_area: float
+    shear_center_radius_of_gyration: float
     aisc_flexure_section: ClassVar[str] = "F10"
 
     @classmethod
@@ -242,9 +243,10 @@ class LSection(Section):
             **cls._base_kwargs(s, designation),
             leg_long=_get(s, "d"),
             leg_short=_get(s, "b"),
-            thickness=_get(s, "T"),
+            thickness=_get(s, "t"),
             minor_principal_radius_of_gyration=_get(s, "rz"),
             minor_principal_second_moment_of_area=_get(s, "Iz"),
+            shear_center_radius_of_gyration=_get(s, "ro"),
         )
 
 
