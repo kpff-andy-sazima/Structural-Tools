@@ -94,6 +94,9 @@ def display_table(
 
         styler.format_index(escape="latex-math", axis=0)
 
+        if "caption" in kwargs and isinstance(kwargs["caption"], str):
+            kwargs["caption"] = kwargs["caption"].replace("_", r"\_")
+
         display(
             Latex(
                 styler.to_latex(
@@ -107,6 +110,8 @@ def display_table(
             )
         )
     else:
+        if "caption" in kwargs:
+            print(kwargs.get("caption"))
         display(df_display)
 
 
