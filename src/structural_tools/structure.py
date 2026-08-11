@@ -137,22 +137,24 @@ class Level:
 class Structure:
     lateral_system_x: LateralSystem
     lateral_system_y: LateralSystem
-    structural_height: FloatLike
     levels_input: dict[int, Level]
+    structural_height: FloatLike | None = None
     vertical_system: VerticalSystem = field(default_factory=VerticalSystem)
     site_class: SiteClass = SiteClass.D
     risk_category: RiskCategory = RiskCategory.II
+    asce_code_version: CodeVersion = CodeVersion.ASCE_7_22
 
     def __post_init__(self):
+        # Single source of truth for the code version
+        self.lateral_system_x.bind_code_version(self.asce_code_version)
+        self.lateral_system_y.bind_code_version(self.asce_code_version)
+
         # Check for level numbers increasing consecutively
         expected = list(range(1, len(self.levels_input) + 1))
         if list(self.levels_input.keys()) != expected:
             raise ValueError(
                 f"levels_data keys must be consecutive integers starting at 1, got {list(self.levels_input.keys())}"
             )
-
-        self.structural_height = float(self.structural_height)
-
         # Roof should have 0 height. Force it to be 0
         if self.levels_input[self.roof].height != 0:
             self.levels_input[self.roof].height = 0
@@ -163,8 +165,15 @@ class Structure:
             self.levels_input[1].weight = 0
             warnings.warn("Ground level (1) weight overridden to 0", stacklevel=2)
 
+        if self.structural_height:
+            self.structural_height = float(self.structural_height)
+        else:
+            self.structural_height = sum(level.height for level in self.levels_input.values())
+
         self.period_x = self.lateral_system_x.c_t * self.structural_height**self.lateral_system_x.x
         self.period_y = self.lateral_system_y.c_t * self.structural_height**self.lateral_system_y.x
+        self.t_x = self.period_x
+        self.t_y = self.period_y
 
     @property
     def roof(self) -> int:
