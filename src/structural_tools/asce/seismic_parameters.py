@@ -3,8 +3,8 @@ from __future__ import annotations
 from bisect import bisect_right
 from dataclasses import dataclass
 from enum import Enum
-from importlib import resources
-import pandas as pd
+
+from structural_tools.typing import FloatLike
 
 
 LOAD_FACTOR_SEISMIC_ASD = 0.7
@@ -90,7 +90,7 @@ SEISMIC_IMPORTANCE_FACTORS: dict[RiskCategory, float] = {
     RiskCategory.IV: 1.5,
 }
 
-F_A_TABLE_11_4_1: dict[SiteClass, dict[str, list]] = {
+F_A_TABLE_11_4_1: dict[SiteClass, dict[str, list[float]]] = {
     SiteClass.A: {
         "s_s": [0.25, 0.50, 0.75, 1.00, 1.25, 1.5],
         "f_a": [0.8, 0.8, 0.8, 0.8, 0.8, 0.8],
@@ -117,7 +117,7 @@ F_A_TABLE_11_4_1: dict[SiteClass, dict[str, list]] = {
     },
 }
 
-F_V_TABLE_11_4_2: dict[SiteClass, dict[str, list]] = {
+F_V_TABLE_11_4_2: dict[SiteClass, dict[str, list[float]]] = {
     SiteClass.A: {
         "s_1": [0.1, 0.2, 0.3, 0.4, 0.5, 0.6],
         "f_v": [0.8, 0.8, 0.8, 0.8, 0.8, 0.8],
@@ -148,13 +148,6 @@ C_U_TABLE_12_8_1: dict[str, list[float]] = {
     "s_d1": [0.1, 0.15, 0.2, 0.3, 0.4],
     "c_u": [1.7, 1.6, 1.5, 1.4, 1.4],
 }
-
-DESIGN_COEFFICIENTS_TABLE_12_2_1 = pd.read_csv(
-    filepath_or_buffer=resources
-    .files("structural_tools.data")
-    .joinpath("asce_7_22_table_12_2_1.csv")
-    .open("r", encoding="utf-8"),
-).set_index("Index")
 
 # ============================================================================
 # GENERIC INTERPOLATION UTILITIES
@@ -244,13 +237,17 @@ class SeismicParameters:
     Encapsulates seismic parameters for a given site and spectral response acceleration.
     """
 
-    s_s: float
-    s_1: float
+    s_s: FloatLike
+    s_1: FloatLike
     site_class: SiteClass = SiteClass.D
     risk_category: RiskCategory = RiskCategory.II
-    t_l: float = 16
+    t_l: FloatLike = 16
 
     def __post_init__(self):
+        self.s_s = float(self.s_s)
+        self.s_1 = float(self.s_1)
+        self.t_l = float(self.t_l)
+
         self.f_a = self._get_f_a_coefficient()
         self.f_v = self._get_f_v_coefficient()
 
