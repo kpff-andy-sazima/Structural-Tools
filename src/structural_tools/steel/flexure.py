@@ -14,6 +14,7 @@ from math import sqrt
 from typing import TYPE_CHECKING, Union
 
 import numpy as np
+from numpy.typing import NDArray
 
 from ..typing import FloatLike
 from .constants import YOUNGS_MODULUS_KSI
@@ -262,8 +263,8 @@ def calculate_nominal_flexural_strength(
 
 
 def calculate_cb_from_moment_diagram(
-    positions: Sequence[FloatLike],
-    moments: Sequence[FloatLike],
+    positions: Sequence[FloatLike] | NDArray[np.float64],
+    moments: Sequence[FloatLike] | NDArray[np.float64],
 ) -> float:
     """C_b via the quarter-point method (Eq. F1-1) from a sampled diagram.
 
@@ -350,8 +351,8 @@ def evaluate_beam_flexure(
     yield_stress: FloatLike,
     positions: Sequence[FloatLike],
     moments: Sequence[FloatLike],
-    top_flange_brace_points: Sequence[FloatLike],
-    bottom_flange_brace_points: Sequence[FloatLike],
+    top_flange_brace_points: Sequence[FloatLike] | Bracing,
+    bottom_flange_brace_points: Sequence[FloatLike] | Bracing,
     youngs_modulus: FloatLike = YOUNGS_MODULUS_KSI,
     positive_moment_compresses: str = "bottom",
     zero_atol: float = 1e-6,

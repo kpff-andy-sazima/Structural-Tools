@@ -15,7 +15,7 @@ from ..typing import FloatLike
 from .postprocessing import get_moments_from_tags
 
 if TYPE_CHECKING:
-    from .section import WSection
+    from ..steel.section import WSection
 
 
 def analyze_member_flexure(
@@ -23,8 +23,8 @@ def analyze_member_flexure(
     section: WSection,
     member_name: str = "m_1",
     tags: str | list[str] = "strength",
-    top_flange_brace_points: Sequence[FloatLike] = Bracing.CONTINUOUS,
-    bottom_flange_brace_points: Sequence[FloatLike] = Bracing.UNBRACED,
+    top_flange_brace_points: Sequence[FloatLike] | Bracing = Bracing.CONTINUOUS,
+    bottom_flange_brace_points: Sequence[FloatLike] | Bracing = Bracing.UNBRACED,
     youngs_modulus: FloatLike = YOUNGS_MODULUS_KSI,
     positive_moment_compresses: str = "bottom",
     n_points: int = 500,
@@ -48,15 +48,16 @@ def analyze_member_flexure(
     Returns:
         pandas.DataFrame indexed by "Load Combo", sorted by Load Combo then x_start.
     """
-    x, moments, labels, moments_dict = get_moments_from_tags(
-        model=model, member_name=member_name, tags=tags, n_points=n_points
-    )
+    x, moments, labels, _ = get_moments_from_tags(model=model, member_name=member_name, tags=tags, n_points=n_points)
+    fy = model.members[member_name].material.fy
+    if fy is None:
+        raise ValueError(f"Material '{model.members[member_name].material.fy}' has no fy")
 
     results_dict = {}
     for combo_name, moment_list in zip(labels, moments):
         results_dict[combo_name] = evaluate_beam_flexure(
             section=section,
-            yield_stress=model.members[member_name].material.fy,
+            yield_stress=fy,
             positions=x,
             moments=moment_list,
             top_flange_brace_points=top_flange_brace_points,
