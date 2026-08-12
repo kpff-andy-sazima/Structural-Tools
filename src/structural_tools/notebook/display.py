@@ -1,13 +1,20 @@
-from collections.abc import Callable, Sequence
+"""Functions aiding with displaying things in notebooks and their exported PDFs"""
+
 import math
 import os
+from collections.abc import Callable, Sequence
 from typing import Literal
 
+from handcalcs.global_config import set_option
 import pandas as pd
-from IPython.display import DisplayHandle, Latex, display, Markdown
+from IPython.display import DisplayHandle, Latex, Markdown, display
 
 
-def sig_figs(x: float, sig_figs: int):
+def set_params_columns(num_cols: int):
+    set_option("param_columns", num_cols)
+
+
+def sig_figs(x, sig_figs: int) -> str:
     """
     Rounds a number to number of significant figures
     Parameters:
@@ -21,13 +28,13 @@ def sig_figs(x: float, sig_figs: int):
         return ""
 
     if x == 0:
-        return float(0)
+        return str(float(0))
 
     # If the value is not a number, just return it as is (e.g. for strings in the dataframe)
     try:
         x = float(x)
     except ValueError, TypeError:
-        return x
+        return str(x)
 
     sig_figs = int(sig_figs)
 
@@ -36,7 +43,7 @@ def sig_figs(x: float, sig_figs: int):
         decimals = max(decimals, 0)
         return f"{x:.{decimals}f}"
 
-    return round(x, -int(math.floor(math.log10(abs(x)))) + (sig_figs - 1))
+    return str(round(x, -int(math.floor(math.log10(abs(x)))) + (sig_figs - 1)))
 
 
 def display_table(
@@ -48,7 +55,7 @@ def display_table(
     hrules: bool = True,
     clines: Literal["all;data", "all;index", "skip-last;data", "skip-last;index"] | None = "all;data",
     position: str = "!htb",
-    position_float: str = "centering",
+    position_float: (Literal["centering", "raggedleft", "raggedright"]) = "centering",
     **kwargs,
 ) -> DisplayHandle | None:
     """Displays a table if run in a Jupyter ipynb, or returns LaTeX code if run by nbconvert when exporting to PDF
