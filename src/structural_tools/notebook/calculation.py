@@ -1,7 +1,9 @@
 """Calculation tools for notebooks"""
 
+from structural_tools.typing import FloatLike
 
-def check_value(value: float, check_value: float = 1, inequality: str = "leq"):
+
+def check_value(value: FloatLike, check_value: FloatLike = 1.0, inequality: str = "leq"):
     pass_latex = r"\textbf{\color{OK}OK}\ {\color{OK}\checkmark}"
     fail_latex = r"\textbf{{\color{NG}NG !}}"
     outcome = fail_latex
