@@ -5,31 +5,31 @@ from importlib import resources
 
 import pandas as pd
 
-from .asce import CodeVersion, RiskCategory, SiteClass
+from .asce import ASCECodeVersion, RiskCategory, SiteClass
 from .typing import FloatLike
 
-_TABLE_12_2_1_FILES: dict[CodeVersion, str] = {
-    CodeVersion.ASCE_7_16: "asce_7_16_table_12_2_1.csv",
-    CodeVersion.ASCE_7_22: "asce_7_22_table_12_2_1.csv",
+_TABLE_12_2_1_FILES: dict[ASCECodeVersion, str] = {
+    ASCECodeVersion.ASCE_7_16: "asce_7_16_table_12_2_1.csv",
+    ASCECodeVersion.ASCE_7_22: "asce_7_22_table_12_2_1.csv",
 }
 
 
 @lru_cache(maxsize=None)
-def design_coefficients_table(code_version: CodeVersion) -> pd.DataFrame:
+def design_coefficients_table(asce_code_version: ASCECodeVersion) -> pd.DataFrame:
     """Load ASCE 7 Table 12.2-1 for a given code version.
 
     Args:
-        code_version: ASCE 7 edition to load.
+        asce_code_version: ASCE 7 edition to load.
     Returns:
         Table 12.2-1 indexed by system index.
     Raises:
-        ValueError: If no table is registered for `code_version`.
+        ValueError: If no table is registered for `asce_code_version`.
     """
     try:
-        filename = _TABLE_12_2_1_FILES[code_version]
+        filename = _TABLE_12_2_1_FILES[asce_code_version]
     except KeyError:
         valid = ", ".join(version.name for version in _TABLE_12_2_1_FILES)
-        raise ValueError(f"No Table 12.2-1 data for {code_version}. Available: {valid}.") from None
+        raise ValueError(f"No Table 12.2-1 data for {asce_code_version}. Available: {valid}.") from None
     source = resources.files("structural_tools.data").joinpath(filename)
     with source.open("r", encoding="utf-8") as file:
         return pd.read_csv(file).set_index("Index")
@@ -60,24 +60,24 @@ class LateralSystem:
         """
         return str(system_index).strip().upper()
 
-    def bind_code_version(self, code_version: CodeVersion) -> None:
+    def bind_code_version(self, asce_code_version: ASCECodeVersion) -> None:
         """Resolve Table 12.2-1 coefficients against a code version.
 
         Args:
-            code_version: ASCE 7 edition supplied by the owning Structure.
+            asce_code_version: ASCE 7 edition supplied by the owning Structure.
         Raises:
             ValueError: If `system_index` is not in the table.
         """
         # Re-normalize in case system_index was reassigned after construction
         self.system_index = self._normalize_index(self.system_index)
-        table = design_coefficients_table(code_version)
+        table = design_coefficients_table(asce_code_version)
         if self.system_index not in table.index:
             raise ValueError(
-                f"'{self.system_index}' is not a valid {code_version.name} Table 12.2-1 index. "
+                f"'{self.system_index}' is not a valid {asce_code_version.name} Table 12.2-1 index. "
                 f"Valid indices: {list(table.index)}"
             )
         row = table.loc[self.system_index]
-        self.asce_code_version = code_version
+        self.asce_code_version = asce_code_version
         self.category = row["Category"]
         self.system = row["Seismic Force-Resisting System"]
         self.response_modification_coefficient = row["R"]
@@ -139,10 +139,12 @@ class Structure:
     lateral_system_y: LateralSystem
     levels_input: dict[int, Level]
     structural_height: FloatLike | None = None
+    period_x: float | None = None
+    period_y: float | None = None
     vertical_system: VerticalSystem = field(default_factory=VerticalSystem)
     site_class: SiteClass = SiteClass.D
     risk_category: RiskCategory = RiskCategory.II
-    asce_code_version: CodeVersion = CodeVersion.ASCE_7_22
+    asce_code_version: ASCECodeVersion = ASCECodeVersion.ASCE_7_22
 
     def __post_init__(self):
         # Single source of truth for the code version
@@ -168,10 +170,12 @@ class Structure:
         if self.structural_height:
             self.structural_height = float(self.structural_height)
         else:
-            self.structural_height = sum(level.height for level in self.levels_input.values())
+            self.structural_height = float(sum(level.height for level in self.levels_input.values()))
 
-        self.period_x = self.lateral_system_x.c_t * self.structural_height**self.lateral_system_x.x
-        self.period_y = self.lateral_system_y.c_t * self.structural_height**self.lateral_system_y.x
+        if not self.period_x:
+            self.period_x = self.lateral_system_x.c_t * self.structural_height**self.lateral_system_x.x
+        if not self.period_y:
+            self.period_y = self.lateral_system_y.c_t * self.structural_height**self.lateral_system_y.x
         self.t_x = self.period_x
         self.t_y = self.period_y
 
