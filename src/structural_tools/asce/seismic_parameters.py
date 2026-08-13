@@ -3,9 +3,13 @@ from __future__ import annotations
 from bisect import bisect_right
 from dataclasses import dataclass
 from enum import Enum
+import ssl
 
-from structural_tools.typing import FloatLike
+import numpy as np
+import requests
 
+from .. import ASCECodeVersion
+from .general import RiskCategory
 
 LOAD_FACTOR_SEISMIC_ASD = 0.7
 LOAD_FACTOR_SEISMIC_LRFD = 1.0
@@ -14,8 +18,11 @@ LOAD_FACTOR_SEISMIC_LRFD = 1.0
 class SiteClass(Enum):
     A = "A"
     B = "B"
+    BC = "BC"
     C = "C"
+    CD = "CD"
     D = "D"
+    DE = "DE"
     E = "E"
     F = "F"
 
@@ -24,30 +31,13 @@ class SiteClass(Enum):
         order = {
             SiteClass.A: 1,
             SiteClass.B: 2,
+            SiteClass.BC: 2.5,
             SiteClass.C: 3,
+            SiteClass.CD: 3.5,
             SiteClass.D: 4,
+            SiteClass.DE: 4.5,
             SiteClass.E: 5,
             SiteClass.F: 6,
-        }
-        return order[self]
-
-    def __lt__(self, other):
-        return self.severity < other.severity
-
-
-class RiskCategory(Enum):
-    I = "I"  # noqa: E741
-    II = "II"
-    III = "III"
-    IV = "IV"
-
-    @property
-    def severity(self):
-        order = {
-            RiskCategory.I: 1,
-            RiskCategory.II: 2,
-            RiskCategory.III: 3,
-            RiskCategory.IV: 4,
         }
         return order[self]
 
@@ -109,11 +99,11 @@ F_A_TABLE_11_4_1: dict[SiteClass, dict[str, list[float]]] = {
     },
     SiteClass.E: {
         "s_s": [0.25, 0.50, 0.75, 1.00, 1.25, 1.5],
-        "f_a": [2.4, 1.7, 1.3, None, None, None],
+        "f_a": [2.4, 1.7, 1.3, np.nan, np.nan, np.nan],
     },
     SiteClass.F: {
         "s_s": [0.25, 0.50, 0.75, 1.00, 1.25, 1.5],
-        "f_a": [None, None, None, None, None, None],
+        "f_a": [np.nan, np.nan, np.nan, np.nan, np.nan, np.nan],
     },
 }
 
@@ -136,11 +126,11 @@ F_V_TABLE_11_4_2: dict[SiteClass, dict[str, list[float]]] = {
     },
     SiteClass.E: {
         "s_1": [0.1, 0.2, 0.3, 0.4, 0.5, 0.6],
-        "f_v": [4.2, None, None, None, None, None],
+        "f_v": [4.2, np.nan, np.nan, np.nan, np.nan, np.nan],
     },
     SiteClass.F: {
         "s_1": [0.1, 0.2, 0.3, 0.4, 0.5, 0.6],
-        "f_v": [None, None, None, None, None, None],
+        "f_v": [np.nan, np.nan, np.nan, np.nan, np.nan, np.nan],
     },
 }
 
@@ -195,6 +185,10 @@ def _interpolate_table(
     float
         Interpolated value.
     """
+    if np.isnan(y_values):
+        raise ValueError(
+            "You are trying to interpolate values that are NAN. This means you are in a regime of the table that does not have values according to ASCE. See the relevant table to see where values are not defined."
+        )
 
     if len(x_values) != len(y_values):
         raise ValueError("x_values and y_values must have equal length.")
@@ -235,32 +229,71 @@ def _interpolate_table(
 class SeismicParameters:
     """
     Encapsulates seismic parameters for a given site and spectral response acceleration.
+
+    Note that 0.001 degrees of latitude and longitude is on the order of about 100 meters, so you only need 3-4 decimals of precision for lat/long.
     """
 
-    s_s: FloatLike
-    s_1: FloatLike
     site_class: SiteClass = SiteClass.D
     risk_category: RiskCategory = RiskCategory.II
-    t_l: FloatLike = 16
+    asce_code_version: ASCECodeVersion = ASCECodeVersion.ASCE_7_22
+    latitude: float | None = None
+    longitude: float | None = None
+    s_s: float | None = None
+    s_1: float | None = None
+    t_l: float = 16
+    request_timeout: int = 10
 
     def __post_init__(self):
-        self.s_s = float(self.s_s)
-        self.s_1 = float(self.s_1)
-        self.t_l = float(self.t_l)
-
-        self.f_a = self._get_f_a_coefficient()
-        self.f_v = self._get_f_v_coefficient()
-
-        self.s_ms = self.s_s * self.f_a
-        self.s_m1 = self.s_1 * self.f_v
-
-        self.s_ds = 2 / 3 * self.s_ms
-        self.s_d1 = 2 / 3 * self.s_m1
-
-        self.c_u = self._get_c_u_coefficient()
-
         self.i_e = SEISMIC_IMPORTANCE_FACTORS[self.risk_category]
-        self.sdc = self._get_seismic_design_category()
+        if self.asce_code_version is ASCECodeVersion.ASCE_7_22:
+            if not self.latitude or not self.longitude:
+                raise ValueError(
+                    "Supply Latitude and Longitude to the class constructor to obtain seismic parameters using the USGS API endpoint (same as ASCE Hazard Tool)"
+                )
+            self.site_data = self.get_site_seismic_values()
+            self.pga_m = self.site_data["pgam"]
+            self.s_ms = self.site_data["sms"]
+            self.s_m1 = self.site_data["sm1"]
+            self.s_ds = self.site_data["sds"]
+            self.s_d1 = self.site_data["sd1"]
+            self.sdc = self.site_data["sdc"]
+            self.s_s = self.site_data["ss"]
+            self.s_1 = self.site_data["s1"]
+            self.t_l = self.site_data["tl"]
+            self.t_s = self.site_data["ts"]
+            self.t_0 = self.site_data["t0"]
+            self.c_v = self.site_data["cv"]
+        else:
+            if not self.s_s or self.s_1:
+                raise ValueError(
+                    "Supply s_1 and s_s to the class constructor to obtain seismic parameters using ASCE 7-16 Section 11."
+                )
+            self.f_a = self._get_f_a_coefficient()
+            self.f_v = self._get_f_v_coefficient()
+
+            self.s_ms = self.s_s * self.f_a
+            self.s_m1 = self.s_1 * self.f_v
+
+            self.s_ds = 2 / 3 * self.s_ms
+            self.s_d1 = 2 / 3 * self.s_m1
+
+            self.c_u = self._get_c_u_coefficient()
+
+            self.sdc = self._get_seismic_design_category()
+
+    def get_site_seismic_values(self) -> dict:
+        response = requests.get(
+            "https://earthquake.usgs.gov/ws/building-codes/asce7-22/calculate",
+            params={
+                "latitude": self.latitude,
+                "longitude": self.longitude,
+                "siteClass": self.site_class.value,
+                "riskCategory": self.risk_category.value,
+            },
+            timeout=self.request_timeout,
+        )
+        response.raise_for_status()
+        return response.json()["response"]["data"]
 
     def _get_f_a_coefficient(self) -> float:
         """
