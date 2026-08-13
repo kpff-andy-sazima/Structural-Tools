@@ -48,13 +48,13 @@ def sig_figs(x, sig_figs: int) -> str:
 
 def display_table(
     dataframe: pd.DataFrame,
-    levels: str | list[str] | None = None,
+    levels: int | list[int] | None = None,
     column_names_filter_and_map: dict[str, str | None] | None = None,
     style_functions: Sequence[tuple[Callable, Literal[0, 1]]] | None = None,
     formatter_functions: Sequence[Callable] | None = None,
     hrules: bool = True,
     clines: Literal["all;data", "all;index", "skip-last;data", "skip-last;index"] | None = "all;data",
-    position: str = "!htb",
+    position: str = "H",
     position_float: (Literal["centering", "raggedleft", "raggedright"]) = "centering",
     **kwargs,
 ) -> DisplayHandle | None:
@@ -67,7 +67,7 @@ def display_table(
         style_functions (Sequence[tuple[Callable, Literal[0, 1]]], optional): A list of tuples containing the function to apply to the styler for table formatting and the axis (0 or 1) to apply that function to. Note that the columns will use the renamed columns following column_names_filter_and_map. Defaults to None.
         position_float (str, optional): See pandas documentation for Styler.to_latex(). Defaults to "centering".
         hrules (bool, optional): See pandas documentation for Styler.to_latex(). Defaults to True.
-        position (str, optional): See pandas documentation for Styler.to_latex(). Defaults to "H".
+        position (str, optional): See pandas documentation for Styler.to_latex(). Defaults to "H". Other common option is "!htb".
 
     Returns:
         Latex: String of latex text that will be picked up by NBConvert if printed to the output of a cell
