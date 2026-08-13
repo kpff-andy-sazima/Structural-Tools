@@ -1,6 +1,6 @@
-from .general import DesignMethod
+from .. import DesignMethod, ASCECodeVersion, LoadCase
+from .general import RiskCategory
 from .seismic_parameters import (
-    RiskCategory,
     SeismicDesignCategory,
     SeismicParameters,
     SiteClass,
@@ -10,6 +10,8 @@ from .seismic_parameters import (
 
 __all__ = [
     "DesignMethod",
+    "ASCECodeVersion",
+    "LoadCase",
     "RiskCategory",
     "SeismicDesignCategory",
     "SeismicParameters",
