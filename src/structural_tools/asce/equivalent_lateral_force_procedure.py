@@ -11,6 +11,27 @@ LOWER_BOUND_C_S_CHECK_S_1 = 0.6
 
 @dataclass
 class SeismicLoads:
+    """Seismic loading class containing individual parameters and the full seismic loads table as a pd.DataFrame.
+
+    The returned columns are:
+        "level height": "$h_{floor}$ [ft]",
+        "level weight": "$w_x$ [kip]",
+        "level elevation": "$h_x$ [ft]",
+        "level weighting parameter": "$w_x h_x^k$",
+        "vertical distribution factor": "$C_{vx}$",
+        "lateral seismic force": "$F_x$ [kip]",
+        "cumulative lateral seismic force": r"$\sum F_x$ [kip]",
+        "unbounded diaphragm design force": "$F_{px,u}$ [kip]",
+        "minimum diaphragm design force": "$F_{px,min}$ [kip]",
+        "maximum diaphragm design force": "$F_{px,max}$ [kip]",
+        "diaphragm design force": "$F_{px}$ [kip]",
+        "seismic design story shear": "$V_x$ [kip]",
+        "overturning moment": "OTM [kip-ft]",
+
+    Raises:
+        ValueError: Building period must be greater than 0
+    """
+
     structure: Structure
     seismic_parameters: SeismicParameters
 
