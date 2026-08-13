@@ -4,11 +4,11 @@ from __future__ import annotations
 
 from collections import defaultdict
 from dataclasses import dataclass
-from enum import Enum
 
 from Pynite import FEModel3D
 
 from .. import DesignMethod
+from ..asce import LoadCase
 from ..steel.section import Section
 
 
@@ -87,22 +87,6 @@ MATERIAL_WOOD_KIP_INCH: ModelMaterial = ModelMaterial(
     rho=30 / (12**3) / 1000,
     fy=2.4,
 )
-
-
-class LoadCase(Enum):
-    """ASCE 7 principal load cases. Value is the primary PyNite case label.
-
-    SEISMIC spans two labels (E_v, E_h); the value is informational only since
-    inclusion is driven by the enum member, not the label string.
-    """
-
-    DEAD = "D"
-    LIVE = "L"
-    LIVE_ROOF = "L_r"
-    SNOW = "S"
-    RAIN = "R"
-    WIND = "W"
-    SEISMIC = "E"
 
 
 @dataclass(frozen=True)
@@ -372,7 +356,7 @@ def add_named_node_load(
 
     _ensure_load_metadata(node)
 
-    node._load_metadata["node_loads"].append({
+    getattr(node, "_load_metadata")["node_loads"].append({
         "direction": direction,
         "P": p,
         "case": case,
@@ -416,7 +400,7 @@ def add_named_member_pt_load(
 
     _ensure_load_metadata(member)
 
-    member._load_metadata["point_loads"].append({
+    getattr(member, "_load_metadata")["point_loads"].append({
         "direction": direction,
         "P": p,
         "x": x,
@@ -470,7 +454,7 @@ def add_named_member_dist_load(
 
     _ensure_load_metadata(member)
 
-    member._load_metadata["dist_loads"].append({
+    getattr(member, "_load_metadata")["dist_loads"].append({
         "direction": direction,
         "w1": w1,
         "w2": w2,
