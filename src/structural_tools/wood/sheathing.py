@@ -5,12 +5,12 @@ from importlib import resources
 
 import pandas as pd
 
-from ..asce import DesignMethod
+from .. import DesignMethod, LoadCase
 
-LOAD_CASE_FACTOR_SEISMIC_ASD = 1 / 2.8
-LOAD_CASE_FACTOR_WIND_ASD = 1 / 2
-LOAD_CASE_FACTOR_SEISMIC_LRFD = 0.5
-LOAD_CASE_FACTOR_WIND_LRFD = 0.8
+NDS_LOAD_CASE_FACTOR_SEISMIC_ASD = 1 / 2.8
+NDS_LOAD_CASE_FACTOR_WIND_ASD = 1 / 2
+NDS_LOAD_CASE_FACTOR_SEISMIC_LRFD = 0.5
+NDS_LOAD_CASE_FACTOR_WIND_LRFD = 0.8
 
 SDPWS_TABLE_4_3_A = pd.read_csv(
     filepath_or_buffer=resources
@@ -39,9 +39,13 @@ SDPWS_TABLE_4_2_C = pd.read_csv(
 )
 
 
-class LoadCase(Enum):
-    SEISMIC = "SEISMIC"
-    WIND = "WIND"
+class Nail(Enum):
+    COMMON_6D = "6d common"
+    COMMON_8D = "8d common"
+    COMMON_10D = "10d common"
+    GALV_CASING_6D = "6d galvanized casing"
+    GALV_CASING_8D = "8d galvanized casing"
+    GALV_ROOFING_11GA = "11 gauge galvanized roofing"
 
 
 class SheathingApplication(Enum):
@@ -55,15 +59,6 @@ class SheathingMaterial(Enum):
     PLYWOOD_SIDING = "Plywood Siding"
     PARTICLEBOARD_SHEATHING = "Particleboard Sheathing"
     SFS = "Structural Fiberboard Sheathing"
-
-
-class Nail(Enum):
-    COMMON_6D = "6d common"
-    COMMON_8D = "8d common"
-    COMMON_10D = "10d common"
-    GALV_CASING_6D = "6d galvanized casing"
-    GALV_CASING_8D = "8d galvanized casing"
-    GALV_ROOFING_11GA = "11 gauge galvanized roofing"
 
 
 class PanelType(Enum):
@@ -212,14 +207,14 @@ def get_viable_sheathing(
     # Scale by load case
     if design_method == DesignMethod.ASD:
         if load_case == LoadCase.SEISMIC:
-            load_case_factor = LOAD_CASE_FACTOR_SEISMIC_ASD
+            load_case_factor = NDS_LOAD_CASE_FACTOR_SEISMIC_ASD
         else:
-            load_case_factor = LOAD_CASE_FACTOR_WIND_ASD
+            load_case_factor = NDS_LOAD_CASE_FACTOR_WIND_ASD
     else:
         if load_case == LoadCase.SEISMIC:
-            load_case_factor = LOAD_CASE_FACTOR_SEISMIC_LRFD
+            load_case_factor = NDS_LOAD_CASE_FACTOR_SEISMIC_LRFD
         else:
-            load_case_factor = LOAD_CASE_FACTOR_WIND_LRFD
+            load_case_factor = NDS_LOAD_CASE_FACTOR_WIND_LRFD
 
     # Scale by 1 or 2 based on number of sheathed sides and load case
     filtered_sheathing_options["Adjusted Unit Shear"] = (
