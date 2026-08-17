@@ -3,7 +3,6 @@ from __future__ import annotations
 from bisect import bisect_right
 from dataclasses import dataclass
 from enum import Enum
-import ssl
 
 import numpy as np
 import requests
