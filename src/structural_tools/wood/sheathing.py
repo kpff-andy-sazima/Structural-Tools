@@ -6,11 +6,12 @@ from importlib import resources
 import pandas as pd
 
 from .. import DesignMethod, LoadCase
-
-NDS_LOAD_CASE_FACTOR_SEISMIC_ASD = 1 / 2.8
-NDS_LOAD_CASE_FACTOR_WIND_ASD = 1 / 2
-NDS_LOAD_CASE_FACTOR_SEISMIC_LRFD = 0.5
-NDS_LOAD_CASE_FACTOR_WIND_LRFD = 0.8
+from .constants import (
+    SPDWS_LOAD_CASE_FACTOR_SEISMIC_ASD,
+    SPDWS_LOAD_CASE_FACTOR_SEISMIC_LRFD,
+    SPDWS_LOAD_CASE_FACTOR_WIND_ASD,
+    SPDWS_LOAD_CASE_FACTOR_WIND_LRFD,
+)
 
 SDPWS_TABLE_4_3_A = pd.read_csv(
     filepath_or_buffer=resources
@@ -207,14 +208,14 @@ def get_viable_sheathing(
     # Scale by load case
     if design_method == DesignMethod.ASD:
         if load_case == LoadCase.SEISMIC:
-            load_case_factor = NDS_LOAD_CASE_FACTOR_SEISMIC_ASD
+            load_case_factor = SPDWS_LOAD_CASE_FACTOR_SEISMIC_ASD
         else:
-            load_case_factor = NDS_LOAD_CASE_FACTOR_WIND_ASD
+            load_case_factor = SPDWS_LOAD_CASE_FACTOR_WIND_ASD
     else:
         if load_case == LoadCase.SEISMIC:
-            load_case_factor = NDS_LOAD_CASE_FACTOR_SEISMIC_LRFD
+            load_case_factor = SPDWS_LOAD_CASE_FACTOR_SEISMIC_LRFD
         else:
-            load_case_factor = NDS_LOAD_CASE_FACTOR_WIND_LRFD
+            load_case_factor = SPDWS_LOAD_CASE_FACTOR_WIND_LRFD
 
     # Scale by 1 or 2 based on number of sheathed sides and load case
     filtered_sheathing_options["Adjusted Unit Shear"] = (
