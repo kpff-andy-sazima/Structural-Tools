@@ -185,7 +185,7 @@ class Structure:
 
     @property
     def floor_levels(self) -> list[int]:
-        return [level for level in self.levels_input.keys() if level != self.roof]
+        return [level for level in self.levels_input if level != self.roof]
 
     @property
     def levels(self) -> list[int]:
