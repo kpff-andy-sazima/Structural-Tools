@@ -5,8 +5,8 @@ import os
 from collections.abc import Callable, Sequence
 from typing import Literal
 
-from handcalcs.global_config import set_option
 import pandas as pd
+from handcalcs.global_config import set_option
 from IPython.display import DisplayHandle, Latex, Markdown, display
 
 
@@ -168,10 +168,7 @@ def display_markdown(text: str) -> DisplayHandle | None:
 
 
 def display_figure(
-    image_path: str,
-    caption: str,
-    label: str,
-    width: str | None = None,
+    image_path: str, caption: str, label: str, width: str | None = None, position: str = "H"
 ) -> DisplayHandle | None:
     """
     Display a figure using Pandoc markdown syntax.
@@ -188,6 +185,9 @@ def display_figure(
     attributes = []
     if width:
         attributes.append(f"width={width}")
+
+    if position:
+        attributes.append(rf'fig-pos="{position}"')
 
     attributes.append(f"#{label}")
 
