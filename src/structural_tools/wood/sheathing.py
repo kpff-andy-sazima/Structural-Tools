@@ -125,10 +125,7 @@ class Sheathing:
 
     def __post_init__(self):
         # Value checks
-        if (
-            self.minimum_nominal_panel_thickness
-            and self.minimum_nominal_panel_thickness not in VALID_NOMINAL_PANEL_THICKNESSES
-        ):
+        if self.minimum_nominal_panel_thickness and self.minimum_nominal_panel_thickness not in VALID_NOMINAL_PANEL_THICKNESSES:
             raise ValueError(
                 f"Invalid minimum nominal panel thickness: {self.minimum_nominal_panel_thickness}.\nValid values include: {VALID_NOMINAL_PANEL_THICKNESSES}"
             )
@@ -190,9 +187,7 @@ def get_viable_sheathing(
     sheathing_application: SheathingApplication = SheathingApplication.SHEAR_WALL,
 ) -> pd.DataFrame:
     if sheathed_sides not in VALID_SHEATHED_SIDES:
-        raise ValueError(
-            f"Invalid number of sheathed sides: {sheathed_sides}.\nValid values include: {VALID_SHEATHED_SIDES}"
-        )
+        raise ValueError(f"Invalid number of sheathed sides: {sheathed_sides}.\nValid values include: {VALID_SHEATHED_SIDES}")
     # Filter based on sheathing parameters
     if sheathing_application == SheathingApplication.SHEAR_WALL:
         filtered_sheathing_options: pd.DataFrame = _apply_filter(SDPWS_TABLE_4_3_A, filter_dataclass=sheathing)
@@ -283,18 +278,16 @@ def get_sheathing_properties(
         ValueError: If the dataframe argument does not have 'adjusted unit shear demand' and/or 'sheathed sides'.
 
     Returns:
-        pd.DataFrame: DataFrame with the columns ['adjusted unit shear capacity', 'nail spacing', 'shear stiffness', 'shear dcr']
+        pd.DataFrame: DataFrame with the columns ['adjusted unit shear capacity', 'nail spacing', 'sheathing shear stiffness', 'shear dcr']
     """
     # Shear wall sheathing selection needs demand and number of sheathed sides as 2 sheathed sides doubles capacity
     if sheathing_application == SheathingApplication.SHEAR_WALL:
         required = {"adjusted unit shear demand", "sheathed sides"}
         if not required.issubset(dataframe.columns):
-            raise ValueError(
-                "The given DataFrame requires the following columns: 'adjusted unit shear demand', 'sheathed sides'"
-            )
+            raise ValueError("The given DataFrame requires the following columns: 'adjusted unit shear demand', 'sheathed sides'")
 
         properties: pd.DataFrame = pd.DataFrame()
-        properties[["adjusted unit shear capacity", "nail spacing", "shear stiffness"]] = dataframe[
+        properties[["adjusted unit shear capacity", "nail spacing", "sheathing shear stiffness"]] = dataframe[
             ["adjusted unit shear demand", "sheathed sides"]
         ].apply(
             lambda row: select_sheathing(
@@ -323,7 +316,7 @@ def get_sheathing_properties(
         dataframe.columns = ["adjusted unit shear demand"]
 
         properties: pd.DataFrame = pd.DataFrame()
-        properties[["adjusted unit shear capacity", "shear stiffness"]] = dataframe.apply(
+        properties[["adjusted unit shear capacity", "sheathing shear stiffness"]] = dataframe.apply(
             lambda row: select_sheathing(
                 viable_sheathing=get_viable_sheathing(
                     demand=row["adjusted unit shear demand"],
