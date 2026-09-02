@@ -10,8 +10,25 @@ import requests
 from .. import ASCECodeVersion
 from .general import RiskCategory
 
-LOAD_FACTOR_SEISMIC_ASD = 0.7
-LOAD_FACTOR_SEISMIC_LRFD = 1.0
+ASCE_ASD_8_D = 1.0
+ASCE_ASD_8_E_H = 0.7
+ASCE_ASD_8_E_V = 0.7
+
+ASCE_ASD_9_D = 1.0
+ASCE_ASD_9_E_H = 0.525
+ASCE_ASD_9_E_V = 0.525
+ASCE_ASD_9_L = 0.75
+ASCE_ASD_9_S = 0.1
+
+ASCE_ASD_10_D = 0.6
+ASCE_ASD_10_E_H = 0.7
+ASCE_ASD_10_E_V = 0.7
+
+ASCE_LRFD_6_E_H = 1.0
+ASCE_LRFD_6_E_V = 1.0
+
+ASCE_LRFD_7_E_H = 1.0
+ASCE_LRFD_7_E_V = 1.0
 
 
 class SiteClass(Enum):
