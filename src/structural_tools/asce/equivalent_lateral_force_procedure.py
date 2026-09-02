@@ -1,10 +1,11 @@
 from dataclasses import dataclass
 
-import pandas as pd
 import numpy as np
+import pandas as pd
+
+from structural_tools.structure import Structure
 
 from .seismic_parameters import SeismicParameters
-from structural_tools.structure import Structure
 
 LOWER_BOUND_C_S_CHECK_S_1 = 0.6
 
@@ -22,7 +23,6 @@ class SeismicLoads:
         "lateral seismic force": "$F_x$ [kip]",
         "cumulative lateral seismic force": r"$\sum F_x$ [kip]",
         "unbounded diaphragm design force": "$F_{px,u}$ [kip]",
-        "minimum diaphragm design force": "$F_{px,min}$ [kip]",
         "maximum diaphragm design force": "$F_{px,max}$ [kip]",
         "diaphragm design force": "$F_{px}$ [kip]",
         "seismic design story shear": "$V_x$ [kip]",
@@ -40,8 +40,12 @@ class SeismicLoads:
         self.base_shear_y = self._calculate_base_shear(self.c_s_y)
         self.v_x = self.base_shear_x
         self.v_y = self.base_shear_y
-        self.seismic_loads_x = self._calculate_seismic_loads(self.base_shear_x, self._k_x)
-        self.seismic_loads_y = self._calculate_seismic_loads(self.base_shear_y, self._k_y)
+        self.seismic_loads_x = self._calculate_seismic_loads(
+            self.base_shear_x, self._k_x, self.structure.plan_dimensions[1]
+        )
+        self.seismic_loads_y = self._calculate_seismic_loads(
+            self.base_shear_y, self._k_y, self.structure.plan_dimensions[0]
+        )
 
     @property
     def _k_x(self) -> float:
@@ -70,7 +74,6 @@ class SeismicLoads:
             "lateral seismic force": "$F_x$ [kip]",
             "cumulative lateral seismic force": r"$\sum F_x$ [kip]",
             "unbounded diaphragm design force": "$F_{px,u}$ [kip]",
-            "minimum diaphragm design force": "$F_{px,min}$ [kip]",
             "maximum diaphragm design force": "$F_{px,max}$ [kip]",
             "diaphragm design force": "$F_{px}$ [kip]",
             "seismic design story shear": "$V_x$ [kip]",
@@ -120,7 +123,7 @@ class SeismicLoads:
 
         return k
 
-    def _calculate_seismic_loads(self, V, k) -> pd.DataFrame:
+    def _calculate_seismic_loads(self, V, k, l_diaph, r_diaph=4.5) -> pd.DataFrame:
         p = self.seismic_parameters
         # Generate seismic loads DataFrame
         seismic_loads = self.structure.levels_data.copy()
@@ -152,23 +155,16 @@ class SeismicLoads:
 
         # Calc diaphragm loads
         seismic_loads["cumulative lateral seismic force"] = seismic_loads.iloc[::-1]["lateral seismic force"].cumsum()
-        seismic_loads["unbounded diaphragm design force"] = (
-            seismic_loads["cumulative lateral seismic force"]
-            / seismic_loads["cumulative level weight"]
-            * seismic_loads["level weight"]
-        )
+        seismic_loads["unbounded diaphragm design force"] = p.s_ds / r_diaph * p.i_e * seismic_loads["level weight"]
         # set bounds on diaphragm loads
-        seismic_loads["minimum diaphragm design force"] = 0.2 * p.s_ds * p.i_e * seismic_loads["level weight"]
-        seismic_loads["maximum diaphragm design force"] = 0.4 * p.s_ds * p.i_e * seismic_loads["level weight"]
+        seismic_loads["maximum diaphragm design force"] = (
+            p.s_d1 / (0.002 * l_diaph) / r_diaph * p.i_e * seismic_loads["level weight"]
+        )
         # bound the diaphragm design force
         seismic_loads["diaphragm design force"] = np.where(
-            seismic_loads["unbounded diaphragm design force"] <= seismic_loads["minimum diaphragm design force"],
-            seismic_loads["minimum diaphragm design force"],
-            np.where(
-                seismic_loads["unbounded diaphragm design force"] >= seismic_loads["maximum diaphragm design force"],
-                seismic_loads["maximum diaphragm design force"],
-                seismic_loads["unbounded diaphragm design force"],
-            ),
+            seismic_loads["unbounded diaphragm design force"] >= seismic_loads["maximum diaphragm design force"],
+            seismic_loads["maximum diaphragm design force"],
+            seismic_loads["unbounded diaphragm design force"],
         )
 
         return seismic_loads
