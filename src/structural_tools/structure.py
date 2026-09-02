@@ -138,6 +138,7 @@ class Structure:
     lateral_system_x: LateralSystem
     lateral_system_y: LateralSystem
     levels_input: dict[int, Level]
+    plan_dimensions: tuple[float, float]
     structural_height: FloatLike | None = None
     period_x: float | None = None
     period_y: float | None = None
