@@ -73,13 +73,24 @@ def initialize_shear_walls_dataframe(
 
     # Add trib area automatically. Drop the trib width and trib length columns after area is determined
     if "tributary area" not in df.columns:
-        df["tributary area"] = 0
+        df["tributary area"] = 0.0
 
-    df["tributary area"] = df["tributary area"].where(
-        df["tributary area"] != 0, df["tributary width"] * df["tributary length"]
-    )
-    df.drop(columns=["tributary length", "tributary width"], inplace=True)
-    df["level tributary area"] = df.groupby(["Level", "Direction"])["tributary area"].sum()
+    has_width = "tributary width" in df.columns
+    has_length = "tributary length" in df.columns
+
+    if has_width and has_length:
+        missing_area = df["tributary area"] == 0
+
+        df.loc[missing_area, "tributary area"] = (
+            df.loc[missing_area, "tributary width"] * df.loc[missing_area, "tributary length"]
+        )
+
+        df.drop(
+            columns=["tributary width", "tributary length"],
+            inplace=True,
+        )
+
+    df["level tributary area"] = df.groupby(["Level", "Direction"])["tributary area"].transform("sum")
 
     if "angle" not in df.columns:
         df["angle"] = pd.NA
@@ -498,11 +509,11 @@ def _envelope_shear_demand(shear_walls_dataframe: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
-def _check_shear_dcr(shear_walls_dataframe: pd.DataFrame) -> bool:
+def _check_shear_dcr(shear_walls_dataframe: pd.DataFrame) -> tuple[bool, float]:
     df = shear_walls_dataframe
     necessary_columns = ["shear dcr"]
     _check_for_missing_columns(df, necessary_columns)
-    return df["shear dcr"].max() <= 1
+    return df["shear dcr"].max() <= 1, df["shear dcr"].max()
 
 
 def design_shear_walls_envelope(
@@ -521,18 +532,27 @@ def design_shear_walls_envelope(
 ):
     df = shear_walls_dataframe
     df = design_shear_walls_flexible_assumption(df, sheathing, dcr_check_value)
+    df.to_csv("test.csv")
     df["adjusted flexible unit shear capacity"] = df["adjusted unit shear capacity"]
     df["sheathed sides flexible"] = df["sheathed sides"]
     df["nail spacing flexible"] = df["nail spacing"]
+    df.to_csv("test.csv")
     df = _calculate_shear_wall_stiffness(df, end_post_youngs_modulus, end_post_area, Delta_A)
+    df.to_csv("test.csv")
     df = _calculate_center_of_rigidity(df)
+    df.to_csv("test.csv")
     df = _calculate_eccentricities(df, center_of_mass, plan_dimensions)
+    df.to_csv("test.csv")
     df = _calculate_rigid_shear_demand(df)
+    df.to_csv("test.csv")
     df = _envelope_shear_demand(df)
+    df.to_csv("test.csv")
     df = _choose_shear_wall_sheathing(df, sheathing, dcr_check_value)
+    df.to_csv("test.csv")
     df = _calculate_shear_wall_stiffness(
         df, end_post_youngs_modulus, end_post_area, Delta_A
     )  # update the stiffnesses with updated walls
+    df.to_csv("test.csv")
     df = calculate_deflections(
         shear_walls_dataframe,
         plan_dimensions,
@@ -541,16 +561,23 @@ def design_shear_walls_envelope(
         i_e,
         allowable_story_drift_coefficient,
     )
+    df.to_csv("test.csv")
     df = _calculate_eccentricities(df, center_of_mass, plan_dimensions)
+    df.to_csv("test.csv")
     df = _calculate_rigid_shear_demand(df)
+    df.to_csv("test.csv")
     df = _envelope_shear_demand(df)
+    df.to_csv("test.csv")
     df = _choose_shear_wall_sheathing(df, sheathing, dcr_check_value)
+    df.to_csv("test.csv")
     df = _calculate_shear_wall_stiffness(
         df, end_post_youngs_modulus, end_post_area, Delta_A
     )  # update the stiffnesses with updated walls
-    if not _check_shear_dcr(df):
+    df.to_csv("test.csv")
+    dcr_check, max_shear_dcr = _check_shear_dcr(df)
+    if not dcr_check:
         raise ValueError(
-            "Your highest shear DCR is > 1, please refine your design to add more shear wall or remove the bad wall."
+            f"Your highest shear DCR is {max_shear_dcr} > 1, please refine your design to add more shear wall or remove the bad wall."
         )
 
     return df
