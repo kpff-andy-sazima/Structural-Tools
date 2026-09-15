@@ -55,23 +55,12 @@ def display_table(
     hrules: bool = True,
     clines: Literal["all;data", "all;index", "skip-last;data", "skip-last;index"] | None = "all;data",
     position: str = "H",
-    position_float: (Literal["centering", "raggedleft", "raggedright"]) = "centering",
+    position_float: Literal["centering", "raggedleft", "raggedright"] = "centering",
+    longtable_rows_min: int = 40,
     **kwargs,
 ) -> DisplayHandle | None:
-    """Displays a table if run in a Jupyter ipynb, or returns LaTeX code if run by nbconvert when exporting to PDF
+    """Displays a table if run in a Jupyter ipynb, or returns LaTeX code if run by nbconvert when exporting to PDF."""
 
-    Args:
-        dataframe (pd.DataFrame): Your dataframe
-        level (str, list[str], optional): Levels you want to display. If None, then display all levels. Defaults to None.
-        column_names_filter_and_map (dict[str, str | None], optional): A dictionary of the columns you wish to show, and their mapped display names (give None for the value to leave the display name the same). Every key needs a value or None. If no mapping is given, all columns will be shown with their default names. Defaults to None.
-        style_functions (Sequence[tuple[Callable, Literal[0, 1]]], optional): A list of tuples containing the function to apply to the styler for table formatting and the axis (0 or 1) to apply that function to. Note that the columns will use the renamed columns following column_names_filter_and_map. Defaults to None.
-        position_float (str, optional): See pandas documentation for Styler.to_latex(). Defaults to "centering".
-        hrules (bool, optional): See pandas documentation for Styler.to_latex(). Defaults to True.
-        position (str, optional): See pandas documentation for Styler.to_latex(). Defaults to "H". Other common option is "!htb".
-
-    Returns:
-        Latex: String of latex text that will be picked up by NBConvert if printed to the output of a cell
-    """
     if dataframe.empty:
         return
 
@@ -81,6 +70,7 @@ def display_table(
         df_display.rename(columns=column_names_filter_and_map, errors="raise", inplace=True)
     else:
         df_display = dataframe.copy()
+
     if levels:
         df_display = df_display.loc[levels]
 
@@ -93,29 +83,39 @@ def display_table(
             for function in formatter_functions:
                 styler = styler.format(function)
         else:
-            styler.format(lambda value: sig_figs(value, sig_figs=3))
+            styler = styler.format(lambda value: sig_figs(value, sig_figs=3))
 
         if style_functions:
             for function, axis in style_functions:
                 styler = styler.apply(function, axis)
 
-        styler.format_index(escape="latex-math", axis=0)
+        styler = styler.format_index(escape="latex-math", axis=0)
 
         if "caption" in kwargs and isinstance(kwargs["caption"], str):
             kwargs["caption"] = kwargs["caption"].replace("_", r"\_")
 
+        latex_kwargs = {
+            "hrules": hrules,
+            "clines": clines,
+            "convert_css": True,
+            **kwargs,
+        }
+
+        if "environment" not in latex_kwargs:
+            if len(df_display.index) >= longtable_rows_min:
+                latex_kwargs["environment"] = "longtable"
+            else:
+                latex_kwargs["position"] = position
+                latex_kwargs["position_float"] = position_float
+
         display(
             Latex(
                 styler.to_latex(
-                    hrules=hrules,
-                    clines=clines,
-                    position=position,
-                    convert_css=True,
-                    position_float=position_float,
-                    **kwargs,
+                    **latex_kwargs,
                 )
             )
         )
+
     else:
         if "caption" in kwargs:
             print(kwargs.get("caption"))
