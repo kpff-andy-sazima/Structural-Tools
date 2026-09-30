@@ -1,0 +1,161 @@
+﻿Sheathing Material,Nail Type and Size,Minimum Nail Bearing Length in Framing Member or Blocking,Minimum Nominal Panel Thickness,Minimum Nominal Width of Nailed Face at Adjoining Panel Edges and Boundaries,Panel Edge Nail Spacing,Panel Type,Unit Shear,Apparent Shear Stiffness Value
+Wood Structural Panels - Structural I,6d common,1.25,0.3125,2,6,OSB,520,15
+Wood Structural Panels - Structural I,6d common,1.25,0.3125,3,6,OSB,590,12
+Wood Structural Panels - Structural I,8d common,1.375,0.375,2,6,OSB,755,14
+Wood Structural Panels - Structural I,8d common,1.375,0.375,3,6,OSB,840,12
+Wood Structural Panels - Structural I,10d common,1.5,0.46875,2,6,OSB,895,24
+Wood Structural Panels - Structural I,10d common,1.5,0.46875,3,6,OSB,1010,20
+Wood Structural Panels - Sheathing,6d common,1.25,0.3125,2,6,OSB,475,15
+Wood Structural Panels - Sheathing,6d common,1.25,0.3125,3,6,OSB,530,12
+Wood Structural Panels - Sheathing,6d common,1.25,0.375,2,6,OSB,520,13
+Wood Structural Panels - Sheathing,6d common,1.25,0.375,3,6,OSB,590,10
+Wood Structural Panels - Sheathing,8d common,1.375,0.375,2,6,OSB,670,15
+Wood Structural Panels - Sheathing,8d common,1.375,0.375,3,6,OSB,755,12
+Wood Structural Panels - Sheathing,8d common,1.375,0.4375,2,6,OSB,715,14
+Wood Structural Panels - Sheathing,8d common,1.375,0.4375,3,6,OSB,800,11
+Wood Structural Panels - Sheathing,8d common,1.375,0.46875,2,6,OSB,755,13
+Wood Structural Panels - Sheathing,8d common,1.375,0.46875,3,6,OSB,840,10
+Wood Structural Panels - Sheathing,10d common,1.5,0.46875,2,6,OSB,810,25
+Wood Structural Panels - Sheathing,10d common,1.5,0.46875,3,6,OSB,910,21
+Wood Structural Panels - Sheathing,10d common,1.5,0.59375,2,6,OSB,895,21
+Wood Structural Panels - Sheathing,10d common,1.5,0.59375,3,6,OSB,1010,17
+Wood Structural Panels - Structural I,6d common,1.25,0.3125,2,6,PLY,520,12
+Wood Structural Panels - Structural I,6d common,1.25,0.3125,3,6,PLY,590,9.5
+Wood Structural Panels - Structural I,8d common,1.375,0.375,2,6,PLY,755,11
+Wood Structural Panels - Structural I,8d common,1.375,0.375,3,6,PLY,840,10
+Wood Structural Panels - Structural I,10d common,1.5,0.46875,2,6,PLY,895,17
+Wood Structural Panels - Structural I,10d common,1.5,0.46875,3,6,PLY,1010,15
+Wood Structural Panels - Sheathing,6d common,1.25,0.3125,2,6,PLY,475,10
+Wood Structural Panels - Sheathing,6d common,1.25,0.3125,3,6,PLY,530,9
+Wood Structural Panels - Sheathing,6d common,1.25,0.375,2,6,PLY,520,9.5
+Wood Structural Panels - Sheathing,6d common,1.25,0.375,3,6,PLY,590,8
+Wood Structural Panels - Sheathing,8d common,1.375,0.375,2,6,PLY,670,11
+Wood Structural Panels - Sheathing,8d common,1.375,0.375,3,6,PLY,755,9.5
+Wood Structural Panels - Sheathing,8d common,1.375,0.4375,2,6,PLY,715,10
+Wood Structural Panels - Sheathing,8d common,1.375,0.4375,3,6,PLY,800,9
+Wood Structural Panels - Sheathing,8d common,1.375,0.46875,2,6,PLY,755,9.5
+Wood Structural Panels - Sheathing,8d common,1.375,0.46875,3,6,PLY,840,8.5
+Wood Structural Panels - Sheathing,10d common,1.5,0.46875,2,6,PLY,810,15
+Wood Structural Panels - Sheathing,10d common,1.5,0.46875,3,6,PLY,910,14
+Wood Structural Panels - Sheathing,10d common,1.5,0.59375,2,6,PLY,895,14
+Wood Structural Panels - Sheathing,10d common,1.5,0.59375,3,6,PLY,1010,12
+Wood Structural Panels - Structural I,6d common,1.25,0.3125,2,4,OSB,700,8.5
+Wood Structural Panels - Structural I,6d common,1.25,0.3125,3,4,OSB,785,7
+Wood Structural Panels - Structural I,8d common,1.375,0.375,2,4,OSB,1010,9
+Wood Structural Panels - Structural I,8d common,1.375,0.375,3,4,OSB,1120,7.5
+Wood Structural Panels - Structural I,10d common,1.5,0.46875,2,4,OSB,1190,15
+Wood Structural Panels - Structural I,10d common,1.5,0.46875,3,4,OSB,1345,12
+Wood Structural Panels - Sheathing,6d common,1.25,0.3125,2,4,OSB,630,9
+Wood Structural Panels - Sheathing,6d common,1.25,0.3125,3,4,OSB,700,7
+Wood Structural Panels - Sheathing,6d common,1.25,0.375,2,4,OSB,700,7
+Wood Structural Panels - Sheathing,6d common,1.25,0.375,3,4,OSB,785,5.5
+Wood Structural Panels - Sheathing,8d common,1.375,0.375,2,4,OSB,895,9.5
+Wood Structural Panels - Sheathing,8d common,1.375,0.375,3,4,OSB,1010,7.5
+Wood Structural Panels - Sheathing,8d common,1.375,0.4375,2,4,OSB,950,8.5
+Wood Structural Panels - Sheathing,8d common,1.375,0.4375,3,4,OSB,1065,7
+Wood Structural Panels - Sheathing,8d common,1.375,0.46875,2,4,OSB,1010,7.5
+Wood Structural Panels - Sheathing,8d common,1.375,0.46875,3,4,OSB,1120,6
+Wood Structural Panels - Sheathing,10d common,1.5,0.46875,2,4,OSB,1080,15
+Wood Structural Panels - Sheathing,10d common,1.5,0.46875,3,4,OSB,1205,12
+Wood Structural Panels - Sheathing,10d common,1.5,0.59375,2,4,OSB,1190,13
+Wood Structural Panels - Sheathing,10d common,1.5,0.59375,3,4,OSB,1345,10
+Wood Structural Panels - Structural I,6d common,1.25,0.3125,2,4,PLY,700,7.5
+Wood Structural Panels - Structural I,6d common,1.25,0.3125,3,4,PLY,785,6
+Wood Structural Panels - Structural I,8d common,1.375,0.375,2,4,PLY,1010,7.5
+Wood Structural Panels - Structural I,8d common,1.375,0.375,3,4,PLY,1120,6.5
+Wood Structural Panels - Structural I,10d common,1.5,0.46875,2,4,PLY,1190,12
+Wood Structural Panels - Structural I,10d common,1.5,0.46875,3,4,PLY,1345,9.5
+Wood Structural Panels - Sheathing,6d common,1.25,0.3125,2,4,PLY,630,7
+Wood Structural Panels - Sheathing,6d common,1.25,0.3125,3,4,PLY,700,6
+Wood Structural Panels - Sheathing,6d common,1.25,0.375,2,4,PLY,700,6
+Wood Structural Panels - Sheathing,6d common,1.25,0.375,3,4,PLY,785,5
+Wood Structural Panels - Sheathing,8d common,1.375,0.375,2,4,PLY,895,7.5
+Wood Structural Panels - Sheathing,8d common,1.375,0.375,3,4,PLY,1010,6
+Wood Structural Panels - Sheathing,8d common,1.375,0.4375,2,4,PLY,950,7
+Wood Structural Panels - Sheathing,8d common,1.375,0.4375,3,4,PLY,1065,6
+Wood Structural Panels - Sheathing,8d common,1.375,0.46875,2,4,PLY,1010,6.5
+Wood Structural Panels - Sheathing,8d common,1.375,0.46875,3,4,PLY,1120,5.5
+Wood Structural Panels - Sheathing,10d common,1.5,0.46875,2,4,PLY,1080,11
+Wood Structural Panels - Sheathing,10d common,1.5,0.46875,3,4,PLY,1205,9.5
+Wood Structural Panels - Sheathing,10d common,1.5,0.59375,2,4,PLY,1190,9.5
+Wood Structural Panels - Sheathing,10d common,1.5,0.59375,3,4,PLY,1345,8
+Wood Structural Panels - Structural I,6d common,1.25,0.3125,2,2.5,OSB,1050,12
+Wood Structural Panels - Structural I,6d common,1.25,0.3125,3,2.5,OSB,1175,9.5
+Wood Structural Panels - Structural I,8d common,1.375,0.375,2,2.5,OSB,1485,13
+Wood Structural Panels - Structural I,8d common,1.375,0.375,3,2.5,OSB,1680,10
+Wood Structural Panels - Structural I,10d common,1.5,0.46875,2,2.5,OSB,1790,20
+Wood Structural Panels - Structural I,10d common,1.5,0.46875,3,2.5,OSB,2015,16
+Wood Structural Panels - Sheathing,6d common,1.25,0.3125,2,2.5,OSB,940,13
+Wood Structural Panels - Sheathing,6d common,1.25,0.3125,3,2.5,OSB,1065,10
+Wood Structural Panels - Sheathing,6d common,1.25,0.375,2,2.5,OSB,1050,10
+Wood Structural Panels - Sheathing,6d common,1.25,0.375,3,2.5,OSB,1175,8.5
+Wood Structural Panels - Sheathing,8d common,1.375,0.375,2,2.5,OSB,1345,13
+Wood Structural Panels - Sheathing,8d common,1.375,0.375,3,2.5,OSB,1510,11
+Wood Structural Panels - Sheathing,8d common,1.375,0.4375,2,2.5,OSB,1415,12
+Wood Structural Panels - Sheathing,8d common,1.375,0.4375,3,2.5,OSB,1595,10
+Wood Structural Panels - Sheathing,8d common,1.375,0.46875,2,2.5,OSB,1485,11
+Wood Structural Panels - Sheathing,8d common,1.375,0.46875,3,2.5,OSB,1680,9
+Wood Structural Panels - Sheathing,10d common,1.5,0.46875,2,2.5,OSB,1610,21
+Wood Structural Panels - Sheathing,10d common,1.5,0.46875,3,2.5,OSB,1820,17
+Wood Structural Panels - Sheathing,10d common,1.5,0.59375,2,2.5,OSB,1790,18
+Wood Structural Panels - Sheathing,10d common,1.5,0.59375,3,2.5,OSB,2015,14
+Wood Structural Panels - Structural I,6d common,1.25,0.3125,2,2.5,PLY,1050,10
+Wood Structural Panels - Structural I,6d common,1.25,0.3125,3,2.5,PLY,1175,8.5
+Wood Structural Panels - Structural I,8d common,1.375,0.375,2,2.5,PLY,1485,10
+Wood Structural Panels - Structural I,8d common,1.375,0.375,3,2.5,PLY,1680,9
+Wood Structural Panels - Structural I,10d common,1.5,0.46875,2,2.5,PLY,1790,15
+Wood Structural Panels - Structural I,10d common,1.5,0.46875,3,2.5,PLY,2015,13
+Wood Structural Panels - Sheathing,6d common,1.25,0.3125,2,2.5,PLY,940,9.5
+Wood Structural Panels - Sheathing,6d common,1.25,0.3125,3,2.5,PLY,1065,8
+Wood Structural Panels - Sheathing,6d common,1.25,0.375,2,2.5,PLY,1050,8
+Wood Structural Panels - Sheathing,6d common,1.25,0.375,3,2.5,PLY,1175,7
+Wood Structural Panels - Sheathing,8d common,1.375,0.375,2,2.5,PLY,1345,9.5
+Wood Structural Panels - Sheathing,8d common,1.375,0.375,3,2.5,PLY,1510,8.5
+Wood Structural Panels - Sheathing,8d common,1.375,0.4375,2,2.5,PLY,1415,9.5
+Wood Structural Panels - Sheathing,8d common,1.375,0.4375,3,2.5,PLY,1595,8
+Wood Structural Panels - Sheathing,8d common,1.375,0.46875,2,2.5,PLY,1485,8.5
+Wood Structural Panels - Sheathing,8d common,1.375,0.46875,3,2.5,PLY,1680,7.5
+Wood Structural Panels - Sheathing,10d common,1.5,0.46875,2,2.5,PLY,1610,14
+Wood Structural Panels - Sheathing,10d common,1.5,0.46875,3,2.5,PLY,1820,12
+Wood Structural Panels - Sheathing,10d common,1.5,0.59375,2,2.5,PLY,1790,12
+Wood Structural Panels - Sheathing,10d common,1.5,0.59375,3,2.5,PLY,2015,11
+Wood Structural Panels - Structural I,6d common,1.25,0.3125,2,2,OSB,1175,20
+Wood Structural Panels - Structural I,6d common,1.25,0.3125,3,2,OSB,1330,17
+Wood Structural Panels - Structural I,8d common,1.375,0.375,2,2,OSB,1680,21
+Wood Structural Panels - Structural I,8d common,1.375,0.375,3,2,OSB,1890,18
+Wood Structural Panels - Structural I,10d common,1.5,0.46875,2,2,OSB,2045,31
+Wood Structural Panels - Structural I,10d common,1.5,0.46875,3,2,OSB,2295,26
+Wood Structural Panels - Sheathing,6d common,1.25,0.3125,2,2,OSB,1065,21
+Wood Structural Panels - Sheathing,6d common,1.25,0.3125,3,2,OSB,1205,17
+Wood Structural Panels - Sheathing,6d common,1.25,0.375,2,2,OSB,1175,18
+Wood Structural Panels - Sheathing,6d common,1.25,0.375,3,2,OSB,1330,14
+Wood Structural Panels - Sheathing,8d common,1.375,0.375,2,2,OSB,1525,21
+Wood Structural Panels - Sheathing,8d common,1.375,0.375,3,2,OSB,1710,18
+Wood Structural Panels - Sheathing,8d common,1.375,0.4375,2,2,OSB,1610,20
+Wood Structural Panels - Sheathing,8d common,1.375,0.4375,3,2,OSB,1805,17
+Wood Structural Panels - Sheathing,8d common,1.375,0.46875,2,2,OSB,1680,19
+Wood Structural Panels - Sheathing,8d common,1.375,0.46875,3,2,OSB,1890,15
+Wood Structural Panels - Sheathing,10d common,1.5,0.46875,2,2,OSB,1835,33
+Wood Structural Panels - Sheathing,10d common,1.5,0.46875,3,2,OSB,2060,28
+Wood Structural Panels - Sheathing,10d common,1.5,0.59375,2,2,OSB,2045,28
+Wood Structural Panels - Sheathing,10d common,1.5,0.59375,3,2,OSB,2295,24
+Wood Structural Panels - Structural I,6d common,1.25,0.3125,2,2,PLY,1175,15
+Wood Structural Panels - Structural I,6d common,1.25,0.3125,3,2,PLY,1330,13
+Wood Structural Panels - Structural I,8d common,1.375,0.375,2,2,PLY,1680,15
+Wood Structural Panels - Structural I,8d common,1.375,0.375,3,2,PLY,1890,13
+Wood Structural Panels - Structural I,10d common,1.5,0.46875,2,2,PLY,2045,21
+Wood Structural Panels - Structural I,10d common,1.5,0.46875,3,2,PLY,2295,18
+Wood Structural Panels - Sheathing,6d common,1.25,0.3125,2,2,PLY,1065,13
+Wood Structural Panels - Sheathing,6d common,1.25,0.3125,3,2,PLY,1205,12
+Wood Structural Panels - Sheathing,6d common,1.25,0.375,2,2,PLY,1175,12
+Wood Structural Panels - Sheathing,6d common,1.25,0.375,3,2,PLY,1330,10
+Wood Structural Panels - Sheathing,8d common,1.375,0.375,2,2,PLY,1525,13
+Wood Structural Panels - Sheathing,8d common,1.375,0.375,3,2,PLY,1710,12
+Wood Structural Panels - Sheathing,8d common,1.375,0.4375,2,2,PLY,1610,13
+Wood Structural Panels - Sheathing,8d common,1.375,0.4375,3,2,PLY,1805,12
+Wood Structural Panels - Sheathing,8d common,1.375,0.46875,2,2,PLY,1680,13
+Wood Structural Panels - Sheathing,8d common,1.375,0.46875,3,2,PLY,1890,11
+Wood Structural Panels - Sheathing,10d common,1.5,0.46875,2,2,PLY,1835,18
+Wood Structural Panels - Sheathing,10d common,1.5,0.46875,3,2,PLY,2060,16
+Wood Structural Panels - Sheathing,10d common,1.5,0.59375,2,2,PLY,2045,17
+Wood Structural Panels - Sheathing,10d common,1.5,0.59375,3,2,PLY,2295,15
