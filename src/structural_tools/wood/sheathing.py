@@ -20,11 +20,12 @@ SDPWS_TABLE_4_3_A = pd.read_csv(
     .open("r", encoding="utf-8"),
 )
 
-# SDPWS_TABLE_4_2_A = pd.read_csv(
-#     filepath_or_buffer=resources.files("structural_tools.data")
-#     .joinpath("sdpws_2021_table_4_2_a.csv")
-#     .open("r", encoding="utf-8"),
-# )
+SDPWS_TABLE_4_2_A = pd.read_csv(
+    filepath_or_buffer=resources
+    .files("structural_tools.data")
+    .joinpath("sdpws_2021_table_4_2_a.csv")
+    .open("r", encoding="utf-8"),
+)
 
 # SDPWS_TABLE_4_2_B = pd.read_csv(
 #     filepath_or_buffer=resources.files("structural_tools.data")
@@ -85,6 +86,7 @@ VALID_NAIL_BEARING_LENGTHS = {
 
 VALID_NAIL_SPACING = {
     2,
+    2.5,
     3,
     4,
     6,
@@ -113,7 +115,7 @@ VALID_CASES = {
 
 @dataclass
 class Sheathing:
-    nail_spacing: int | None = None
+    nail_spacing: float | None = None
     sheathing_material: SheathingMaterial | None = None
     minimum_nominal_panel_thickness: float | None = None
     minimum_nail_bearing_length: float | None = None
@@ -125,7 +127,10 @@ class Sheathing:
 
     def __post_init__(self):
         # Value checks
-        if self.minimum_nominal_panel_thickness and self.minimum_nominal_panel_thickness not in VALID_NOMINAL_PANEL_THICKNESSES:
+        if (
+            self.minimum_nominal_panel_thickness
+            and self.minimum_nominal_panel_thickness not in VALID_NOMINAL_PANEL_THICKNESSES
+        ):
             raise ValueError(
                 f"Invalid minimum nominal panel thickness: {self.minimum_nominal_panel_thickness}.\nValid values include: {VALID_NOMINAL_PANEL_THICKNESSES}"
             )
@@ -187,16 +192,16 @@ def get_viable_sheathing(
     sheathing_application: SheathingApplication = SheathingApplication.SHEAR_WALL,
 ) -> pd.DataFrame:
     if sheathed_sides not in VALID_SHEATHED_SIDES:
-        raise ValueError(f"Invalid number of sheathed sides: {sheathed_sides}.\nValid values include: {VALID_SHEATHED_SIDES}")
+        raise ValueError(
+            f"Invalid number of sheathed sides: {sheathed_sides}.\nValid values include: {VALID_SHEATHED_SIDES}"
+        )
     # Filter based on sheathing parameters
     if sheathing_application == SheathingApplication.SHEAR_WALL:
         filtered_sheathing_options: pd.DataFrame = _apply_filter(SDPWS_TABLE_4_3_A, filter_dataclass=sheathing)
     else:
         # TODO: Add blocking. Currently just pull unblocked values
         if sheathing.blocking:
-            # filtered_sheathing_options: pd.DataFrame = _apply_filter(SDPWS_TABLE_4_2_A, filter_dataclass=sheathing)
-            filtered_sheathing_options: pd.DataFrame = _apply_filter(SDPWS_TABLE_4_2_C, filter_dataclass=sheathing)
-            pass
+            filtered_sheathing_options: pd.DataFrame = _apply_filter(SDPWS_TABLE_4_2_A, filter_dataclass=sheathing)
         else:
             filtered_sheathing_options: pd.DataFrame = _apply_filter(SDPWS_TABLE_4_2_C, filter_dataclass=sheathing)
 
@@ -284,7 +289,9 @@ def get_sheathing_properties(
     if sheathing_application == SheathingApplication.SHEAR_WALL:
         required = {"adjusted unit shear demand", "sheathed sides"}
         if not required.issubset(dataframe.columns):
-            raise ValueError("The given DataFrame requires the following columns: 'adjusted unit shear demand', 'sheathed sides'")
+            raise ValueError(
+                "The given DataFrame requires the following columns: 'adjusted unit shear demand', 'sheathed sides'"
+            )
 
         properties: pd.DataFrame = pd.DataFrame()
         properties[["adjusted unit shear capacity", "nail spacing", "sheathing shear stiffness"]] = dataframe[
