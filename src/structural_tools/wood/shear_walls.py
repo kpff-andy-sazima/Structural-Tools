@@ -3,6 +3,7 @@ from __future__ import annotations
 import math
 from pathlib import Path
 from string import ascii_uppercase
+from typing import Literal
 
 import numpy as np
 import pandas as pd
@@ -27,11 +28,31 @@ from .constants import SPDWS_LOAD_CASE_FACTOR_SEISMIC_ASD
 from .sheathing import Sheathing, get_sheathing_properties
 
 
+def _debug_save(
+    df: pd.DataFrame,
+    filename: str,
+    enabled: bool,
+) -> None:
+    if enabled:
+        Path("debug").mkdir(exist_ok=True)
+        df.to_csv(Path("debug") / filename)
+
+
 def initialize_shear_walls_dataframe(
     shear_walls_dataframe: pd.DataFrame,
     seismic_loads: SeismicLoads,
     tributary_area_check: dict[int, float] | FloatLike,
 ) -> pd.DataFrame:
+    """BE SURE TO NAME YOUR WALLS WITH '--' BETWEEN THE GRIDLINES SO THAT THE WALL LINE IS PROPERLY SELECTED.
+
+    Args:
+        shear_walls_dataframe (pd.DataFrame): _description_
+        seismic_loads (SeismicLoads): _description_
+        tributary_area_check (dict[int, float] | FloatLike): _description_
+
+    Returns:
+        pd.DataFrame: _description_
+    """
     df = shear_walls_dataframe.map(lambda x: x.strip() if isinstance(x, str) else x)
     df.columns = df.columns.str.lower()
 
@@ -92,6 +113,13 @@ def initialize_shear_walls_dataframe(
 
     df["level tributary area"] = df.groupby(["Level", "Direction"])["tributary area"].transform("sum")
 
+    # Automatically extract the shear line by splitting at "_" and taking the first section
+    df["line"] = df.index.get_level_values("Wall").str.split("--").str[0]
+
+    # Get tributary area and wall length for the shear line
+    df["line tributary area"] = df.groupby(["Level", "Direction", "line"])["tributary area"].transform("sum")
+    df["line wall length"] = df.groupby(["Level", "Direction", "line"])["wall length"].transform("sum")
+
     if "angle" not in df.columns:
         df["angle"] = pd.NA
 
@@ -123,6 +151,18 @@ def initialize_shear_walls_dataframe(
     )
 
     df["level seismic force"] *= angle_factor
+
+    level_forces = df.groupby(["Level", "Direction"], sort=False)["level seismic force"].first()
+
+    cumulative_shear = level_forces.groupby("Direction").cumsum()
+
+    df["total level cumulative shear demand"] = (
+        df.index
+        .to_frame(index=False)
+        .assign(Direction=df["Direction"].to_numpy())
+        .set_index(["Level", "Direction"])
+        .index.map(cumulative_shear)
+    )
 
     if tributary_area_check:
         _ = check_shear_wall_tributary_area(shear_walls_dataframe=df, tributary_area_check=tributary_area_check)
@@ -279,14 +319,6 @@ def _calculate_flexible_seismic_demand(shear_walls_dataframe: pd.DataFrame):
     df = shear_walls_dataframe
     necessary_columns = ["line", "tributary area", "wall length", "level seismic force per area"]
     _check_for_missing_columns(df, necessary_columns)
-
-    # Automatically extract the shear line by splitting at "_" and taking the first section
-    df["line"] = df.index.get_level_values("Wall").str.split("--").str[0]
-
-    # Get tributary area and wall length for the shear line
-    df["line tributary area"] = df.groupby(["Level", "Direction", "line"])["tributary area"].transform("sum")
-    df["line wall length"] = df.groupby(["Level", "Direction", "line"])["wall length"].transform("sum")
-
     df["line shear demand"] = df["line tributary area"] * df["level seismic force per area"]
     df["line unit shear"] = df["line shear demand"] / df["line wall length"]
     df["line cumulative shear demand"] = df.groupby(level="Wall")["line shear demand"].cumsum()
@@ -303,25 +335,45 @@ def _calculate_flexible_seismic_demand(shear_walls_dataframe: pd.DataFrame):
     return df
 
 
-def _choose_shear_wall_sheathing(shear_walls_dataframe: pd.DataFrame, sheathing: Sheathing, dcr_check_value: float = 1):
+def _choose_shear_wall_sheathing(
+    shear_walls_dataframe: pd.DataFrame,
+    sheathing: Sheathing,
+    dcr_check_value: float = 1.0,
+    default_one_sided_sheathing: bool = True,
+) -> pd.DataFrame:
     df = shear_walls_dataframe
-    necessary_columns = ["adjusted unit shear demand", "sheathed sides"]
+
+    necessary_columns = ["adjusted unit shear demand"]
     _check_for_missing_columns(df, necessary_columns)
 
-    df[["adjusted unit shear capacity", "nail spacing", "sheathing shear stiffness", "shear dcr"]] = (
-        get_sheathing_properties(df[["adjusted unit shear demand", "sheathed sides"]], sheathing=sheathing)
+    result_columns = [
+        "adjusted unit shear capacity",
+        "nail spacing",
+        "sheathing shear stiffness",
+        "shear dcr",
+    ]
+
+    if default_one_sided_sheathing:
+        df["sheathed sides"] = 1
+
+    df[result_columns] = get_sheathing_properties(
+        df[["adjusted unit shear demand", "sheathed sides"]],
+        sheathing=sheathing,
     )
 
-    # Assign 2-sided sheathing to walls requiring it, then recalc capacity for just those walls (more efficient than passing the full wall dataframe)
-    if (df["shear dcr"] > dcr_check_value).any():
-        df.loc[df["shear dcr"] > dcr_check_value, "sheathed sides"] = 2
-        df.loc[
-            df["shear dcr"] > dcr_check_value,
-            ["adjusted unit shear capacity", "nail spacing", "sheathing shear stiffness", "shear dcr"],
-        ] = get_sheathing_properties(
-            df.loc[df["shear dcr"] > dcr_check_value, ["adjusted unit shear demand", "sheathed sides"]],
+    requires_two_sides = df["shear dcr"] > dcr_check_value
+
+    if requires_two_sides.any():
+        df.loc[requires_two_sides, "sheathed sides"] = 2
+
+        df.loc[requires_two_sides, result_columns] = get_sheathing_properties(
+            df.loc[
+                requires_two_sides,
+                ["adjusted unit shear demand", "sheathed sides"],
+            ],
             sheathing=sheathing,
         )
+
     return df
 
 
@@ -340,42 +392,62 @@ def _check_for_missing_columns(dataframe: pd.DataFrame, necessary_columns: list[
 
 def _calculate_shear_wall_stiffness(
     shear_walls_dataframe: pd.DataFrame,
-    end_post_youngs_modulus: float,
-    end_post_area: float,
-    Delta_A: float,
+    end_post_youngs_modulus: float | None,
+    end_post_area: float | None,
+    Delta_A: float | None,
     deflection_unit_conversion_factor: float = 1 / 12,
+    stiffness_method: Literal["deflection", "length"] = "deflection",
 ):
     df = shear_walls_dataframe
-    necessary_columns = [
-        "unit shear demand",
-        "wall length",
-        "wall height",
-        "sheathing shear stiffness",
-        "sheathed sides",
-        "nail spacing",
-        "cumulative shear demand",
-    ]
-    _check_for_missing_columns(df, necessary_columns)
 
-    df["end post youngs modulus"] = end_post_youngs_modulus
-    df["end post area"] = end_post_area
-    df["Delta_A"] = Delta_A
+    if stiffness_method == "deflection":
+        necessary_columns = [
+            "unit shear demand",
+            "wall length",
+            "wall height",
+            "sheathing shear stiffness",
+            "sheathed sides",
+            "nail spacing",
+            "cumulative shear demand",
+        ]
+        _check_for_missing_columns(df, necessary_columns)
 
-    df["delta_sw"] = (
-        8
-        * df["unit shear demand"]
-        * df["wall height"] ** 3
-        / (df["end post youngs modulus"] * df["end post area"] * df["wall length"])
-        + df["unit shear demand"] * df["wall height"] / (1000 * df["sheathing shear stiffness"] * df["sheathed sides"])
-        + df["wall height"] * df["Delta_A"] / df["wall length"]
-    ) * deflection_unit_conversion_factor
-    df["cumulative shear demand"] = df["cumulative shear demand"]
-    df["wall stiffness"] = df["cumulative shear demand"] / df["delta_sw"]
+        df["end post youngs modulus"] = end_post_youngs_modulus
+        df["end post area"] = end_post_area
+        df["Delta_A"] = Delta_A
+
+        df["delta_sw"] = (
+            8
+            * df["unit shear demand"]
+            * df["wall height"] ** 3
+            / (df["end post youngs modulus"] * df["end post area"] * df["wall length"])
+            + df["unit shear demand"]
+            * df["wall height"]
+            / (1000 * df["sheathing shear stiffness"] * df["sheathed sides"])
+            + df["wall height"] * df["Delta_A"] / df["wall length"]
+        ) * deflection_unit_conversion_factor
+
+        df["wall stiffness"] = df["cumulative shear demand"] / df["delta_sw"]
+        df["total level cumulative shear demand"] = df.groupby(["Level", "Direction"])[
+            "cumulative shear demand"
+        ].transform("sum")
+
+    elif stiffness_method == "length":
+        necessary_columns = [
+            "wall length",
+        ]
+        _check_for_missing_columns(df, necessary_columns)
+        # Relative stiffness proportional to wall length.
+        # Absolute magnitude is irrelevant because only the
+        # relative stiffness is used for force distribution.
+        df["delta_sw"] = np.nan
+        df["wall stiffness"] = df["wall length"]
+
+    else:
+        raise ValueError("stiffness_method must be 'deflection' or 'length'")
+
     df["total level stiffness"] = df.groupby(["Level", "Direction"])["wall stiffness"].transform("sum")
-    df["total level cumulative shear demand"] = df.groupby([
-        "Level",
-        "Direction",
-    ])["cumulative shear demand"].transform("sum")
+
     df["relative wall stiffness"] = df["wall stiffness"] / df["total level stiffness"]
 
     return df
@@ -490,14 +562,19 @@ def _calculate_rigid_shear_demand(shear_walls_dataframe: pd.DataFrame):
 
 def _envelope_shear_demand(shear_walls_dataframe: pd.DataFrame) -> pd.DataFrame:
     df = shear_walls_dataframe
-    necessary_columns = ["flexible shear force demand", "rigid shear force demand"]
-    _check_for_missing_columns(df, necessary_columns)
+    # necessary_columns = ["flexible shear force demand", "rigid shear force demand"]
+    # _check_for_missing_columns(df, necessary_columns)
 
-    df["shear force demand"] = np.where(
-        df["flexible shear force demand"] >= df["rigid shear force demand"],
-        df["flexible shear force demand"],
-        df["rigid shear force demand"],
-    )
+    if "flexible shear force demand" not in df.columns:
+        df["shear force demand"] = df["rigid shear force demand"]
+    elif "rigid shear force demand" not in df.columns:
+        df["shear force demand"] = df["flexible shear force demand"]
+    else:
+        df["shear force demand"] = np.where(
+            df["flexible shear force demand"] >= df["rigid shear force demand"],
+            df["flexible shear force demand"],
+            df["rigid shear force demand"],
+        )
     df["unit shear demand"] = df["shear force demand"] / df["wall length"]
     df["floor shear demand"] = abs(df.groupby("Wall")["shear force demand"].diff().fillna(df["shear force demand"]))
     df["floor unit shear demand"] = df["floor shear demand"] / df["wall length"]
@@ -509,11 +586,65 @@ def _envelope_shear_demand(shear_walls_dataframe: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
-def _check_shear_dcr(shear_walls_dataframe: pd.DataFrame) -> tuple[bool, float]:
+def _check_shear_dcr(
+    shear_walls_dataframe: pd.DataFrame,
+    max_dcr: float = 1.0,
+) -> tuple[bool, float, pd.DataFrame]:
+    """Check shear wall DCRs and return failures.
+
+    Args:
+        shear_walls_dataframe: Shear wall dataframe.
+        max_dcr: Maximum acceptable DCR.
+
+    Returns:
+        Tuple containing:
+            - Whether all walls pass.
+            - Maximum DCR.
+            - DataFrame of walls exceeding max_dcr.
+    """
     df = shear_walls_dataframe
+
     necessary_columns = ["shear dcr"]
     _check_for_missing_columns(df, necessary_columns)
-    return df["shear dcr"].max() <= 1, df["shear dcr"].max()
+
+    failing_walls = df.loc[df["shear dcr"] > max_dcr].copy()
+
+    return (
+        failing_walls.empty,
+        df["shear dcr"].max(),
+        failing_walls,
+    )
+
+
+def assign_shear_wall_type(df: pd.DataFrame) -> pd.DataFrame:
+    """Assign shear wall type from sheathed sides and nail spacing."""
+
+    wall_type_lookup = {
+        (1, 6): 1,
+        (1, 4): 2,
+        (1, 3): 3,
+        (1, 2): 4,
+        (2, 4): 5,
+        (2, 3): 6,
+        (2, 2): 7,
+    }
+
+    df["shear wall type"] = pd.MultiIndex.from_arrays([
+        df["sheathed sides"].astype(int),
+        df["nail spacing"].astype(int),
+    ]).map(wall_type_lookup)
+
+    if df["shear wall type"].isna().any():
+        invalid_rows = df.loc[
+            df["shear wall type"].isna(),
+            ["sheathed sides", "nail spacing"],
+        ].drop_duplicates()
+
+        raise ValueError(f"Invalid shear wall type combination(s):\n{invalid_rows.to_string(index=False)}")
+
+    df["shear wall type"] = df["shear wall type"].astype(int)
+
+    return df
 
 
 def design_shear_walls_envelope(
@@ -529,30 +660,33 @@ def design_shear_walls_envelope(
     i_e: float,
     dcr_check_value: float = 1,
     allowable_story_drift_coefficient: float = 0.020,
+    stiffness_method: Literal["deflection", "length"] = "deflection",
+    debug_save_intermediate_csvs: bool = False,
 ):
     df = shear_walls_dataframe
     df = design_shear_walls_flexible_assumption(df, sheathing, dcr_check_value)
-    df.to_csv("test.csv")
     df["adjusted flexible unit shear capacity"] = df["adjusted unit shear capacity"]
     df["sheathed sides flexible"] = df["sheathed sides"]
     df["nail spacing flexible"] = df["nail spacing"]
-    df.to_csv("test.csv")
-    df = _calculate_shear_wall_stiffness(df, end_post_youngs_modulus, end_post_area, Delta_A)
-    df.to_csv("test.csv")
-    df = _calculate_center_of_rigidity(df)
-    df.to_csv("test.csv")
-    df = _calculate_eccentricities(df, center_of_mass, plan_dimensions)
-    df.to_csv("test.csv")
-    df = _calculate_rigid_shear_demand(df)
-    df.to_csv("test.csv")
-    df = _envelope_shear_demand(df)
-    df.to_csv("test.csv")
-    df = _choose_shear_wall_sheathing(df, sheathing, dcr_check_value)
-    df.to_csv("test.csv")
+    _debug_save(df, "01_flexible_design.csv", enabled=debug_save_intermediate_csvs)
     df = _calculate_shear_wall_stiffness(
-        df, end_post_youngs_modulus, end_post_area, Delta_A
+        df, end_post_youngs_modulus, end_post_area, Delta_A, stiffness_method=stiffness_method
+    )
+    _debug_save(df, "02_calculate_shear_wall_stiffness.csv", enabled=debug_save_intermediate_csvs)
+    df = _calculate_center_of_rigidity(df)
+    _debug_save(df, "03_calculate_center_of_rigidity.csv", enabled=debug_save_intermediate_csvs)
+    df = _calculate_eccentricities(df, center_of_mass, plan_dimensions)
+    _debug_save(df, "04_calculate_eccentricities.csv", enabled=debug_save_intermediate_csvs)
+    df = _calculate_rigid_shear_demand(df)
+    _debug_save(df, "05_calculate_rigid_shear_demand.csv", enabled=debug_save_intermediate_csvs)
+    df = _envelope_shear_demand(df)
+    _debug_save(df, "06_envelope_shear_demand.csv", enabled=debug_save_intermediate_csvs)
+    df = _choose_shear_wall_sheathing(df, sheathing, dcr_check_value)
+    _debug_save(df, "07_choose_shear_wall_sheathing.csv", enabled=debug_save_intermediate_csvs)
+    df = _calculate_shear_wall_stiffness(
+        df, end_post_youngs_modulus, end_post_area, Delta_A, stiffness_method=stiffness_method
     )  # update the stiffnesses with updated walls
-    df.to_csv("test.csv")
+    _debug_save(df, "08_calculate_shear_wall_stiffness.csv", enabled=debug_save_intermediate_csvs)
     df = calculate_deflections(
         shear_walls_dataframe,
         plan_dimensions,
@@ -561,24 +695,171 @@ def design_shear_walls_envelope(
         i_e,
         allowable_story_drift_coefficient,
     )
-    df.to_csv("test.csv")
+    _debug_save(df, "08_calculate_deflections.csv", enabled=debug_save_intermediate_csvs)
     df = _calculate_eccentricities(df, center_of_mass, plan_dimensions)
-    df.to_csv("test.csv")
+    _debug_save(df, "10_calculate_eccentricities.csv", enabled=debug_save_intermediate_csvs)
     df = _calculate_rigid_shear_demand(df)
-    df.to_csv("test.csv")
+    _debug_save(df, "11_calculate_rigid_shear_demand.csv", enabled=debug_save_intermediate_csvs)
     df = _envelope_shear_demand(df)
-    df.to_csv("test.csv")
+    _debug_save(df, "12_envelope_shear_demand.csv", enabled=debug_save_intermediate_csvs)
     df = _choose_shear_wall_sheathing(df, sheathing, dcr_check_value)
-    df.to_csv("test.csv")
+    _debug_save(df, "13_choose_shear_wall_sheathing.csv", enabled=debug_save_intermediate_csvs)
     df = _calculate_shear_wall_stiffness(
-        df, end_post_youngs_modulus, end_post_area, Delta_A
+        df, end_post_youngs_modulus, end_post_area, Delta_A, stiffness_method=stiffness_method
     )  # update the stiffnesses with updated walls
-    df.to_csv("test.csv")
-    dcr_check, max_shear_dcr = _check_shear_dcr(df)
+    _debug_save(df, "14_calculate_shear_wall_stiffness.csv", enabled=debug_save_intermediate_csvs)
+
+    # Find walls that ended up with a nonsensical configuration:
+    # 2-sided sheathing with 6" edge nailing.
+    mask = (df["sheathed sides"] == 2) & (df["nail spacing"] == 6)
+    if mask.any():
+        # Force these walls back to a one-sided schedule.
+        df.loc[mask, "sheathed sides"] = 1
+
+        # Re-run the stiffness / force distribution / wall selection cycle.
+        df = _calculate_shear_wall_stiffness(
+            # Re-run the stiffness / force distribution / wall selection cycle.
+            df,
+            end_post_youngs_modulus,
+            end_post_area,
+            Delta_A,
+            stiffness_method=stiffness_method,
+        )
+        _debug_save(df, "15_calculate_shear_wall_stiffness.csv", enabled=debug_save_intermediate_csvs)
+        df = _calculate_center_of_rigidity(df)
+        _debug_save(df, "16_calculate_center_of_rigidity.csv", enabled=debug_save_intermediate_csvs)
+        df = _calculate_eccentricities(df, center_of_mass, plan_dimensions)
+        _debug_save(df, "17_calculate_eccentricities.csv", enabled=debug_save_intermediate_csvs)
+        df = _calculate_rigid_shear_demand(df)
+        _debug_save(df, "18_calculate_rigid_shear_demand.csv", enabled=debug_save_intermediate_csvs)
+        df = _envelope_shear_demand(df)
+        _debug_save(df, "19_envelope_shear_demand.csv", enabled=debug_save_intermediate_csvs)
+        df = _choose_shear_wall_sheathing(df, sheathing, dcr_check_value)
+        _debug_save(df, "20_choose_shear_wall_sheathing.csv", enabled=debug_save_intermediate_csvs)
+        df = _calculate_shear_wall_stiffness(
+            df, end_post_youngs_modulus, end_post_area, Delta_A, stiffness_method=stiffness_method
+        )
+        _debug_save(df, "21_calculate_shear_wall_stiffness.csv", enabled=debug_save_intermediate_csvs)
+        df = calculate_deflections(df, plan_dimensions, c_d_x, c_d_y, i_e, allowable_story_drift_coefficient)
+        _debug_save(df, "22_calculate_deflections.csv", enabled=debug_save_intermediate_csvs)
+
+    dcr_check, max_shear_dcr, failing_walls = _check_shear_dcr(df)
     if not dcr_check:
         raise ValueError(
-            f"Your highest shear DCR is {max_shear_dcr} > 1, please refine your design to add more shear wall or remove the bad wall."
+            f"The following walls are failing: \n{failing_walls['shear dcr']}\nYour highest shear DCR is {max_shear_dcr} > 1, please refine your design to add more shear wall or remove the bad wall."
         )
+
+    assign_shear_wall_type(df)
+    _debug_save(df, "23_assign_shear_wall_type.csv", enabled=debug_save_intermediate_csvs)
+
+    return df
+
+
+def design_shear_walls_rigid(
+    shear_walls_dataframe: pd.DataFrame,
+    sheathing: Sheathing,
+    center_of_mass: tuple[float, float],
+    plan_dimensions: tuple[float, float],
+    c_d_x: float,
+    c_d_y: float,
+    i_e: float,
+    dcr_check_value: float = 1,
+    allowable_story_drift_coefficient: float = 0.020,
+    # stiffness_method: Literal["deflection", "length"] = "length",
+    debug_save_intermediate_csvs: bool = False,
+):
+    df = shear_walls_dataframe
+    # df = design_shear_walls_flexible_assumption(df, sheathing, dcr_check_value)
+    # df["adjusted flexible unit shear capacity"] = df["adjusted unit shear capacity"]
+    # df["sheathed sides flexible"] = df["sheathed sides"]
+    # df["nail spacing flexible"] = df["nail spacing"]
+    # _debug_save(df, "01_flexible_design.csv", enabled=debug_save_intermediate_csvs)
+    df = _calculate_shear_wall_stiffness(
+        df,
+        end_post_youngs_modulus=None,
+        end_post_area=None,
+        Delta_A=None,
+        stiffness_method="length",
+    )
+    _debug_save(df, "01_calculate_shear_wall_stiffness.csv", enabled=debug_save_intermediate_csvs)
+    df = _calculate_center_of_rigidity(df)
+    _debug_save(df, "02_calculate_center_of_rigidity.csv", enabled=debug_save_intermediate_csvs)
+    df = _calculate_eccentricities(df, center_of_mass, plan_dimensions)
+    _debug_save(df, "03_calculate_eccentricities.csv", enabled=debug_save_intermediate_csvs)
+    df = _calculate_rigid_shear_demand(df)
+    _debug_save(df, "04_calculate_rigid_shear_demand.csv", enabled=debug_save_intermediate_csvs)
+    df = _envelope_shear_demand(df)
+    _debug_save(df, "05_envelope_shear_demand.csv", enabled=debug_save_intermediate_csvs)
+    df = _choose_shear_wall_sheathing(df, sheathing, dcr_check_value)
+    _debug_save(df, "06_choose_shear_wall_sheathing.csv", enabled=debug_save_intermediate_csvs)
+    df = _calculate_shear_wall_stiffness(
+        df, end_post_youngs_modulus=None, end_post_area=None, Delta_A=None, stiffness_method="length"
+    )  # update the stiffnesses with updated walls
+    _debug_save(df, "07_calculate_shear_wall_stiffness.csv", enabled=debug_save_intermediate_csvs)
+    df = calculate_deflections(
+        shear_walls_dataframe,
+        plan_dimensions,
+        c_d_x,
+        c_d_y,
+        i_e,
+        allowable_story_drift_coefficient,
+    )
+    _debug_save(df, "08_calculate_deflections.csv", enabled=debug_save_intermediate_csvs)
+    df = _calculate_eccentricities(df, center_of_mass, plan_dimensions)
+    _debug_save(df, "09_calculate_eccentricities.csv", enabled=debug_save_intermediate_csvs)
+    df = _calculate_rigid_shear_demand(df)
+    _debug_save(df, "10_calculate_rigid_shear_demand.csv", enabled=debug_save_intermediate_csvs)
+    df = _envelope_shear_demand(df)
+    _debug_save(df, "11_envelope_shear_demand.csv", enabled=debug_save_intermediate_csvs)
+    df = _choose_shear_wall_sheathing(df, sheathing, dcr_check_value)
+    _debug_save(df, "12_choose_shear_wall_sheathing.csv", enabled=debug_save_intermediate_csvs)
+    df = _calculate_shear_wall_stiffness(
+        df, end_post_youngs_modulus=None, end_post_area=None, Delta_A=None, stiffness_method="length"
+    )  # update the stiffnesses with updated walls
+    _debug_save(df, "13_calculate_shear_wall_stiffness.csv", enabled=debug_save_intermediate_csvs)
+
+    # Find walls that ended up with a nonsensical configuration:
+    # 2-sided sheathing with 6" edge nailing.
+    mask = (df["sheathed sides"] == 2) & (df["nail spacing"] == 6)
+    if mask.any():
+        # Force these walls back to a one-sided schedule.
+        df.loc[mask, "sheathed sides"] = 1
+
+        # Re-run the stiffness / force distribution / wall selection cycle.
+        df = _calculate_shear_wall_stiffness(
+            # Re-run the stiffness / force distribution / wall selection cycle.
+            df,
+            end_post_youngs_modulus=None,
+            end_post_area=None,
+            Delta_A=None,
+            stiffness_method="length",
+        )
+        _debug_save(df, "14_calculate_shear_wall_stiffness.csv", enabled=debug_save_intermediate_csvs)
+        df = _calculate_center_of_rigidity(df)
+        _debug_save(df, "15_calculate_center_of_rigidity.csv", enabled=debug_save_intermediate_csvs)
+        df = _calculate_eccentricities(df, center_of_mass, plan_dimensions)
+        _debug_save(df, "16_calculate_eccentricities.csv", enabled=debug_save_intermediate_csvs)
+        df = _calculate_rigid_shear_demand(df)
+        _debug_save(df, "17_calculate_rigid_shear_demand.csv", enabled=debug_save_intermediate_csvs)
+        df = _envelope_shear_demand(df)
+        _debug_save(df, "18_envelope_shear_demand.csv", enabled=debug_save_intermediate_csvs)
+        df = _choose_shear_wall_sheathing(df, sheathing, dcr_check_value)
+        _debug_save(df, "19_choose_shear_wall_sheathing.csv", enabled=debug_save_intermediate_csvs)
+        df = _calculate_shear_wall_stiffness(
+            df, end_post_youngs_modulus=None, end_post_area=None, Delta_A=None, stiffness_method="length"
+        )
+        _debug_save(df, "20_calculate_shear_wall_stiffness.csv", enabled=debug_save_intermediate_csvs)
+        df = calculate_deflections(df, plan_dimensions, c_d_x, c_d_y, i_e, allowable_story_drift_coefficient)
+        _debug_save(df, "21_calculate_deflections.csv", enabled=debug_save_intermediate_csvs)
+
+    dcr_check, max_shear_dcr, failing_walls = _check_shear_dcr(df)
+    if not dcr_check:
+        raise ValueError(
+            f"The following walls are failing: \n{failing_walls['shear dcr']}\nYour highest shear DCR is {max_shear_dcr} > 1, please refine your design to add more shear wall or remove the bad wall."
+        )
+
+    assign_shear_wall_type(df)
+    _debug_save(df, "22_assign_shear_wall_type.csv", enabled=debug_save_intermediate_csvs)
 
     return df
 
@@ -749,11 +1030,11 @@ def assign_force_schedule(
     """Assign force schedules by grouping forces into bins.
 
     Args:
-        dataframe: Input dataframe.
+        shear_walls_dataframe: Input dataframe.
         num_options: Maximum number of schedule options (1-26).
         level_name: Index level used to group rows.
-        tension_column: Column containing tension forces.
-        compression_column: Column containing compression forces.
+        tension_column: Column containing tension forces (lbs).
+        compression_column: Column containing compression forces (lbs).
 
     Returns:
         Tuple containing:
@@ -766,15 +1047,29 @@ def assign_force_schedule(
     labels = list(ascii_uppercase[:num_options])
     schedule_rows = []
 
+    def _round_schedule_force(force: pd.Series) -> pd.Series:
+        """Round schedule forces.
+
+        < 10 kip  -> round up to next 0.5 kip
+        >= 10 kip -> round up to next whole kip
+        """
+        rounded = np.ceil(force * 2) / 2
+
+        mask = rounded >= 10
+        rounded[mask] = np.ceil(rounded[mask])
+
+        return rounded
+
     def _assign_schedule(group: pd.DataFrame) -> pd.DataFrame:
         group = group.copy()
 
         level = group.index.get_level_values(level_name)[0]
-
         n = len(group)
 
+        # Assign bins
         group["_bin"] = np.floor(np.arange(n) * min(num_options, n) / n).astype(int)
 
+        # Get maximum forces in each bin
         schedule = (
             group
             .groupby("_bin")
@@ -786,29 +1081,59 @@ def assign_force_schedule(
         )
 
         # Convert to kips
-        schedule["tension"] /= 1000
-        schedule["compression"] /= 1000
+        schedule["tension"] /= 1000.0
+        schedule["compression"] /= 1000.0
 
         # Sort by governing force
         schedule["governing"] = schedule[["tension", "compression"]].max(axis=1)
+
         schedule = schedule.sort_values("governing").reset_index(drop=True)
 
-        schedule["option"] = labels[: len(schedule)]
+        # Enforce monotonic schedules
+        schedule["tension"] = schedule["tension"].cummax()
+        schedule["compression"] = schedule["compression"].cummax()
+
+        # Round schedule values
+        schedule["tension"] = _round_schedule_force(schedule["tension"])
+        schedule["compression"] = _round_schedule_force(schedule["compression"])
+
+        schedule["Option"] = labels[: len(schedule)]
         schedule["Level"] = level
 
-        bin_to_option = dict(zip(schedule["_bin"], schedule["option"]))
-        group["option"] = group["_bin"].map(bin_to_option)
+        # Map bins back to option letters
+        bin_to_option = dict(
+            zip(
+                schedule["_bin"],
+                schedule["Option"],
+                strict=False,
+            )
+        )
 
-        schedule_map = schedule.set_index("option")[["tension", "compression"]]
+        group["Option"] = group["_bin"].map(bin_to_option)
 
-        group["binned tension force"] = group["option"].map(schedule_map["tension"])
-        group["binned compression force"] = group["option"].map(schedule_map["compression"])
+        schedule_map = schedule.set_index("Option")[["tension", "compression"]]
 
-        schedule_rows.append(schedule[["Level", "option", "tension", "compression"]])
+        group["binned tension force"] = group["Option"].map(schedule_map["tension"])
+
+        group["binned compression force"] = group["Option"].map(schedule_map["compression"])
+
+        schedule_rows.append(
+            schedule[
+                [
+                    "Level",
+                    "Option",
+                    "tension",
+                    "compression",
+                ]
+            ]
+        )
 
         return group.drop(columns="_bin")
 
-    shear_walls_dataframe = shear_walls_dataframe.groupby(level=level_name, group_keys=False).apply(_assign_schedule)
+    shear_walls_dataframe = shear_walls_dataframe.groupby(
+        level=level_name,
+        group_keys=False,
+    ).apply(_assign_schedule)
 
     schedule_df = (
         pd
@@ -819,7 +1144,7 @@ def assign_force_schedule(
                 "compression": "binned compression force",
             }
         )
-        .set_index(["Level", "option"])
+        .set_index(["Level", "Option"])
         .sort_index()
     )
 
