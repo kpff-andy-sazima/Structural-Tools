@@ -199,7 +199,6 @@ def get_viable_sheathing(
     if sheathing_application == SheathingApplication.SHEAR_WALL:
         filtered_sheathing_options: pd.DataFrame = _apply_filter(SDPWS_TABLE_4_3_A, filter_dataclass=sheathing)
     else:
-        # TODO: Add blocking. Currently just pull unblocked values
         if sheathing.blocking:
             filtered_sheathing_options: pd.DataFrame = _apply_filter(SDPWS_TABLE_4_2_A, filter_dataclass=sheathing)
         else:
