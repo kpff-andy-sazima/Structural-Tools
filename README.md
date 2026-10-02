@@ -58,7 +58,7 @@ name = "project_name"
 version = "0.1.0"
 description = "Project description"
 readme = "README.md"
-requires-python = ">=3.14"
+requires-python = ">=3.12"
 dependencies = [
     "ipython",
     "ipykernel<7",
